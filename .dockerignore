@@ -1,0 +1,95 @@
+# Version control
+**/.git
+**/.gitignore
+**/.gitattributes
+**/.github
+**/.gitlab-ci.yml
+**/.azure-pipelines
+**/azure-pipelines*.yml
+
+# Docker files (not needed inside the build context)
+**/.dockerignore
+**/docker-compose*
+**/compose*.y*ml
+# Dockerfiles are read by the daemon directly, so they can be excluded from the context:
+# **/Dockerfile*
+
+# IDEs / editors
+**/.vs
+**/.vscode
+**/.idea
+**/.history
+**/*.user
+**/*.suo
+**/*.iml
+**/*.DotSettings.user
+**/*.code-workspace
+**/_ReSharper*
+
+# .NET build output (restored/built inside the image)
+**/bin
+**/obj
+**/publish
+**/artifacts/*
+# Exception: runtime-only Dockerfiles COPY artifacts/publish/<deployable>/ from the repository root.
+# It must come after the two excludes above (the last matching rule wins), and the artifacts directory
+# itself is not excluded (only its children) so the re-include is not blocked by an excluded parent.
+# Excludes below (*.pdb, *.log, secrets, ...) still apply inside artifacts/publish.
+!artifacts/publish
+**/.nuget
+**/*.nupkg
+**/*.snupkg
+**/*.binlog
+**/*.pdb
+
+# Tests / coverage
+**/TestResults
+**/coverage
+**/*.trx
+**/*.coverage
+**/BenchmarkDotNet.Artifacts
+**/StrykerOutput
+
+# Logs and temp
+**/*.log
+**/*.tmp
+
+# Local config & secrets - never bake into an image
+**/.env
+**/.env.*
+**/secrets.json
+**/appsettings.Local.json
+**/appsettings.*.local.json
+**/*.pfx
+**/*.snk
+**/launchSettings.json
+
+# Angular / Node (installed and built inside the image)
+**/node_modules
+**/dist
+**/out-tsc
+**/.angular
+**/.nx
+**/.turbo
+**/.vite
+**/.cache
+**/.parcel-cache
+**/.sass-cache
+**/.eslintcache
+**/.nyc_output
+**/*.tsbuildinfo
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/pnpm-debug.log*
+**/cypress/videos
+**/cypress/screenshots
+**/playwright-report
+**/test-results
+**/storybook-static
+
+# Docs & tooling that don't belong in an image
+**/.claude
+**/CLAUDE*.md
+**/.migrate-tmp
+**/REPO-STRUCTURE.md

@@ -1,0 +1,73 @@
+# Line endings are LF in the repository AND in every working tree (Windows and
+# macOS alike). An `eol` attribute overrides core.autocrlf / core.eol, so the
+# result does not depend on each developer's git config. Keep .editorconfig
+# (end_of_line) in step with this file so editors and IDEs write the same thing.
+#
+# `text=auto` lets git detect text files; the extensions below are forced to
+# text so a misdetection can never corrupt them.
+* text=auto eol=lf
+
+# ---------------------------------------------------------------------------
+# Text: LF everywhere (read by Linux runners, containers, bash and pwsh)
+# ---------------------------------------------------------------------------
+*.sh                    text eol=lf
+*.bash                  text eol=lf
+*.zsh                   text eol=lf
+*.ps1                   text eol=lf
+*.py                    text eol=lf
+Dockerfile*             text eol=lf
+*.dockerfile            text eol=lf
+.dockerignore           text eol=lf
+*.yaml                  text eol=lf
+*.yml                   text eol=lf
+*.cs                    text eol=lf
+*.csproj                text eol=lf
+*.props                 text eol=lf
+*.targets               text eol=lf
+*.slnx                  text eol=lf
+*.json                  text eol=lf
+*.md                    text eol=lf
+
+# ---------------------------------------------------------------------------
+# Text: CRLF everywhere (Windows tooling that breaks on bare LF)
+# ---------------------------------------------------------------------------
+*.cmd                   text eol=crlf
+*.bat                   text eol=crlf
+*.sln                   text eol=crlf
+
+# ---------------------------------------------------------------------------
+# Binary (never converted, never diffed as text)
+# ---------------------------------------------------------------------------
+*.png                   binary
+*.jpg                   binary
+*.jpeg                  binary
+*.gif                   binary
+*.webp                  binary
+*.ico                   binary
+*.pdf                   binary
+*.woff                  binary
+*.woff2                 binary
+*.ttf                   binary
+*.eot                   binary
+*.dll                   binary
+*.exe                   binary
+*.pdb                   binary
+*.so                    binary
+*.dylib                 binary
+*.nupkg                 binary
+*.snupkg                binary
+*.snk                   binary
+*.pfx                   binary
+*.p12                   binary
+*.zip                   binary
+*.gz                    binary
+*.tar                   binary
+*.7z                    binary
+*.jar                   binary
+
+# ---------------------------------------------------------------------------
+# Diff / language statistics
+# ---------------------------------------------------------------------------
+*.cs                    diff=csharp
+*.md                    diff=markdown
+package-lock.json       -diff linguist-generated

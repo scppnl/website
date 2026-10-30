@@ -1,0 +1,231 @@
+# ---------------------------------------------------------------------------
+# OS
+# ---------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ---------------------------------------------------------------------------
+# IDEs / editors
+# ---------------------------------------------------------------------------
+# Visual Studio Code (share only the team-wide config files)
+.vscode/*
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+!.vscode/*.code-workspace
+.history/
+
+# Visual Studio
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.rsuser
+*.userprefs
+*.vsix
+*.VC.db
+*.VC.VC.opendb
+*.sln.ide/
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+.ionide/
+.idea_modules/
+
+# JetBrains Rider / other JetBrains IDEs
+.idea/
+*.iml
+*.ipr
+*.iws
+cmake-build-*/
+
+# ---------------------------------------------------------------------------
+# .NET build output
+# ---------------------------------------------------------------------------
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Ll]og/
+[Ll]ogs/
+artifacts/
+publish/
+PublishScripts/
+*.publish.xml
+*.pubxml
+!**/Properties/PublishProfiles/*.pubxml
+project.lock.json
+project.fragment.lock.json
+*.nupkg
+*.snupkg
+.nuget/
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+csharp_ci_output/
+*.binlog
+*.dll.config.bak
+*.pdb
+*.cache
+*.log
+*.tmp
+*.tmp_proj
+*.tlog
+*.pidb
+*.svclog
+
+# Tests / coverage
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+TestResults/
+*.trx
+coverage/
+coverage*.json
+coverage*.xml
+coverage*.info
+*.coverage
+*.coveragexml
+*.lcov
+.coverage
+lcov.info
+BenchmarkDotNet.Artifacts/
+.stryker-tmp/
+StrykerOutput/
+
+# ASP.NET / local config & secrets
+appsettings.Local.json
+appsettings.*.local.json
+launchSettings.local.json
+secrets.json
+# Optional file the services load for local and production secrets
+appsettings.secrets.json
+*.pfx
+*.snk
+# Strong-name keys shipped with vendor source are needed to build it (REPO-STRUCTURE.md section 3.6)
+!src/vendor/**/*.snk
+.env
+.env.*
+!.env.example
+!.env.template
+
+# Local environment: database backups to restore and volume snapshots (eng/local-env/docker-compose.yaml)
+eng/local-env/backups/
+eng/local-env/snapshots/
+
+# Generated / misc .NET
+*_i.c
+*_p.c
+*.ilk
+*.meta
+*.obj
+*.iobj
+*.ipdb
+*.pch
+*.tlb
+*.tli
+*.tlh
+ScaffoldingReadMe.txt
+Generated_Code/
+UpgradeLog*.XML
+UpgradeLog*.htm
+*.orig
+*.rej
+
+# ---------------------------------------------------------------------------
+# Angular / Node
+# ---------------------------------------------------------------------------
+node_modules/
+jspm_packages/
+bower_components/
+/dist/
+**/dist/
+/out-tsc/
+**/out-tsc/
+/tmp/
+.angular/
+**/.angular/
+.sass-cache/
+/connect.lock
+/libpeerconnection.log
+/typings/
+*.tsbuildinfo
+.eslintcache
+.stylelintcache
+.parcel-cache/
+.cache/
+.nyc_output/
+.npm/
+.pnpm-store/
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+testem.log
+.vite/
+.nx/
+.turbo/
+
+# Angular SSR / Cypress / Playwright
+cypress/videos/
+cypress/screenshots/
+playwright-report/
+test-results/
+blob-report/
+playwright/.cache/
+
+# Storybook
+storybook-static/
+
+# ---------------------------------------------------------------------------
+# Docker (local overrides)
+# ---------------------------------------------------------------------------
+docker-compose.override.yml
+docker-compose.override.yaml
+
+# ---------------------------------------------------------------------------
+# Claude Code (keep shared skills/settings, ignore local state)
+# ---------------------------------------------------------------------------
+.claude/settings.local.json
+.claude/scheduled_tasks.lock
+.claude/worktrees/
+CLAUDE.local.md
+
+# ---------------------------------------------------------------------------
+# Migration work area (repos cloned by the migrate-repo skill)
+# ---------------------------------------------------------------------------
+.migrate-tmp/
+
+# ---------------------------------------------------------------------------
+# Python components (src/routing/mt/ait-detection-service)
+# ---------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+htmlcov/
+*.egg-info/
+src/routing/mt/ait-detection-service/model_files/
+src/routing/mt/ait-detection-service/local_testing/
+src/routing/mt/ait-detection-service/old_tests/
+src/routing/mt/ait-detection-service/data/
+src/routing/mt/ait-detection-service/output/
