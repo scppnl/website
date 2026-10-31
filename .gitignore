@@ -229,3 +229,8 @@ src/routing/mt/ait-detection-service/local_testing/
 src/routing/mt/ait-detection-service/old_tests/
 src/routing/mt/ait-detection-service/data/
 src/routing/mt/ait-detection-service/output/
+
+# ---------------------------------------------------------------------------
+# Full-size source photos (web-sized copies live in public/images)
+# ---------------------------------------------------------------------------
+src/apps/frontpage-foundation/photos/
