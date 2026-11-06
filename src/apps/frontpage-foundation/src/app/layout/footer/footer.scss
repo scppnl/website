@@ -1,0 +1,38 @@
+.footer {
+  margin-top: 2rem;
+  padding-top: 3rem;
+  background: var(--color-primary-dark);
+  color: #e9efe6;
+
+  h2 {
+    color: #fff;
+    font-size: 1.1rem;
+  }
+
+  a:not(.btn) {
+    color: #fff;
+  }
+
+  address {
+    font-style: normal;
+  }
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+}
+
+.footer__grid {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+
+.footer__copy {
+  margin: 2rem auto 0;
+  padding-block: 1.25rem;
+  border-top: 1px solid rgb(255 255 255 / 0.2);
+  font-size: 0.9rem;
+}

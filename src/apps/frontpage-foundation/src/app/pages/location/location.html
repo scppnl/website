@@ -1,0 +1,54 @@
+<app-page-header [title]="content.title" [lead]="content.lead" />
+
+<section class="section">
+  <div class="container grid grid--two">
+    <div>
+      <h2>Adres</h2>
+      <address>
+        <strong>{{ foundation.name }}</strong
+        ><br />
+        {{ foundation.address.street }}<br />
+        {{ foundation.address.postalCode }} {{ foundation.address.city }}
+      </address>
+      <p class="route">
+        <a class="btn" [href]="foundation.mapsUrl" target="_blank" rel="noopener">Route plannen</a>
+      </p>
+    </div>
+    <iframe
+      class="map"
+      title="Kaart met de locatie van het clubhuis aan de Huijbergsebaan 415"
+      src="https://www.openstreetmap.org/export/embed.html?bbox=4.3183%2C51.4729%2C4.3303%2C51.4769&amp;layer=mapnik&amp;marker=51.4749186%2C4.3243142"
+      loading="lazy"
+    ></iframe>
+  </div>
+</section>
+
+<section class="section section--tint">
+  <div class="container">
+    <h2>Bereikbaarheid</h2>
+    <div class="grid">
+      @for (item of content.access; track item.title) {
+        <article class="card">
+          <h3>{{ item.title }}</h3>
+          <p>{{ item.text }}</p>
+        </article>
+      }
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container grid grid--two">
+    <div>
+      <h2>{{ content.surroundings.title }}</h2>
+      <p>{{ content.surroundings.text }}</p>
+    </div>
+    <app-photo
+      [src]="content.surroundings.photo.src"
+      [alt]="content.surroundings.photo.alt"
+      sizes="(min-width: 42rem) 50vw, 100vw"
+    />
+  </div>
+</section>
+
+<app-cta-banner />

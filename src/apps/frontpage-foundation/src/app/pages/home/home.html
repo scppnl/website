@@ -1,0 +1,67 @@
+<section class="hero">
+  <div class="container grid grid--two">
+    <div>
+      <h1>{{ content.heroTitle }}</h1>
+      <p class="lead">{{ content.heroText }}</p>
+      <p class="hero__actions">
+        <a class="btn btn--accent" routerLink="/reserveren">Reserveer nu</a>
+        <a class="btn btn--outline" routerLink="/tarieven">Tarieven & info</a>
+      </p>
+    </div>
+    <app-photo
+      [src]="content.heroPhoto.src"
+      [alt]="content.heroPhoto.alt"
+      sizes="(min-width: 42rem) 50vw, 100vw"
+      priority
+    />
+  </div>
+</section>
+
+<section class="section">
+  <div class="container intro">
+    <h2>{{ content.intro.title }}</h2>
+    @for (paragraph of content.intro.paragraphs; track paragraph) {
+      <p>{{ paragraph }}</p>
+    }
+  </div>
+</section>
+
+<section class="section section--tint">
+  <div class="container">
+    <div class="grid">
+      @for (item of content.highlights; track item.title) {
+        <article class="card">
+          <h3>{{ item.title }}</h3>
+          <p>{{ item.text }}</p>
+        </article>
+      }
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <h2>{{ content.audiencesTitle }}</h2>
+    <div class="grid">
+      @for (item of content.audiences; track item.title) {
+        <article class="card">
+          <h3>{{ item.title }}</h3>
+          <p>{{ item.text }}</p>
+        </article>
+      }
+    </div>
+  </div>
+</section>
+
+<section class="section section--tint">
+  <div class="container">
+    <div class="grid">
+      @for (photo of content.photoStrip; track photo.alt) {
+        <app-photo [src]="photo.src" [alt]="photo.alt" />
+      }
+    </div>
+    <p class="more"><a class="btn btn--outline" routerLink="/gebouw">Bekijk het hele gebouw</a></p>
+  </div>
+</section>
+
+<app-cta-banner />

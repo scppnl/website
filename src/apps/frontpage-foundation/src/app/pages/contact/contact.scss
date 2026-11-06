@@ -1,0 +1,15 @@
+.contact-layout {
+  display: grid;
+  gap: 2rem;
+  grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr);
+  align-items: start;
+
+  @media (max-width: 52rem) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.contact-aside {
+  display: grid;
+  gap: 1.5rem;
+}
