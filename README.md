@@ -96,70 +96,51 @@ and runs `npm ci` in the project root. No hard-coded application list needs an
 update. Add its lockfile path to the workflow's npm cache paths if it is outside
 `src/apps/*`. CI automatically runs any registered `build` and `test` targets.
 
-## Future .NET components
+## Booking API and .NET components
 
-`global.json` selects .NET 10 starting at 10.0.100, allows stable feature-band
-updates within .NET 10 (`latestFeature`), and disallows prereleases. CI installs
-the SDK even while there are no .NET projects. No sample application is included.
+`Scpp.slnx` is the root .NET solution. The component solution is
+`src/foundation/booking-api/Scpp.Foundation.Booking.Api.slnx`; both contain the API
+under the component's `src/` directory and its MSTest unit tests under `tests/`.
+`global.json` selects .NET 10 starting at 10.0.404, allows stable feature-band
+updates within .NET 10 (`latestFeature`), and disallows prereleases.
 
-`eng/dotnet.mjs` accepts only explicitly supplied, existing project or solution
-paths, resolved from the repository root. It also accepts absolute paths:
+The API uses the slim minimal API host with Native AOT enabled. `GET /` returns
+HTTP 200 with plain text `Booking API`. To run it locally:
 
 ```sh
-npm run dotnet -- restore src/services/example/Example.csproj
-npm run dotnet -- build src/services/example/Example.csproj
-npm run dotnet -- test src/services/example/Example.csproj
+dotnet run --project src/foundation/booking-api/src/Scpp.Foundation.Booking.Api -- --urls http://localhost:5080
+curl http://localhost:5080/
 ```
 
+CI registers the entire component as the Nx project `booking-api`. An affected
+run restores, builds Release, and runs MSTest without rebuilding or restoring.
+Native publishing and executable smoke tests are deferred. API sources, tests,
+project configuration, and either solution affect only `booking-api`;
+frontend-only changes select only the corresponding frontend. Shared SDK,
+build/package configuration, and CI tooling changes affect every project.
+Markdown-only changes select no projects.
+
+```sh
+npm run nx -- run booking-api:test
+npm run ci -- --files=src/foundation/booking-api/src/Scpp.Foundation.Booking.Api/Program.cs
+npm run dotnet -- restore Scpp.slnx
+npm run dotnet -- build Scpp.slnx
+npm run dotnet -- test Scpp.slnx
+```
+
+`eng/dotnet.mjs` accepts explicitly supplied, existing project or solution paths,
+resolved from the repository root; absolute paths and multiple paths also work.
 Restore must run first. Build uses Release and `--no-restore`; test uses Release,
-`--no-restore`, and `--no-build`, requiring the earlier build. Multiple paths are
-supported. SDK selection runs from the repository root, and every child failure
-propagates to the caller.
+`--no-restore`, and `--no-build`, requiring the earlier build. SDK selection runs
+from the repository root, and every child failure propagates to the caller.
 
-Register real components with explicit Nx targets, for example this future
-`src/services/example/project.json` (adjust paths and dependencies to match the
-component):
-
-```json
-{
-  "name": "example",
-  "projectType": "application",
-  "implicitDependencies": ["example-contracts"],
-  "targets": {
-    "restore": {
-      "executor": "nx:run-commands",
-      "cache": false,
-      "options": {
-        "command": "node eng/dotnet.mjs restore src/services/example/Example.slnx"
-      }
-    },
-    "build": {
-      "executor": "nx:run-commands",
-      "cache": false,
-      "dependsOn": ["restore", "^build"],
-      "options": {
-        "command": "node eng/dotnet.mjs build src/services/example/Example.slnx"
-      }
-    },
-    "test": {
-      "executor": "nx:run-commands",
-      "cache": false,
-      "dependsOn": ["build"],
-      "options": {
-        "command": "node eng/dotnet.mjs test src/services/example/Example.slnx"
-      }
-    }
-  }
-}
-```
-
-The example targets a solution containing both the application and its tests.
-For separate test-project targets, restore and build the test project before testing.
-`example-contracts` must name a real registered project. Explicitly model every
-project reference and shared library dependency; a `dotnet` command alone does
-not teach Nx the .NET project graph. Shared `Directory.Build.*`,
-`Directory.Packages.props`, NuGet config, and SDK/tool configuration are global
-inputs. Add other shared imports as needed. Keep **all .NET targets** at
-`cache: false` (overriding root build/test defaults) until real components verify
-restore behavior, generated files, runtime/configuration variants, and complete
-outputs such as `bin` and `obj`. Then introduce caching deliberately.
+For another .NET component, follow the booking API's `project.json`: register
+explicit restore, build, and test targets through `eng/dotnet.mjs`, with build
+depending on restore and test depending on build. A component solution should
+include both its sources and tests. Explicitly model project references and
+shared library dependencies in Nx; a `dotnet` command alone does not teach Nx
+the .NET project graph. Shared `Directory.Build.*`, `Directory.Packages.props`,
+NuGet config, and SDK/tool configuration are global inputs. Add other shared
+imports as needed. Keep **all .NET targets** at `cache: false` until restore
+behavior, generated files, runtime/configuration variants, and complete outputs
+such as `bin` and `obj` have been verified for caching.

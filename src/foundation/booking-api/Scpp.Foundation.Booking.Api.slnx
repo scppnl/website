@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Scpp.Foundation.Booking.Api/Scpp.Foundation.Booking.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Scpp.Foundation.Booking.Api.UnitTests/Scpp.Foundation.Booking.Api.UnitTests.csproj" />
+  </Folder>
+</Solution>

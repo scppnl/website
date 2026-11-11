@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/src/foundation/booking-api/">
+    <Project Path="src/foundation/booking-api/src/Scpp.Foundation.Booking.Api/Scpp.Foundation.Booking.Api.csproj" />
+    <Project Path="src/foundation/booking-api/tests/Scpp.Foundation.Booking.Api.UnitTests/Scpp.Foundation.Booking.Api.UnitTests.csproj" />
+  </Folder>
+</Solution>

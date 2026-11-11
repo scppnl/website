@@ -7,16 +7,28 @@ import { root } from './process.mjs';
 const env = { ...process.env };
 delete env.NODE_TEST_CONTEXT;
 const both = ['frontpage-association', 'frontpage-foundation'];
+const all = ['booking-api', ...both];
+const bookingRoot = 'src/foundation/booking-api';
 for (const [files, expected] of [
   [['src/apps/frontpage-association/src/app.ts'], [both[0]]],
   [['src/apps/frontpage-association/package-lock.json'], [both[0]]],
   [['src/apps/frontpage-foundation/src/app/app.ts'], [both[1]]],
   [['src/apps/frontpage-foundation/package-lock.json'], [both[1]]],
-  [['eng/ci.mjs'], both],
-  [['.github/workflows/ci.yml'], both],
-  [['global.json'], both],
-  [['package-lock.json'], both],
-  [['README.md', 'src/apps/frontpage-association/README.md', 'src/apps/frontpage-foundation/README.md'], []],
+  [[`${bookingRoot}/src/Scpp.Foundation.Booking.Api/Program.cs`], ['booking-api']],
+  [[`${bookingRoot}/src/Scpp.Foundation.Booking.Api/Scpp.Foundation.Booking.Api.csproj`], ['booking-api']],
+  [[`${bookingRoot}/tests/Scpp.Foundation.Booking.Api.UnitTests/DummyEndpointTests.cs`], ['booking-api']],
+  [[`${bookingRoot}/tests/Scpp.Foundation.Booking.Api.UnitTests/Scpp.Foundation.Booking.Api.UnitTests.csproj`], ['booking-api']],
+  [[`${bookingRoot}/project.json`], ['booking-api']],
+  [[`${bookingRoot}/Scpp.Foundation.Booking.Api.slnx`], ['booking-api']],
+  [['Scpp.slnx'], ['booking-api']],
+  [['eng/ci.mjs'], all],
+  [['.github/workflows/ci.yml'], all],
+  [['global.json'], all],
+  [['package-lock.json'], all],
+  [['Directory.Build.props'], all],
+  [['Directory.Packages.props'], all],
+  [['NuGet.Config'], all],
+  [['README.md', 'src/apps/frontpage-association/README.md', 'src/apps/frontpage-foundation/README.md', `${bookingRoot}/README.md`], []],
 ]) {
   test(`affected selection: ${files.join(', ')}`, () => {
     const result = spawnSync(process.execPath,
