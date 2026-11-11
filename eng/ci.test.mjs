@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, test } from 'node:test';
@@ -20,19 +20,33 @@ writeFileSync(join(directory, 'app/package-lock.json'), '{}');
 writeFileSync(join(directory, 'npm.cjs'), 'process.exit(23);');
 writeFileSync(join(directory, 'node_modules/nx/bin/nx.js'), `
 const args = process.argv.slice(2);
-if (args[0] === 'show' && args[1] === 'projects') console.log('["app"]');
+if (args[0] === 'show' && args[1] === 'projects') console.log(JSON.stringify([process.env.TEST_PROJECT || 'app']));
 else if (args[0] === 'show') console.log(JSON.stringify({root: 'app', metadata: {ci: {npm: process.env.FAIL_INSTALL === 'true'}}}));
-else process.exit(29);
+else process.exit(Number(process.env.TEST_NX_EXIT ?? 29));
 `);
 
 test('CI exits unsuccessfully when npm installation or Nx execution fails', () => {
   for (const failInstall of [true, false]) {
+    const output = join(directory, `output-${failInstall}`);
     const result = spawnSync(process.execPath, ['eng/ci.mjs', '--all'], {
       cwd: directory, encoding: 'utf8', env: { ...childEnv,
-        FAIL_INSTALL: String(failInstall), npm_execpath: join(directory, 'npm.cjs') },
+        FAIL_INSTALL: String(failInstall), npm_execpath: join(directory, 'npm.cjs'), GITHUB_OUTPUT: output },
     });
     assert.equal(result.status, 1);
     assert.match(result.stderr, failInstall ? /failed \(23\)/ : /failed \(29\)/);
+    assert.equal(existsSync(output), false, 'Failed checks must not export deployable sites');
+  }
+});
+
+test('successful CI exports only its checked production websites', () => {
+  for (const project of ['frontpage-association', 'frontpage-foundation', 'future-api']) {
+    const output = join(directory, `output-${project}`);
+    const result = spawnSync(process.execPath, ['eng/ci.mjs', '--all'], {
+      cwd: directory, encoding: 'utf8', env: { ...childEnv,
+        FAIL_INSTALL: 'false', TEST_PROJECT: project, TEST_NX_EXIT: '0', GITHUB_OUTPUT: output },
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(readFileSync(output, 'utf8'), `sites=${JSON.stringify(project === 'future-api' ? [] : [project])}\n`);
   }
 });
 

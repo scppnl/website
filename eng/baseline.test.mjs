@@ -53,7 +53,9 @@ test('main compares with the last successful push, retaining changes from a fail
   const selected = await baseline({ head }, env, {
     ...services,
     lastSuccessfulPush: (settings) => lastSuccessfulPush(settings, history([
-      run(4, head), run(3, failed, 'failure'), run(2, failed, 'success', 'workflow_dispatch'), run(1, successful),
+      // A run is unsuccessful even when builds or one of its two deployments passed.
+      run(4, head), run(3, failed, 'failure'), run(5, failed, 'cancelled'),
+      run(2, failed, 'success', 'workflow_dispatch'), run(1, successful),
     ])),
   });
   assert.equal(selected.base, successful);

@@ -70,8 +70,11 @@ excluding the current run. It compares with the latest successful run's commit,
 so changes from failed or cancelled intervening runs remain included. A missing
 baseline, inaccessible Actions history, missing commit, or non-ancestor after a
 force push triggers a full check. Manual runs always check everything. Repository
-and Actions token permissions are read-only; superseded runs on the same PR or
-branch are cancelled. No deployment or artifact publication runs here.
+and Actions token permissions are read-only. Superseded PR runs are cancelled;
+production runs on `main` are serialized without interrupting an active deploy.
+GitHub keeps at most one pending run per concurrency group, so a newer pending
+push may replace an older pending push. The successful baseline still includes
+changes from those cancelled runs.
 
 `eng/select-projects.mjs` delegates project selection to Nx. Each app's lockfile
 is part of its own inputs. `nx.json` declares shared workflow, `eng`, root tooling,
@@ -80,6 +83,86 @@ from affected selection and task hashing. Markdown-only changes
 (including app READMEs) select no projects and finish successfully without
 installing or running apps. When adding another shared configuration file, add
 it to `sharedGlobals` so affected selection and task hashes both include it.
+
+## Production deployments
+
+After every selected project's checks pass, `ci.yml` publishes affected websites
+on pushes to `main`. PRs only validate. A manual **CI → Run workflow** run targeting
+`main` checks and publishes both websites; manual runs on other branches only
+validate. Markdown-only pushes publish nothing. Shared tooling or workflow
+changes affect both sites. The first push containing this deployment workflow
+therefore publishes both.
+
+| Project | Existing Worker | Production URL |
+| --- | --- | --- |
+| `frontpage-association` | `scpp-association` | https://scpp-association.de-wildert-penp.workers.dev |
+| `frontpage-foundation` | `scpp-foundation` | https://scpp-foundation.de-wildert-penp.workers.dev |
+
+The explicit deployment allowlist lives in `eng/production.mjs`. Adding an Nx
+project only registers it for checks, not production publishing. Both Workers
+belong to **De Wildert PenP**, account `92f5552d0543ddca6c17f012ab294a9f`.
+These existing Workers do not use Cloudflare Builds or custom domains.
+
+### One-time credential setup
+
+A repository administrator must configure the GitHub **production** environment
+before merging the workflow. In **Settings → Environments → production**, allow
+only the selected **branch** `main` and do not require a reviewer. Add environment
+variable `CLOUDFLARE_ACCOUNT_ID` with the account ID above. In Cloudflare, create
+an account-owned API token with **Editor** access scoped only to `scpp-association`
+and `scpp-foundation`; save it as environment secret `CLOUDFLARE_API_TOKEN`.
+See [Workers authorization](https://developers.cloudflare.com/workers/authorization/workers/#wrangler).
+No zone or DNS permissions are needed for these existing `workers.dev` targets.
+Never commit the token or paste it into a command argument or chat.
+
+For a new environment, an authenticated administrator can use the GitHub CLI:
+
+```sh
+gh api --method PUT repos/scppnl/website/environments/production --input - <<'JSON'
+{"wait_timer":0,"reviewers":[],"deployment_branch_policy":{"protected_branches":false,"custom_branch_policies":true}}
+JSON
+gh api --method POST repos/scppnl/website/environments/production/deployment-branch-policies \
+  -f name=main -f type=branch
+gh variable set CLOUDFLARE_ACCOUNT_ID --repo scppnl/website --env production \
+  --body 92f5552d0543ddca6c17f012ab294a9f
+gh secret set CLOUDFLARE_API_TOKEN --repo scppnl/website --env production
+```
+
+The last command securely prompts for the token. Inspect an existing environment
+before using these initialization commands so unrelated policies are preserved.
+Missing credentials or a different account ID fail deployment explicitly.
+
+### Artifacts, verification and recovery
+
+The check job exports website selection only after all selected builds and tests
+pass, then uploads each site's public asset directory as a separate, seven-day
+artifact tied to the commit SHA. Deploy jobs install the locked app tooling,
+restore and validate those assets, and run the pinned Wrangler without rebuilding.
+Only the publish step receives Cloudflare credentials. Each deployment message
+records the commit SHA; the Actions summary includes the Worker, URL, commit and
+publish/smoke outcomes.
+
+Smoke checks compare the live homepage, an internal route, a JavaScript asset
+and the 404 page with the tested artifact bytes, and verify the trailing-slash
+redirect. They retry six times with five seconds between attempts and a
+15-second timeout per request. Persistent errors fail the workflow.
+
+Publishing the two Workers is independent: one site's successful deployment
+remains live if the other fails. A publish or smoke failure fails the whole
+workflow, so it does not advance the successful-push baseline. The next push
+includes outstanding changes from failed or cancelled runs. After fixing
+credentials or a transient failure, retry failed jobs while artifacts are still
+available, or dispatch a new CI run on current `main` to rebuild and publish both.
+Avoid rerunning old commits, which can replace newer production content.
+
+For rollback, select the affected Worker in Cloudflare's **Deployments** view and
+roll back to the intended previously deployed version (identified by its commit
+message). With a matching scoped token and account configured locally, run
+`npx --no-install wrangler rollback <version-id>` from that app's directory.
+Rollback does not change Git: follow it with a revert/fix on `main` before the
+next deployment. The first deployment has no earlier version to restore.
+For initial acceptance, verify a PR checks without publishing and the first
+successful `main` push deploys both sites with passing smoke checks.
 
 ## Onboarding a project
 
