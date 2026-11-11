@@ -12,13 +12,16 @@ permissions:
 
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  # Never cancel a production run midway through publishing its two Workers.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
     name: Build and test affected projects
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      sites: ${{ steps.ci.outputs.sites }}
     env:
       CI: 'true'
       NX_DAEMON: 'false'
@@ -50,6 +53,98 @@ jobs:
       - name: Check CI tooling
         run: npm run ci:tooling
       - name: Build and test affected projects
+        id: ci
         run: npm run ci
         env:
           GITHUB_TOKEN: ${{ github.token }}
+      - name: Upload association assets
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && contains(steps.ci.outputs.sites, 'frontpage-association')
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontpage-association-${{ github.sha }}
+          path: src/apps/frontpage-association/dist/client/
+          if-no-files-found: error
+          retention-days: 7
+          include-hidden-files: true
+          overwrite: true
+      - name: Upload foundation assets
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && contains(steps.ci.outputs.sites, 'frontpage-foundation')
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontpage-foundation-${{ github.sha }}
+          path: src/apps/frontpage-foundation/dist/frontpage-foundation/browser/
+          if-no-files-found: error
+          retention-days: 7
+          include-hidden-files: true
+          overwrite: true
+
+  deploy:
+    name: Publish ${{ matrix.project }}
+    needs: check
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      needs.check.outputs.sites != '' && needs.check.outputs.sites != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        project: ${{ fromJSON(needs.check.outputs.sites) }}
+    environment:
+      name: production
+      url: ${{ steps.site.outputs.url }}
+    env:
+      CI: 'true'
+    steps:
+      - name: Check out the tested commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Resolve production target
+        id: site
+        run: node eng/production.mjs site "$PROJECT"
+        env:
+          PROJECT: ${{ matrix.project }}
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: ${{ steps.site.outputs.directory }}/package-lock.json
+      - name: Pin npm
+        run: npm install --global npm@11.19.1
+      - name: Install locked deployment tooling
+        working-directory: ${{ steps.site.outputs.directory }}
+        run: npm ci --no-audit --no-fund
+      - name: Download tested assets
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.project }}-${{ github.sha }}
+          path: ${{ steps.site.outputs.assets }}
+      - name: Validate restored hosting artifact
+        working-directory: ${{ steps.site.outputs.directory }}
+        run: npm run check:hosting
+      - name: Publish existing Worker
+        id: publish
+        run: node eng/production.mjs deploy "$PROJECT"
+        env:
+          PROJECT: ${{ matrix.project }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      - name: Check published site
+        id: smoke
+        run: node eng/smoke-hosting.mjs "$PROJECT"
+        env:
+          PROJECT: ${{ matrix.project }}
+      - name: Summarize deployment
+        if: always()
+        env:
+          WORKER: ${{ steps.site.outputs.worker }}
+          SITE_URL: ${{ steps.site.outputs.url }}
+          PUBLISH: ${{ steps.publish.outcome }}
+          SMOKE: ${{ steps.smoke.outcome }}
+        run: |
+          printf 'Worker: %s\n\nURL: %s\n\nCommit: `%s`\n\nPublish: %s; smoke checks: %s\n' \
+            "$WORKER" "$SITE_URL" "$GITHUB_SHA" "$PUBLISH" "$SMOKE" >> "$GITHUB_STEP_SUMMARY"

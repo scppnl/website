@@ -40,7 +40,9 @@ npm run deploy
 
 `deploy` rebuilds and checks the site before uploading. Authenticate with your own
 Cloudflare account using Wrangler login or a scoped `CLOUDFLARE_API_TOKEN` in CI;
-keep tokens out of the repository. No production deployment is part of this PR.
+keep tokens out of the repository. GitHub Actions publishes affected websites
+after checks pass on `main`; see the [repository deployment guide](../../../README.md#production-deployments)
+for credentials, manual redeployment, verification and rollback.
 The initial deployment can use its `workers.dev` address. To attach a production
 hostname, add a **Custom Domain** to this Worker in the Cloudflare dashboard, or
 commit the intended custom-domain `routes` configuration after confirming the
