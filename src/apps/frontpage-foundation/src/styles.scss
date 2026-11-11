@@ -35,6 +35,7 @@ body {
   font-size: 1.0625rem;
   line-height: 1.65;
   -webkit-font-smoothing: antialiased;
+  overflow-wrap: anywhere;
 }
 
 h1,
@@ -142,12 +143,17 @@ img {
 .grid {
   display: grid;
   gap: 1.5rem;
-  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
 
   &--two {
-    grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
     align-items: center;
   }
+}
+
+.grid > *,
+.form > * {
+  min-width: 0;
 }
 
 .card {
@@ -203,12 +209,13 @@ img {
 .form {
   display: grid;
   gap: 1.25rem;
-  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
 }
 
 .field {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   gap: 0.35rem;
 
   &--wide {
@@ -240,6 +247,8 @@ img {
   input:not([type='checkbox']),
   select,
   textarea {
+    min-width: 0;
+    width: 100%;
     padding: 0.65rem 0.8rem;
     border: 1px solid var(--color-border);
     border-radius: 0.5rem;

@@ -1,18 +1,27 @@
 <header class="header">
   <div class="container header__inner">
-    <a class="brand" routerLink="/" (click)="closeMenu()">
+    <a class="brand" routerLink="/" [attr.aria-label]="foundation.name" (click)="closeMenu()">
       <span class="brand__mark" aria-hidden="true">⛺</span>
-      <span class="brand__name">{{ foundation.name }}</span>
+      <span class="brand__name">
+        <span class="brand__prefix">Stichting</span>
+        <span>{{ brandTitle }}</span>
+      </span>
     </a>
 
     <button
       type="button"
+      #menuToggle
       class="menu-toggle"
       aria-controls="main-nav"
       [attr.aria-expanded]="menuOpen()"
       (click)="toggleMenu()"
     >
-      {{ menuOpen() ? 'Sluiten' : 'Menu' }}
+      <span
+        class="menu-toggle__icon"
+        [class.menu-toggle__icon--open]="menuOpen()"
+        aria-hidden="true"
+      ></span>
+      <span>{{ menuOpen() ? 'Sluiten' : 'Menu' }}</span>
     </button>
 
     <nav id="main-nav" class="nav" aria-label="Hoofdmenu" [class.nav--open]="menuOpen()">
