@@ -1,59 +1,68 @@
-# FrontpageFoundation
+# Stichting Clubhuis De Wildert
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 22.2.5.
+Angular 22 with prerendered HTML and client hydration. Cloudflare Workers Static
+Assets serves this site; Angular's server bootstrap runs only during the build.
+There is no deployed JavaScript Worker or Express server.
 
-## Development server
+## Development and validation
 
-To start a local development server, run:
+Use Node 24.22.1 (`nvm use` at the repository root; minimum 24.15) and npm 11.19.1.
+From `src/apps/frontpage-foundation`:
 
-```bash
-ng serve
+```sh
+npm ci
+npm start
+npm run build
+npm run check:hosting
+npm run preview -- --port 8788
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+`npm start` runs Angular's development server. `preview` builds, checks and serves the assets
+through local Wrangler at `http://localhost:8788`; restart it after source changes.
+`check:hosting` verifies every prerendered route, hydration markers, the root
+`404.html`, Wrangler's static-only settings, and Workers Free asset limits.
+`npm test -- --watch=false` runs the foundation unit tests.
+The repository Nx `test` target builds first and includes these hosting checks.
 
-## Code scaffolding
+## Cloudflare deployment
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+The committed `wrangler.json` names this Worker **`scpp-foundation`** and publishes only
+`dist/frontpage-foundation/browser/`. The other site has its own Worker, build directory and deployment;
+neither deployment overwrites the other. Both apps pin the same Wrangler release.
 
-```bash
-ng generate component component-name
+```sh
+npx wrangler login
+npm run build
+npm run check:hosting
+npx wrangler deploy --dry-run
+npm run deploy
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+`deploy` rebuilds and checks the site before uploading. Authenticate with your own
+Cloudflare account using Wrangler login or a scoped `CLOUDFLARE_API_TOKEN` in CI;
+keep tokens out of the repository. No production deployment is part of this PR.
+The initial deployment can use its `workers.dev` address. To attach a production
+hostname, add a **Custom Domain** to this Worker in the Cloudflare dashboard, or
+commit the intended custom-domain `routes` configuration after confirming the
+zone and hostname. Use a different domain for each site. Angular does not need a
+hostname allowlist for prerendered static hosting.
 
-```bash
-ng generate --help
-```
+The build preserves the Nx output location. Routes `/`, `/gebouw`, `/ligging`, `/tarieven`, `/reserveren`, `/contact` each have real HTML.
+The `404` Angular route is copied to root `404.html` for Workers' `404-page`
+handling, so unknown direct URLs return HTTP 404 with the site's own content.
+Client navigation also renders the not-found component. `drop-trailing-slash`
+redirects route URLs to the version without a trailing slash. Footer years
+use the prerendered value during hydration and refresh to the visitor's local
+date after hydration, so old builds remain current without a mismatch.
+Static asset requests are free and unlimited on Workers, with no Worker CPU
+execution here. The Free plan permits 20,000 files per deployment and 25 MiB per
+file; `check:hosting` enforces those limits. See [Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/)
+and [limits](https://developers.cloudflare.com/workers/platform/limits/#static-assets).
 
-## Building
+## Forms
 
-To build the project run:
-
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+The booking and contact components keep their existing client validation and
+service interfaces. `BookingRequestService` and `ContactMessageService` are still
+stubs: they send and store nothing, while the current UI displays its existing
+success state. Connect the intended APIs and review that behavior before a public
+launch. Static hosting does not add a form backend.

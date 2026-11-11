@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { currentDate } from '../../../current-date';
+import { Component, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { foundation, navItems } from '../../content/site-content';
 
@@ -11,5 +12,6 @@ import { foundation, navItems } from '../../content/site-content';
 export class Footer {
   protected readonly foundation = foundation;
   protected readonly navItems = navItems;
-  protected readonly year = new Date().getFullYear();
+  private readonly date = currentDate();
+  protected readonly year = computed(() => this.date().year);
 }

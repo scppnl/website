@@ -49,10 +49,14 @@ npm run nx -- run frontpage-foundation:build
 ```
 
 Direct Nx execution needs the relevant app dependencies installed first. Existing
-commands inside either app still work unchanged. The association build includes
-Worker packaging, and its `test` target depends on that build and checks SSR for
-all five routes. The foundation build uses the production configuration; tests
-run once with watch mode disabled.
+commands inside either app still work. Both Angular apps prerender static HTML
+and deploy to separate Cloudflare Workers Static Assets with matching pinned
+Wrangler versions. Each `test` target depends on its build and runs
+`check:hosting` for route content, hydration markers, 404 output, hosting settings,
+and Free plan asset limits. Foundation unit tests also run once with watch mode
+disabled. See the [association hosting guide](src/apps/frontpage-association/README.md)
+and [foundation hosting guide](src/apps/frontpage-foundation/README.md) for local
+Wrangler preview, dry runs, deployment, custom domains, and existing form stubs.
 
 ## GitHub Actions and affected selection
 

@@ -4,10 +4,12 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
-    "build": "ng build",
+    "build": "ng build && node ../../../eng/static-hosting.mjs prepare",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:frontpage-foundation": "node dist/frontpage-foundation/server/server.mjs"
+    "preview": "npm run build && npm run check:hosting && wrangler dev",
+    "deploy": "npm run build && npm run check:hosting && wrangler deploy",
+    "check:hosting": "node ../../../eng/static-hosting.mjs check"
   },
   "private": true,
   "packageManager": "npm@11.19.1",
@@ -20,7 +22,6 @@
     "@angular/platform-server": "^22.2.0",
     "@angular/router": "^22.2.0",
     "@angular/ssr": "^22.2.5",
-    "express": "^5.1.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
@@ -28,11 +29,15 @@
     "@angular/build": "^22.2.5",
     "@angular/cli": "^22.2.5",
     "@angular/compiler-cli": "^22.2.0",
-    "@types/express": "^5.0.1",
     "@types/node": "^22.12.0",
     "jsdom": "^30.0.0",
     "prettier": "^3.8.1",
     "typescript": "~6.0.2",
-    "vitest": "^5.0.0"
+    "vitest": "^5.0.0",
+    "wrangler": "4.160.0"
+  },
+  "engines": {
+    "node": ">=24.15.0 <25",
+    "npm": "11.19.1"
   }
 }
