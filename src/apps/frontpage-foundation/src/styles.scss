@@ -1,1 +1,276 @@
-/* You can add global styles to this file, and also import other style files */
+:root {
+  --color-primary: #2f5d3a;
+  --color-primary-dark: #214229;
+  --color-accent: #d9902f;
+  --color-accent-dark: #b8741c;
+  --color-bg: #faf7f0;
+  --color-surface: #ffffff;
+  --color-tint: #eef2e6;
+  --color-text: #1f2a22;
+  --color-muted: #5b675e;
+  --color-border: #ddd6c6;
+  --color-error: #b3261e;
+  --radius: 0.75rem;
+  --max-width: 72rem;
+  --font-body:
+    'Nunito Sans', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-heading: 'Fraunces', Georgia, 'Times New Roman', serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-heading);
+  color: var(--color-primary-dark);
+  line-height: 1.2;
+  margin: 0 0 0.75rem;
+}
+
+h1 {
+  font-size: clamp(2rem, 5vw, 3rem);
+}
+
+h2 {
+  font-size: clamp(1.5rem, 3.5vw, 2.1rem);
+}
+
+h3 {
+  font-size: 1.2rem;
+}
+
+p {
+  margin: 0 0 1rem;
+}
+
+a {
+  color: var(--color-primary);
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.container {
+  width: min(100% - 2rem, var(--max-width));
+  margin-inline: auto;
+}
+
+.section {
+  padding-block: clamp(2.5rem, 6vw, 4.5rem);
+
+  &--tint {
+    background: var(--color-tint);
+  }
+}
+
+.lead {
+  font-size: 1.2rem;
+  color: var(--color-muted);
+}
+
+.btn {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  border: 2px solid var(--color-primary);
+  border-radius: 999px;
+  background: var(--color-primary);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: var(--color-primary-dark);
+  }
+
+  &--accent {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: var(--color-text);
+
+    &:hover {
+      background: var(--color-accent-dark);
+      border-color: var(--color-accent-dark);
+      color: #fff;
+    }
+  }
+
+  &--outline {
+    background: transparent;
+    color: var(--color-primary);
+
+    &:hover {
+      background: var(--color-primary);
+      color: #fff;
+    }
+  }
+
+  &[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+
+  &--two {
+    grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr));
+    align-items: center;
+  }
+}
+
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+
+  h3 {
+    margin-bottom: 0.5rem;
+  }
+
+  p:last-child {
+    margin-bottom: 0;
+  }
+
+  app-photo {
+    margin-bottom: 1rem;
+  }
+}
+
+.checklist {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+
+  li {
+    position: relative;
+    padding-left: 1.75rem;
+    margin-bottom: 0.4rem;
+
+    &::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--color-primary);
+      font-weight: 700;
+    }
+  }
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Forms (booking and contact) */
+
+.form {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+
+  &--wide {
+    grid-column: 1 / -1;
+  }
+
+  &--check {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+
+    label {
+      flex: 1;
+    }
+
+    input {
+      margin-top: 0.4rem;
+    }
+
+    .error {
+      flex-basis: 100%;
+    }
+  }
+
+  label {
+    font-weight: 600;
+  }
+
+  input:not([type='checkbox']),
+  select,
+  textarea {
+    padding: 0.65rem 0.8rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    background: var(--color-surface);
+    color: inherit;
+    font: inherit;
+
+    &[aria-invalid='true'] {
+      border-color: var(--color-error);
+    }
+  }
+}
+
+.error {
+  margin: 0;
+  color: var(--color-error);
+  font-size: 0.9rem;
+}
+
+.alert {
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.25rem;
+  border-radius: 0.5rem;
+
+  &--success {
+    background: #e3f1e5;
+    border: 1px solid var(--color-primary);
+  }
+
+  &--error {
+    background: #fbe9e7;
+    border: 1px solid var(--color-error);
+  }
+}

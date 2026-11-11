@@ -1,0 +1,51 @@
+<app-page-header [title]="content.title" [lead]="content.lead" />
+
+@for (building of content.buildings; track building.name; let odd = $odd) {
+  <section class="section" [class.section--tint]="odd">
+    <div class="container">
+      <div class="grid grid--two building-intro">
+        <app-photo [src]="building.photo.src" [alt]="building.photo.alt" sizes="(min-width: 42rem) 50vw, 100vw" />
+        <div>
+          <h2>{{ building.name }}</h2>
+          <p class="lead">{{ building.summary }}</p>
+        </div>
+      </div>
+      <div class="grid">
+        @for (area of building.areas; track area.title) {
+          <article class="card">
+            <app-photo [src]="area.photo.src" [alt]="area.photo.alt" />
+            <h3>{{ area.title }}</h3>
+            <p>{{ area.text }}</p>
+          </article>
+        }
+      </div>
+    </div>
+  </section>
+}
+
+<section class="section">
+  <div class="container grid grid--two">
+    <app-photo
+      [src]="content.grounds.photo.src"
+      [alt]="content.grounds.photo.alt"
+      sizes="(min-width: 42rem) 50vw, 100vw"
+    />
+    <div>
+      <h2>{{ content.grounds.title }}</h2>
+      <p>{{ content.grounds.text }}</p>
+    </div>
+  </div>
+</section>
+
+<section class="section section--tint">
+  <div class="container">
+    <h2>Aanwezig</h2>
+    <ul class="checklist">
+      @for (item of content.facilities; track item) {
+        <li>{{ item }}</li>
+      }
+    </ul>
+  </div>
+</section>
+
+<app-cta-banner />

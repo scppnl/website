@@ -1,0 +1,73 @@
+<app-page-header [title]="content.title" [lead]="content.lead" />
+
+<section class="section">
+  <div class="container">
+    <h2>Tarieven</h2>
+    <table class="rates">
+      <caption class="visually-hidden">
+        Tarieven voor het huren van het clubhuis
+      </caption>
+      <thead>
+        <tr>
+          <th scope="col">Soort</th>
+          <th scope="col">Prijs</th>
+          <th scope="col">Toelichting</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of content.rates; track row.label) {
+          <tr>
+            <th scope="row">{{ row.label }}</th>
+            <td>{{ row.price }}</td>
+            <td>{{ row.note }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="section section--tint">
+  <div class="container grid">
+    <div>
+      <h2>Voorwaarden</h2>
+      <ul class="checklist">
+        @for (item of content.conditions; track item) {
+          <li>{{ item }}</li>
+        }
+      </ul>
+    </div>
+    <div>
+      <h2>Inbegrepen</h2>
+      <ul class="checklist">
+        @for (item of content.included; track item) {
+          <li>{{ item }}</li>
+        }
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container grid">
+    <div>
+      <h2>Huisregels</h2>
+      <ul class="checklist">
+        @for (item of content.rules; track item) {
+          <li>{{ item }}</li>
+        }
+      </ul>
+    </div>
+    <div>
+      <h2>Veelgestelde vragen</h2>
+      @for (item of content.faq; track item.question) {
+        <details class="faq">
+          <summary>{{ item.question }}</summary>
+          <p>{{ item.answer }}</p>
+        </details>
+      }
+    </div>
+  </div>
+</section>
+
+<app-cta-banner />

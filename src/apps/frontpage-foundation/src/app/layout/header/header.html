@@ -1,0 +1,36 @@
+<header class="header">
+  <div class="container header__inner">
+    <a class="brand" routerLink="/" (click)="closeMenu()">
+      <span class="brand__mark" aria-hidden="true">⛺</span>
+      <span class="brand__name">{{ foundation.name }}</span>
+    </a>
+
+    <button
+      type="button"
+      class="menu-toggle"
+      aria-controls="main-nav"
+      [attr.aria-expanded]="menuOpen()"
+      (click)="toggleMenu()"
+    >
+      {{ menuOpen() ? 'Sluiten' : 'Menu' }}
+    </button>
+
+    <nav id="main-nav" class="nav" aria-label="Hoofdmenu" [class.nav--open]="menuOpen()">
+      <ul>
+        @for (item of navItems; track item.path) {
+          <li>
+            <a
+              [routerLink]="item.path"
+              routerLinkActive="active"
+              ariaCurrentWhenActive="page"
+              [routerLinkActiveOptions]="{ exact: true }"
+              (click)="closeMenu()"
+              >{{ item.label }}</a
+            >
+          </li>
+        }
+      </ul>
+      <a class="btn btn--accent" routerLink="/reserveren" (click)="closeMenu()">Reserveer nu</a>
+    </nav>
+  </div>
+</header>
