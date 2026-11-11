@@ -151,6 +151,12 @@
   }
 }
 
+@media (min-width: 48rem) {
+  .nav {
+    padding-inline: 5vw;
+  }
+}
+
 @media (min-width: 64rem) {
   .brand {
     font-size: 1rem;

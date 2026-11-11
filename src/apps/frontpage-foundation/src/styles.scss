@@ -82,9 +82,10 @@ img {
   margin-inline: auto;
 }
 
-@media (width > 62rem) {
+/* Wider layouts include mobile browsers requesting a desktop-sized viewport. */
+@media (min-width: 48rem) {
   .container {
-    width: min(100% - 4rem, var(--max-width));
+    width: min(90%, var(--max-width));
   }
 }
 
