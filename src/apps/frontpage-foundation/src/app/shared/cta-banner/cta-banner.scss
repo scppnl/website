@@ -1,14 +1,17 @@
 .cta {
-  padding-block: 2.5rem;
+  padding-block: 2.75rem;
   background: var(--color-primary);
   color: #fff;
 
   h2 {
+    margin-bottom: 0.5rem;
     color: #fff;
+    font-size: clamp(1.625rem, 1vw + 1.3rem, 2rem);
   }
 
   p {
     margin: 0;
+    font-size: 1.125rem;
   }
 }
 
@@ -17,21 +20,37 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 1.5rem;
+  gap: 1.5rem 3rem;
+}
+
+.cta__text {
+  min-width: 0;
+  max-width: 60ch;
+}
+
+.cta__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+@media (max-width: 37.4375rem) {
+  .cta__actions,
+  .cta__actions .btn {
+    width: 100%;
+  }
 }
 
 @media (min-width: 64rem) {
   .cta {
-    padding-block: 3rem;
+    padding-block: 3.5rem;
   }
   .cta__inner {
     flex-wrap: nowrap;
-    gap: 3rem;
   }
-  .cta__inner > :first-child {
-    max-width: 65ch;
-  }
-  .cta__inner .btn {
+  .cta__actions .btn {
     flex-shrink: 0;
+    padding-inline: 2rem;
+    min-height: 3.25rem;
   }
 }

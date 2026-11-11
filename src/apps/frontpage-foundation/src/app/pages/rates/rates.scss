@@ -1,63 +1,313 @@
-.rates {
-  width: 100%;
-  border-collapse: collapse;
+.section-intro {
+  max-width: 40rem;
+  margin-bottom: 1.5rem;
+  color: var(--color-muted);
+}
+
+/* Price cards: 2 × 2 on phones so a price never wraps. */
+.prices {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.price-card {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
 
-  th,
-  td {
-    padding: 0.75rem 1rem;
-    text-align: left;
-    border-bottom: 1px solid var(--color-border);
+  p {
+    margin: 0;
   }
 
-  thead th {
-    background: var(--color-primary);
+  &--featured {
+    background: var(--color-primary-dark);
+    border-color: var(--color-primary-dark);
     color: #fff;
   }
 }
 
-.faq {
-  margin-bottom: 0.75rem;
-  padding: 0.75rem 1rem;
+.price-card__label {
+  margin-bottom: 0.125rem !important;
+  font-weight: 700;
+  font-size: 0.97rem;
+  line-height: 1.3;
+  color: var(--color-primary-dark);
+
+  .price-card--featured & {
+    color: #fff;
+  }
+}
+
+.price-card__amount {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 2.125rem;
+  line-height: 1.1;
+  white-space: nowrap;
+  color: var(--color-primary-dark);
+
+  .price-card--featured & {
+    color: #fff;
+  }
+}
+
+.price-card__unit {
+  font-size: 0.85rem;
+  color: var(--color-muted);
+
+  .price-card--featured & {
+    margin-bottom: 0.625rem !important;
+    color: #d5e0d0;
+  }
+}
+
+.price-card__text {
+  margin-top: 1rem !important;
+
+  .price-card--featured & {
+    margin-top: 0 !important;
+    color: var(--color-tint);
+  }
+}
+
+.price-card__saving {
+  margin-top: auto !important;
+  padding-top: 1rem;
+}
+
+.pill--amber {
+  background: var(--color-accent);
+  color: var(--color-text);
+  font-weight: 700;
+  font-size: 0.8125rem;
+}
+
+.info-boxes {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.info-box {
+  display: flex;
+  gap: 0.875rem;
+  align-items: flex-start;
+  padding: 1rem 1.125rem;
+  background: var(--color-tint);
+  border-radius: var(--radius-sm);
+  font-size: 0.97rem;
+
+  app-icon {
+    margin-top: 0.125rem;
+    color: var(--color-primary);
+  }
+
+  p {
+    margin: 0;
+  }
+
+  strong {
+    color: var(--color-primary-dark);
+  }
+}
+
+/* Voorwaarden + Inbegrepen: one card on phones, two on desktop. */
+.panels {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.375rem 1.25rem;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
 
-  summary {
-    font-weight: 700;
-    cursor: pointer;
+  h2 {
+    font-size: 1.375rem;
   }
 
-  p {
-    margin: 0.75rem 0 0;
+  .panel + .panel {
+    padding-top: 1.125rem;
+    border-top: 1px solid var(--color-border);
   }
 }
 
-@media (max-width: 36rem) {
-  .rates th,
-  .rates td {
-    padding: 0.6rem 0.5rem;
-    font-size: 0.95rem;
+/* Huisregels + FAQ */
+.info-grid {
+  display: grid;
+  gap: 0.625rem;
+}
+
+.rules {
+  margin-bottom: 1.375rem;
+}
+
+.rules__heading,
+.rules__list {
+  display: none;
+}
+
+.faqs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+
+  h2 {
+    margin-bottom: 0.25rem;
+    font-size: 1.625rem;
+  }
+}
+
+.faq {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+
+  summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 3.5rem;
+    padding: 0.625rem 1.125rem;
+    font-weight: 700;
+    color: var(--color-primary-dark);
+    list-style: none;
+    cursor: pointer;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+  }
+
+  .faq__icon {
+    color: var(--color-primary);
+    transition: transform 0.15s;
+  }
+
+  &[open] .faq__icon {
+    transform: rotate(45deg);
+  }
+}
+
+.faq__body {
+  margin: 0;
+  padding: 0 1.125rem 1rem;
+  font-size: 1rem;
+}
+
+.rules__title {
+  font-family: var(--font-heading);
+  font-size: 1.3125rem;
+}
+
+@media (min-width: 37.5rem) {
+  .prices {
+    grid-template-columns: repeat(auto-fit, minmax(min(14.375rem, 100%), 1fr));
+    gap: 1.5rem;
+  }
+
+  .price-card {
+    padding: 1.75rem;
+    border-radius: var(--radius);
+  }
+
+  .price-card__label {
+    margin-bottom: 0.25rem !important;
+    font-size: 1.0625rem;
+  }
+
+  .price-card__amount {
+    font-size: 2.75rem;
+  }
+
+  .price-card__unit {
+    margin-bottom: 1rem !important;
+    font-size: 0.9375rem;
+  }
+
+  .info-boxes {
+    grid-template-columns: repeat(auto-fit, minmax(min(23.75rem, 100%), 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+  }
+
+  .info-box {
+    padding: 1.5rem 1.75rem;
+    border-radius: var(--radius);
+    font-size: inherit;
+
+    strong {
+      display: block;
+      margin-bottom: 0.25rem;
+    }
   }
 }
 
 @media (min-width: 64rem) {
-  .rates th,
-  .rates td {
-    padding: 1.1rem 1.5rem;
-    vertical-align: top;
+  .panels {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 2rem;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+
+    .panel {
+      padding: 2rem;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+    }
+
+    .panel + .panel {
+      padding-top: 2rem;
+      border-top: 1px solid var(--color-border);
+    }
+
+    h2 {
+      font-size: 1.75rem;
+    }
   }
-  .rates td:nth-child(2),
-  .rates thead th:nth-child(2) {
-    text-align: right;
-    white-space: nowrap;
-    font-variant-numeric: tabular-nums;
+
+  .info-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4rem;
+    align-items: start;
   }
-  .rates tbody th {
-    width: 35%;
+
+  .rules {
+    margin-bottom: 0;
   }
-  .faq {
-    padding: 1rem 1.25rem;
+
+  .rules__heading,
+  .rules__list {
+    display: block;
+  }
+
+  .rules__details {
+    display: none;
+  }
+
+  .faqs {
+    gap: 0.75rem;
+  }
+
+  .faqs h2 {
+    font-size: 1.75rem;
+  }
+
+  .faq summary {
+    padding-inline: 1.25rem;
+  }
+
+  .faq__body {
+    padding-inline: 1.25rem;
+    padding-bottom: 1.125rem;
   }
 }

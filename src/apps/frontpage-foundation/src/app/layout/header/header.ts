@@ -8,12 +8,15 @@ import {
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DOCUMENT } from '@angular/common';
 import { NavigationStart, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { foundation, navItems } from '../../content/site-content';
+import { Icon } from '../../shared/icon/icon';
+import { Logo } from '../../shared/logo/logo';
 
 @Component({
   selector: 'app-header',
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, RouterLinkActive, Icon, Logo],
   styleUrl: './header.scss',
   templateUrl: './header.html',
   host: {
@@ -27,6 +30,7 @@ export class Header {
   protected readonly brandTitle = foundation.name.replace(/^Stichting\s+/, '');
   protected readonly navItems = navItems;
   protected readonly menuOpen = signal(false);
+  private readonly document = inject(DOCUMENT);
   private readonly element = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly toggle = viewChild.required<ElementRef<HTMLButtonElement>>('menuToggle');
 
@@ -40,7 +44,7 @@ export class Header {
 
     // Browser-only APIs must run after hydration, never during prerendering.
     afterNextRender(() => {
-      const desktop = window.matchMedia('(min-width: 64rem)');
+      const desktop = window.matchMedia('(min-width: 68.75rem)');
       const onBreakpointChange = () => {
         if (desktop.matches) this.closeMenu();
       };
@@ -54,6 +58,7 @@ export class Header {
       });
       observer.observe(this.element.nativeElement);
       destroyRef.onDestroy(() => {
+        this.document.documentElement.classList.remove('menu-open');
         desktop.removeEventListener('change', onBreakpointChange);
         observer.disconnect();
       });
@@ -61,11 +66,17 @@ export class Header {
   }
 
   protected toggleMenu(): void {
-    this.menuOpen.update((open) => !open);
+    this.setOpen(!this.menuOpen());
   }
 
   protected closeMenu(): void {
-    this.menuOpen.set(false);
+    if (this.menuOpen()) this.setOpen(false);
+  }
+
+  /** The open menu covers the page, so the page behind it must not scroll. */
+  private setOpen(open: boolean): void {
+    this.menuOpen.set(open);
+    this.document.documentElement.classList.toggle('menu-open', open);
   }
 
   protected onDocumentClick(event: MouseEvent): void {

@@ -12,6 +12,10 @@ const LARGE = 1600;
  */
 @Component({
   selector: 'app-photo',
+  host: {
+    '[class.fill]': 'fill()',
+    '[style.aspect-ratio]': 'fill() ? null : ratio()',
+  },
   styleUrl: './photo.scss',
   template: `
     @if (src(); as source) {
@@ -48,6 +52,10 @@ export class Photo {
   readonly sizes = input(
     '(min-width: 76rem) 363px, (min-width: 64rem) calc((100vw - 128px) / 3), (min-width: 53rem) calc((100vw - 80px) / 3), (min-width: 35.5rem) calc(50vw - 28px), calc(100vw - 32px)',
   );
+  /** Stretch to the parent's height instead of keeping an aspect ratio. */
+  readonly fill = input(false, { transform: booleanAttribute });
+  /** CSS aspect-ratio when not `fill`, e.g. `16 / 9`. */
+  readonly ratio = input('4 / 3');
   /** Load immediately instead of lazily; use for the photo at the top of the page. */
   readonly priority = input(false, { transform: booleanAttribute });
 

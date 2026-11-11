@@ -1,28 +1,29 @@
 <header class="header">
   <div class="container header__inner">
     <a class="brand" routerLink="/" [attr.aria-label]="foundation.name" (click)="closeMenu()">
-      <span class="brand__mark" aria-hidden="true">⛺</span>
+      <app-logo class="brand__mark" [size]="40" />
       <span class="brand__name">
         <span class="brand__prefix">Stichting</span>
-        <span>{{ brandTitle }}</span>
+        <span class="brand__title">{{ brandTitle }}</span>
       </span>
     </a>
 
-    <button
-      type="button"
-      #menuToggle
-      class="menu-toggle"
-      aria-controls="main-nav"
-      [attr.aria-expanded]="menuOpen()"
-      (click)="toggleMenu()"
-    >
-      <span
-        class="menu-toggle__icon"
-        [class.menu-toggle__icon--open]="menuOpen()"
-        aria-hidden="true"
-      ></span>
-      <span>{{ menuOpen() ? 'Sluiten' : 'Menu' }}</span>
-    </button>
+    <div class="actions">
+      <a class="btn btn--accent compact-cta" routerLink="/reserveren" (click)="closeMenu()"
+        >Reserveer nu</a
+      >
+      <button
+        type="button"
+        #menuToggle
+        class="menu-toggle"
+        aria-controls="main-nav"
+        [attr.aria-expanded]="menuOpen()"
+        [attr.aria-label]="menuOpen() ? 'Menu sluiten' : 'Menu openen'"
+        (click)="toggleMenu()"
+      >
+        <app-icon [name]="menuOpen() ? 'close' : 'menu'" [size]="26" [strokeWidth]="2" />
+      </button>
+    </div>
 
     <nav id="main-nav" class="nav" aria-label="Hoofdmenu" [class.nav--open]="menuOpen()">
       <ul>
@@ -34,12 +35,28 @@
               ariaCurrentWhenActive="page"
               [routerLinkActiveOptions]="{ exact: true }"
               (click)="closeMenu()"
-              >{{ item.label }}</a
             >
+              <span>{{ item.label }}</span>
+              <app-icon class="nav__chevron" name="chevron-right" [size]="20" [strokeWidth]="2.2" />
+            </a>
           </li>
         }
       </ul>
-      <a class="btn btn--accent" routerLink="/reserveren" (click)="closeMenu()">Reserveer nu</a>
+      <div class="nav__foot">
+        <a class="btn btn--accent nav__cta" routerLink="/reserveren" (click)="closeMenu()"
+          >Reserveer nu</a
+        >
+        <address class="nav__contact">
+          <span>
+            <app-icon name="map-pin" [size]="18" />
+            {{ foundation.address.street }}, {{ foundation.address.city }}
+          </span>
+          <a [href]="'mailto:' + foundation.email">
+            <app-icon name="mail" [size]="18" />
+            {{ foundation.email }}
+          </a>
+        </address>
+      </div>
     </nav>
   </div>
 </header>
