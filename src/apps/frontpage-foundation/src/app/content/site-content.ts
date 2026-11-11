@@ -603,4 +603,18 @@ export const contactPage = {
     { value: 'viewing', label: 'Clubhuis bekijken' },
     { value: 'other', label: 'Anders' },
   ] as const,
+  requiredNote: 'Alle velden zijn verplicht, behalve telefoonnummer.',
+  links: {
+    location: {
+      path: '/ligging',
+      title: 'Waar ligt het clubhuis?',
+      text: 'Adres, route en parkeren',
+      photo: 'images/terrein-gebouwen',
+    },
+    booking: {
+      path: '/reserveren',
+      title: 'Het clubhuis huren?',
+      text: 'Doe een vrijblijvende aanvraag',
+    },
+  },
 };
