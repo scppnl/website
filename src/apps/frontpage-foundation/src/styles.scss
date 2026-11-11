@@ -283,3 +283,59 @@ img {
     border: 1px solid var(--color-error);
   }
 }
+
+/* Desktop refinements keep the approved phone and tablet layouts intact. */
+@media (min-width: 64rem) {
+  .container {
+    width: min(100% - 4rem, var(--max-width));
+  }
+  .section {
+    padding-block: 4rem;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  .lead {
+    max-width: 65ch;
+  }
+  .grid {
+    gap: 2rem;
+    align-items: stretch;
+  }
+  .grid--two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 3rem;
+    align-items: center;
+  }
+  .grid--three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .grid--four {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .grid--pair {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 3rem;
+    align-items: start;
+  }
+  .card {
+    padding: 1.75rem;
+  }
+  .card > p {
+    max-width: 65ch;
+  }
+  .form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+  .field--desktop-wide {
+    grid-column: 1 / -1;
+  }
+}
+@media (min-width: 75rem) {
+  .grid--four {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

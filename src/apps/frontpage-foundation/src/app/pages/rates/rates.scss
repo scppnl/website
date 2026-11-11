@@ -41,3 +41,23 @@
     font-size: 0.95rem;
   }
 }
+
+@media (min-width: 64rem) {
+  .rates th,
+  .rates td {
+    padding: 1.1rem 1.5rem;
+    vertical-align: top;
+  }
+  .rates td:nth-child(2),
+  .rates thead th:nth-child(2) {
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .rates tbody th {
+    width: 35%;
+  }
+  .faq {
+    padding: 1rem 1.25rem;
+  }
+}

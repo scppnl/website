@@ -40,7 +40,7 @@ export class Header {
 
     // Browser-only APIs must run after hydration, never during prerendering.
     afterNextRender(() => {
-      const desktop = window.matchMedia('(min-width: 75rem)');
+      const desktop = window.matchMedia('(min-width: 64rem)');
       const onBreakpointChange = () => {
         if (desktop.matches) this.closeMenu();
       };

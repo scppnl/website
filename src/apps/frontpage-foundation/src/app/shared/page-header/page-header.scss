@@ -8,3 +8,12 @@
     margin: 0;
   }
 }
+
+@media (min-width: 64rem) {
+  .page-header {
+    padding-block: 3rem;
+  }
+  .page-header .lead {
+    max-width: 65ch;
+  }
+}

@@ -1,7 +1,7 @@
 <app-page-header [title]="content.title" [lead]="content.lead" />
 
 <section class="section">
-  <div class="container grid grid--two">
+  <div class="container grid grid--two location-overview">
     <div>
       <h2>Adres</h2>
       <address>
@@ -26,7 +26,7 @@
 <section class="section section--tint">
   <div class="container">
     <h2>Bereikbaarheid</h2>
-    <div class="grid">
+    <div class="grid grid--three">
       @for (item of content.access; track item.title) {
         <article class="card">
           <h3>{{ item.title }}</h3>
@@ -46,7 +46,7 @@
     <app-photo
       [src]="content.surroundings.photo.src"
       [alt]="content.surroundings.photo.alt"
-      sizes="(min-width: 42rem) 50vw, 100vw"
+      sizes="(min-width: 76rem) 552px, (min-width: 64rem) calc(50vw - 56px), (min-width: 43.5rem) calc(50vw - 28px), calc(100vw - 32px)"
     />
   </div>
 </section>

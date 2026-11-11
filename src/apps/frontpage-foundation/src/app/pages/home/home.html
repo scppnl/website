@@ -1,5 +1,5 @@
 <section class="hero">
-  <div class="container grid grid--two">
+  <div class="container grid grid--two hero__grid">
     <div>
       <h1>{{ content.heroTitle }}</h1>
       <p class="lead">{{ content.heroText }}</p>
@@ -11,7 +11,7 @@
     <app-photo
       [src]="content.heroPhoto.src"
       [alt]="content.heroPhoto.alt"
-      sizes="(min-width: 42rem) 50vw, 100vw"
+      sizes="(min-width: 76rem) 552px, (min-width: 64rem) calc(50vw - 56px), (min-width: 43.5rem) calc(50vw - 28px), calc(100vw - 32px)"
       priority
     />
   </div>
@@ -28,7 +28,7 @@
 
 <section class="section section--tint">
   <div class="container">
-    <div class="grid">
+    <div class="grid grid--four">
       @for (item of content.highlights; track item.title) {
         <article class="card">
           <h3>{{ item.title }}</h3>
@@ -42,7 +42,7 @@
 <section class="section">
   <div class="container">
     <h2>{{ content.audiencesTitle }}</h2>
-    <div class="grid">
+    <div class="grid grid--three">
       @for (item of content.audiences; track item.title) {
         <article class="card">
           <h3>{{ item.title }}</h3>
@@ -55,7 +55,7 @@
 
 <section class="section section--tint">
   <div class="container">
-    <div class="grid">
+    <div class="grid grid--three">
       @for (photo of content.photoStrip; track photo.alt) {
         <app-photo [src]="photo.src" [alt]="photo.alt" />
       }

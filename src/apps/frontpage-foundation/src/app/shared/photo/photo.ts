@@ -45,7 +45,9 @@ export class Photo {
   readonly src = input<string | null>(null);
   readonly alt = input.required<string>();
   /** Layout width of the photo, so the browser can pick the right file. */
-  readonly sizes = input('(min-width: 60rem) 33vw, 100vw');
+  readonly sizes = input(
+    '(min-width: 76rem) 363px, (min-width: 64rem) calc((100vw - 128px) / 3), (min-width: 53rem) calc((100vw - 80px) / 3), (min-width: 35.5rem) calc(50vw - 28px), calc(100vw - 32px)',
+  );
   /** Load immediately instead of lazily; use for the photo at the top of the page. */
   readonly priority = input(false, { transform: booleanAttribute });
 
