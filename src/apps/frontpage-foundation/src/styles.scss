@@ -284,7 +284,14 @@ img {
   }
 }
 
-/* Desktop refinements keep the approved phone and tablet layouts intact. */
+/* Four-item groups stay balanced at intermediate widths, including zoomed desktops. */
+@media (min-width: 35.5rem) {
+  .grid--four {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Desktop refinements keep the approved phone layouts intact. */
 @media (min-width: 64rem) {
   .container {
     width: min(100% - 4rem, var(--max-width));
@@ -311,9 +318,6 @@ img {
   }
   .grid--three {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .grid--four {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .grid--pair {
     grid-template-columns: repeat(2, minmax(0, 1fr));
