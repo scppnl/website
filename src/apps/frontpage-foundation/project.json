@@ -2,14 +2,20 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "name": "frontpage-foundation",
   "projectType": "application",
-  "metadata": { "ci": { "npm": true } },
+  "metadata": {
+    "ci": {
+      "npm": true
+    }
+  },
   "targets": {
     "build": {
       "executor": "nx:run-commands",
-      "outputs": ["{projectRoot}/dist/frontpage-foundation"],
+      "outputs": [
+        "{projectRoot}/dist/frontpage-foundation"
+      ],
       "options": {
         "cwd": "src/apps/frontpage-foundation",
-        "command": "npm run build -- --configuration production"
+        "command": "npm run build"
       }
     },
     "test": {
@@ -17,8 +23,11 @@
       "outputs": [],
       "options": {
         "cwd": "src/apps/frontpage-foundation",
-        "command": "npm test -- --watch=false"
-      }
+        "command": "npm test -- --watch=false && npm run check:hosting"
+      },
+      "dependsOn": [
+        "build"
+      ]
     }
   }
 }

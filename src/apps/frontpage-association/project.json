@@ -2,11 +2,17 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "name": "frontpage-association",
   "projectType": "application",
-  "metadata": { "ci": { "npm": true } },
+  "metadata": {
+    "ci": {
+      "npm": true
+    }
+  },
   "targets": {
     "build": {
       "executor": "nx:run-commands",
-      "outputs": ["{projectRoot}/dist"],
+      "outputs": [
+        "{projectRoot}/dist"
+      ],
       "options": {
         "cwd": "src/apps/frontpage-association",
         "command": "npm run build"
@@ -14,11 +20,13 @@
     },
     "test": {
       "executor": "nx:run-commands",
-      "dependsOn": ["build"],
+      "dependsOn": [
+        "build"
+      ],
       "outputs": [],
       "options": {
         "cwd": "src/apps/frontpage-association",
-        "command": "npm run check:ssr"
+        "command": "npm run check:hosting"
       }
     }
   }

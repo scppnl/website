@@ -56,6 +56,11 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/contact/contact').then((m) => m.Contact),
   },
   {
+    path: '404',
+    title: 'Pagina niet gevonden',
+    loadComponent: () => import('./pages/not-found/not-found').then((m) => m.NotFound),
+  },
+  {
     path: '**',
     title: 'Pagina niet gevonden',
     loadComponent: () => import('./pages/not-found/not-found').then((m) => m.NotFound),

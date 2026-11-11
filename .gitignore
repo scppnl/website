@@ -234,3 +234,8 @@ src/routing/mt/ait-detection-service/output/
 # Full-size source photos (web-sized copies live in public/images)
 # ---------------------------------------------------------------------------
 src/apps/frontpage-foundation/photos/
+
+# Cloudflare local state and secrets
+.wrangler/
+.dev.vars
+.dev.vars.*

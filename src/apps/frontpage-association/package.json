@@ -5,8 +5,11 @@
   "scripts": {
     "start": "ng serve --host 0.0.0.0 --port 4173",
     "dev": "ng serve --host 0.0.0.0 --port 4173",
-    "build": "ng build && node scripts/package-worker.mjs",
-    "check:ssr": "node scripts/check-ssr.mjs"
+    "build": "ng build && node ../../../eng/static-hosting.mjs prepare",
+    "check:ssr": "npm run check:hosting",
+    "preview": "npm run build && npm run check:hosting && wrangler dev",
+    "deploy": "npm run build && npm run check:hosting && wrangler deploy",
+    "check:hosting": "node ../../../eng/static-hosting.mjs check"
   },
   "dependencies": {
     "@angular/common": "22.2.0",
@@ -23,6 +26,12 @@
     "@angular/build": "22.2.0",
     "@angular/cli": "22.2.0",
     "@angular/compiler-cli": "22.2.0",
-    "typescript": "~6.0.2"
+    "typescript": "~6.0.2",
+    "wrangler": "4.160.0"
+  },
+  "packageManager": "npm@11.19.1",
+  "engines": {
+    "node": ">=24.15.0 <25",
+    "npm": "11.19.1"
   }
 }
