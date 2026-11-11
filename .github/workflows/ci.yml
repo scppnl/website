@@ -120,7 +120,7 @@ jobs:
           CONTAINERS: ${{ needs.check.outputs.containers }}
 
   deploy:
-    name: Publish ${{ matrix.project }}
+    name: Publish
     needs: check
     if: >-
       github.ref == 'refs/heads/main' &&
