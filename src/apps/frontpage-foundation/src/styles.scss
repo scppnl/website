@@ -82,6 +82,13 @@ img {
   margin-inline: auto;
 }
 
+/* Wider layouts include mobile browsers requesting a desktop-sized viewport. */
+@media (min-width: 48rem) {
+  .container {
+    width: min(90%, var(--max-width));
+  }
+}
+
 .section {
   padding-block: clamp(2.5rem, 6vw, 4.5rem);
 
@@ -293,9 +300,6 @@ img {
 
 /* Desktop refinements keep the approved phone layouts intact. */
 @media (min-width: 64rem) {
-  .container {
-    width: min(100% - 4rem, var(--max-width));
-  }
   .section {
     padding-block: 4rem;
   }
