@@ -66,7 +66,6 @@ export interface BuildingInfo {
 
 export const foundation = {
   name: 'Stichting Clubhuis De Wildert',
-  email: 'stichting@scpp.nl',
   address: {
     street: 'Huijbergsebaan 415',
     postalCode: '4624 RG',

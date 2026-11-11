@@ -83,6 +83,11 @@ describe('Header', () => {
     expect(document.activeElement).toBe(brand);
   });
 
+  it('links to the contact page instead of showing an e-mail address', () => {
+    expect(root.querySelector('.nav__contact a[href="/contact"]')).toBeTruthy();
+    expect(root.querySelector('a[href^="mailto:"]')).toBeNull();
+  });
+
   it('closes after a navigation link is selected', async () => {
     await openMenu();
     (root.querySelector('a[href="/contact"]') as HTMLAnchorElement).click();
