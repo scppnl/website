@@ -1,6 +1,6 @@
-import type { BuildingChoice } from '../content/site-content';
+import type { BuildingChoice, DaypartId } from '../content/site-content';
 
-export type { BuildingChoice };
+export type { BuildingChoice, DaypartId };
 export type GroupType = 'family' | 'school' | 'business' | 'other';
 
 export interface BookingRequest {
@@ -12,10 +12,8 @@ export interface BookingRequest {
   readonly groupType: GroupType;
   /** ISO date (yyyy-MM-dd). */
   readonly date: string;
-  /** 24-hour time (HH:mm). */
-  readonly startTime: string;
-  /** 24-hour time (HH:mm). */
-  readonly endTime: string;
+  /** The rented dagdelen, in day order. The price is per dagdeel. */
+  readonly dayparts: readonly DaypartId[];
   readonly guests: number;
   readonly remarks: string;
 }

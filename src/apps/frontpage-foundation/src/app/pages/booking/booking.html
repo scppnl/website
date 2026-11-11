@@ -1,27 +1,8 @@
 <app-page-header [title]="content.title" [lead]="content.lead" />
 
-<section class="steps-section">
-  <div class="container">
-    <h2 class="visually-hidden">{{ content.stepsTitle }}</h2>
-    <ol class="steps">
-      @for (step of content.steps; track step.title; let first = $first; let index = $index) {
-        <li>
-          <span class="steps__number" [class.steps__number--active]="first">{{ index + 1 }}</span>
-          <span class="steps__text">
-            <strong>{{ step.title }}</strong>
-            <span>{{ step.text }}</span>
-          </span>
-        </li>
-      }
-    </ol>
-  </div>
-</section>
-
 <section class="booking">
   <div class="container booking__layout">
     <form class="booking__form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
-      <h2>Reserveringsaanvraag</h2>
-
       @if (status() === 'success') {
         <div class="alert alert--success" role="status">
           <strong>Bedankt voor uw aanvraag!</strong> Wij nemen zo snel mogelijk contact met u op.
@@ -39,7 +20,127 @@
       }
 
       <fieldset>
-        <legend>Uw gegevens</legend>
+        <legend><span class="step-number">1</span>{{ content.sections.rental }}</legend>
+        <div class="choice-cards">
+          @for (option of options; track option.id) {
+            <label class="choice-card">
+              <input
+                type="radio"
+                name="building"
+                formControlName="building"
+                [value]="option.id"
+                [attr.value]="option.id"
+              />
+              <span class="choice-card__text">
+                <strong>{{ option.label }}</strong>
+                <span class="choice-card__description">{{ option.description }}</span>
+                <span class="choice-card__price">
+                  <span class="choice-card__amount">{{ formatEuro(option.amount) }}</span>
+                  {{ content.perDaypart }}
+                  @if (option.id === 'beide') {
+                    <span class="pill pill--amber"><app-copy [text]="savingLabel" /></span>
+                  }
+                </span>
+              </span>
+            </label>
+          }
+        </div>
+        @if (showError('building')) {
+          <p class="error">Kies het gebouw dat u wilt huren.</p>
+        }
+      </fieldset>
+
+      <fieldset>
+        <legend><span class="step-number">2</span>{{ content.sections.when }}</legend>
+        <div class="field when__date">
+          <label for="date">Datum *</label>
+          <input
+            id="date"
+            type="date"
+            formControlName="date"
+            [min]="today().today"
+            [attr.aria-invalid]="showError('date')"
+          />
+          @if (showError('date')) {
+            @if (form.controls.date.hasError('pastDate')) {
+              <p class="error">Kies een datum in de toekomst.</p>
+            } @else {
+              <p class="error">Kies een datum.</p>
+            }
+          }
+        </div>
+
+        <fieldset class="dayparts" formGroupName="dayparts" aria-describedby="dayparts-hint">
+          <legend>{{ content.daypartsLabel }}</legend>
+          <p id="dayparts-hint" class="hint">{{ content.daypartsHint }}</p>
+          <div class="daypart-cards">
+            @for (part of dayparts; track part.id) {
+              <label class="daypart-card">
+                <input type="checkbox" [formControlName]="part.id" />
+                <span class="daypart-card__text">
+                  <strong>{{ part.label }}</strong>
+                  <span>{{ part.from }} – {{ part.to }}</span>
+                </span>
+              </label>
+            }
+          </div>
+          @if (showDaypartsError()) {
+            <p class="error">{{ content.daypartsError }}</p>
+          } @else if (daypartSummary()) {
+            <p class="dayparts__summary">
+              <app-icon name="clock" [size]="18" />
+              <span>{{ daypartSummary() }}</span>
+            </p>
+          }
+        </fieldset>
+      </fieldset>
+
+      <fieldset>
+        <legend><span class="step-number">3</span>{{ content.sections.group }}</legend>
+        <div class="form">
+          <div class="field">
+            <label for="groupType">Type groep *</label>
+            <select
+              id="groupType"
+              formControlName="groupType"
+              [attr.aria-invalid]="showError('groupType')"
+            >
+              <option value="" disabled>Maak een keuze</option>
+              @for (type of content.groupTypes; track type.value) {
+                <option [value]="type.value">{{ type.label }}</option>
+              }
+            </select>
+            @if (showError('groupType')) {
+              <p class="error">Kies het type groep.</p>
+            }
+          </div>
+
+          <div class="field">
+            <label for="guests"
+              >Aantal personen * <span class="optional">(max. {{ capacity }})</span></label
+            >
+            <input
+              id="guests"
+              type="number"
+              min="1"
+              [max]="capacity"
+              inputmode="numeric"
+              formControlName="guests"
+              [attr.aria-invalid]="showError('guests') || guestsTooMany()"
+            />
+            @if (guestsTooMany()) {
+              <p class="error">
+                Er kunnen maximaal {{ capacity }} personen tegelijk op het terrein.
+              </p>
+            } @else if (showError('guests')) {
+              <p class="error">Vul een aantal in tussen 1 en {{ capacity }}.</p>
+            }
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend><span class="step-number">4</span>{{ content.sections.details }}</legend>
         <div class="form">
           <div class="field">
             <label for="name">Naam *</label>
@@ -83,136 +184,19 @@
             <label for="phone">Telefoonnummer</label>
             <input id="phone" type="tel" formControlName="phone" autocomplete="tel" />
           </div>
-        </div>
-      </fieldset>
-
-      <fieldset>
-        <legend>Welk gebouw wilt u huren? *</legend>
-        <div class="radio-cards">
-          @for (option of options; track option.id) {
-            <label class="radio-card">
-              <input
-                type="radio"
-                name="building"
-                formControlName="building"
-                [value]="option.id"
-                [attr.value]="option.id"
-              />
-              <span class="radio-card__text">
-                <strong>{{ option.label }}</strong>
-                <span>{{ formatEuro(option.amount) }} per dagdeel</span>
-              </span>
-            </label>
-          }
-        </div>
-        @if (showError('building')) {
-          <p class="error">Kies het gebouw dat u wilt huren.</p>
-        }
-      </fieldset>
-
-      <fieldset>
-        <legend>Wanneer en met hoeveel?</legend>
-        <div class="form">
-          <div class="field">
-            <label for="groupType">Type groep *</label>
-            <select
-              id="groupType"
-              formControlName="groupType"
-              [attr.aria-invalid]="showError('groupType')"
-            >
-              <option value="" disabled>Maak een keuze</option>
-              @for (type of content.groupTypes; track type.value) {
-                <option [value]="type.value">{{ type.label }}</option>
-              }
-            </select>
-            @if (showError('groupType')) {
-              <p class="error">Kies het type groep.</p>
-            }
-          </div>
-
-          <div class="field">
-            <label for="guests"
-              >Aantal personen * <span class="optional">(max. {{ capacity }})</span></label
-            >
-            <input
-              id="guests"
-              type="number"
-              min="1"
-              [max]="capacity"
-              inputmode="numeric"
-              formControlName="guests"
-              [attr.aria-invalid]="showError('guests')"
-            />
-            @if (showError('guests')) {
-              <p class="error">Vul een aantal in tussen 1 en {{ capacity }}.</p>
-            }
-          </div>
 
           <div class="field field--wide">
-            <label for="date">Datum *</label>
-            <input
-              id="date"
-              type="date"
-              formControlName="date"
-              [attr.aria-invalid]="showError('date')"
-            />
-            @if (showError('date')) {
-              <p class="error">Kies een datum.</p>
-            }
-          </div>
-
-          <div class="field">
-            <label for="startTime"
-              >Starttijd * <span class="optional">(vanaf {{ earliestStart }})</span></label
-            >
-            <input
-              id="startTime"
-              type="time"
-              [min]="earliestStart"
-              [max]="latestEnd"
-              formControlName="startTime"
-              [attr.aria-invalid]="showError('startTime')"
-            />
-            @if (showError('startTime')) {
-              <p class="error">Vul een starttijd in.</p>
-            }
-          </div>
-
-          <div class="field">
-            <label for="endTime"
-              >Eindtijd * <span class="optional">(tot {{ latestEnd }})</span></label
-            >
-            <input
-              id="endTime"
-              type="time"
-              [min]="earliestStart"
-              [max]="latestEnd"
-              formControlName="endTime"
-              [attr.aria-invalid]="showError('endTime') || timeRangeError() !== null"
-            />
-            @if (showError('endTime')) {
-              <p class="error">Vul een eindtijd in.</p>
-            } @else if (timeRangeError() === 'timeOrder') {
-              <p class="error">De eindtijd moet na de starttijd liggen.</p>
-            } @else if (timeRangeError() === 'openingHours') {
-              <p class="error">
-                Het clubhuis is te huur tussen {{ earliestStart }} en {{ latestEnd }} uur.
-              </p>
-            }
+            <label for="remarks">Opmerkingen</label>
+            <p id="remarks-hint" class="hint">{{ content.remarksHint }}</p>
+            <textarea
+              id="remarks"
+              rows="4"
+              formControlName="remarks"
+              aria-describedby="remarks-hint"
+            ></textarea>
           </div>
         </div>
       </fieldset>
-
-      <div class="field remarks">
-        <label for="remarks">Opmerkingen</label>
-        <p id="remarks-hint" class="hint">{{ content.remarksHint }}</p>
-        <textarea
-          id="remarks"
-          rows="4"
-          formControlName="remarks"
-          aria-describedby="remarks-hint"
-        ></textarea>
-      </div>
 
       <div class="submit">
         <div class="field field--check">
@@ -229,36 +213,97 @@
           <button type="submit" class="btn btn--accent" [disabled]="status() === 'submitting'">
             {{ status() === 'submitting' ? 'Bezig met versturen…' : 'Aanvraag versturen' }}
           </button>
-          <span class="hint">Vrijblijvend · velden met * zijn verplicht</span>
+          <span class="hint"
+            >Vrijblijvend · u betaalt nu nog niets · velden met * zijn verplicht</span
+          >
         </div>
       </div>
     </form>
 
-    <aside class="summary" aria-label="Samenvatting">
-      <div class="summary__rates">
-        <h2>{{ content.summary.title }}</h2>
-        <dl>
-          @for (option of options; track option.id) {
-            <div>
-              <dt>{{ option.label }}</dt>
-              <dd>{{ formatEuro(option.amount, true) }}</dd>
-            </div>
-          }
-        </dl>
-        <p>{{ content.summary.note }}</p>
+    <aside class="summary" aria-label="Uw prijsberekening">
+      <!-- Phones show this in the total bar and the breakdown sheet instead. -->
+      <div class="summary__calc">
+        <section class="price-card" aria-live="polite">
+          <div class="price-card__head">
+            <h2>{{ content.price.title }}</h2>
+            <p>{{ headerLine() }}</p>
+          </div>
+          <div class="price-card__body">
+            <app-price-breakdown
+              [quote]="price()"
+              [upgrade]="upgrade()"
+              [emptyHint]="emptyHint()"
+              (bundle)="chooseBundle()"
+            />
+          </div>
+        </section>
+        <app-payment-timeline [rent]="price()?.rent ?? null" [cancelBy]="cancelBy()" />
       </div>
       <div class="summary__notice">
         <app-icon name="info" />
-        <p>{{ content.notice }}</p>
-      </div>
-      <div class="summary__questions">
         <p>
-          <strong>{{ content.questionsTitle }}</strong>
-        </p>
-        <p>
+          {{ content.notice }} {{ content.questionsTitle }}
           <a [href]="'mailto:' + foundation.email">{{ foundation.email }}</a>
         </p>
       </div>
     </aside>
   </div>
+
+  <div class="total-bar">
+    <div class="container total-bar__inner">
+      @let bar = price();
+      <div class="total-bar__sum" aria-live="polite">
+        <span class="total-bar__label">{{ content.price.rentTitle }}</span>
+        <strong class="total-bar__amount">{{ bar ? formatEuro(bar.rent, true) : '€ –' }}</strong>
+        <span class="total-bar__note">
+          @if (bar) {
+            + {{ formatEuro(bar.deposit) }} {{ content.price.barDepositNote }}
+          } @else {
+            {{ content.price.nothingChosen }}
+          }
+        </span>
+      </div>
+      <button
+        type="button"
+        class="btn btn--outline total-bar__button"
+        [attr.aria-expanded]="breakdownOpen()"
+        (click)="openBreakdown()"
+      >
+        {{ content.price.openBreakdown }}
+        <app-icon name="chevron-up" [size]="18" [strokeWidth]="2.2" />
+      </button>
+    </div>
+  </div>
 </section>
+
+<dialog
+  #sheet
+  class="sheet"
+  aria-labelledby="sheet-title"
+  (click)="onSheetClick($event)"
+  (close)="breakdownOpen.set(false)"
+>
+  <div class="sheet__content">
+    <div class="sheet__head">
+      <div>
+        <h2 id="sheet-title">{{ content.price.title }}</h2>
+        <p>{{ headerLine() }}</p>
+      </div>
+      <button
+        type="button"
+        class="sheet__close"
+        [attr.aria-label]="content.price.closeBreakdown"
+        (click)="closeBreakdown()"
+      >
+        <app-icon name="close" [size]="20" [strokeWidth]="2.2" />
+      </button>
+    </div>
+    <app-price-breakdown
+      [quote]="price()"
+      [upgrade]="upgrade()"
+      [emptyHint]="emptyHint()"
+      (bundle)="chooseBundle()"
+    />
+    <app-payment-timeline [rent]="price()?.rent ?? null" [cancelBy]="cancelBy()" />
+  </div>
+</dialog>

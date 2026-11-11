@@ -142,6 +142,28 @@ export type BuildingChoice = (typeof rentalOptions)[number]['id'];
 /** Borg in euros. */
 export const deposit = 250;
 
+/** Free cancellation up to this many weeks before the rental day. */
+export const freeCancellationWeeks = 4;
+
+export interface Daypart {
+  readonly id: 'ochtend' | 'middag' | 'avond';
+  readonly label: string;
+  /** 24-hour time (HH:mm). */
+  readonly from: string;
+  /** 24-hour time (HH:mm). */
+  readonly to: string;
+}
+
+/** The rental is priced per dagdeel. Consecutive dagdelen join up without a gap. */
+// TODO: verify
+export const dayparts = [
+  { id: 'ochtend', label: 'Ochtend', from: '08:00', to: '12:00' },
+  { id: 'middag', label: 'Middag', from: '12:00', to: '17:00' },
+  { id: 'avond', label: 'Avond', from: '17:00', to: '22:00' },
+] as const satisfies readonly Daypart[];
+
+export type DaypartId = (typeof dayparts)[number]['id'];
+
 /** `€ 75`, or `€ 75,00` with `cents`. Amounts stay below 1.000, so no thousands separator. */
 export function formatEuro(amount: number, cents = false): string {
   return `€ ${cents ? amount.toFixed(2).replace('.', ',') : amount}`;
@@ -551,8 +573,8 @@ export const ratesPage = {
     {
       question: 'Wat gebeurt er als we moeten annuleren?',
       answer: {
-        long: 'Annuleren kan kosteloos tot vier weken voor aanvang. Daarna brengen we de huur in rekening. Neem bij vragen contact op.',
-        short: 'Annuleren kan kosteloos tot vier weken voor aanvang.',
+        long: `Annuleren kan kosteloos tot ${freeCancellationWeeks} weken voor aanvang. Daarna brengen we de huur in rekening. Neem bij vragen contact op.`,
+        short: `Annuleren kan kosteloos tot ${freeCancellationWeeks} weken voor aanvang.`,
       },
     },
   ],
@@ -560,30 +582,51 @@ export const ratesPage = {
 
 export const bookingPage = {
   title: 'Reserveren',
-  lead: 'Doe een vrijblijvende aanvraag. Wij nemen zo snel mogelijk contact met u op.',
-  stepsTitle: 'Zo werkt het',
-  steps: <readonly TitledText[]>[
-    {
-      title: 'Aanvraag indienen',
-      text: 'Kies gebouw, datum, tijden en aantal personen.',
-    },
-    {
+  lead: 'Stel uw dag samen en zie meteen wat u betaalt. De aanvraag is vrijblijvend: u betaalt pas na ondertekening van de overeenkomst.',
+  sections: {
+    rental: 'Wat wilt u huren?',
+    when: 'Wanneer?',
+    group: 'Uw groep',
+    details: 'Uw gegevens',
+  },
+  perDaypart: 'per dagdeel',
+  daypartsLabel: 'Dagdelen *',
+  daypartsHint:
+    'Kies één of meer dagdelen. U betaalt per dagdeel; een hele dag (ochtend + middag) telt als twee.',
+  daypartsError: 'Kies minstens één dagdeel.',
+  remarksHint:
+    'Wat voor activiteit plant u? Andere aankomst- of vertrektijden binnen uw dagdelen kunt u hier ook kwijt.',
+  price: {
+    title: 'Uw prijsberekening',
+    nothingChosen: 'Nog niets gekozen',
+    includedLabel: 'Gas, water en elektra',
+    includedValue: 'inbegrepen',
+    depositLabel: 'Borg',
+    depositNote: 'krijgt u terug na oplevering',
+    rentTitle: 'Uw huurprijs',
+    barDepositNote: 'borg (krijgt u terug)',
+    openBreakdown: 'Prijsopbouw',
+    closeBreakdown: 'Prijsopbouw sluiten',
+    emptyBoth: 'Kies een gebouw en minstens één dagdeel. Dan rekenen we direct uit wat u betaalt.',
+    emptyBuilding: 'Kies nog wat u wilt huren. Dan rekenen we direct uit wat u betaalt.',
+    emptyDayparts: 'Kies nog minstens één dagdeel. Dan rekenen we direct uit wat u betaalt.',
+    upsellSuffix: 'meer per dagdeel heeft u het hele clubhuis.',
+    upsellAction: 'Kies beide gebouwen',
+  },
+  payment: {
+    title: 'Wanneer betaalt u wat?',
+    now: { title: 'Nu: aanvraag versturen', text: `${formatEuro(0, true)} · vrijblijvend` },
+    confirm: {
       title: 'Bevestiging',
-      text: 'Wij controleren de beschikbaarheid en sturen een overeenkomst.',
+      text: 'Wij controleren de datum en sturen u de overeenkomst.',
     },
-    {
-      title: 'Betaling en borg',
-      text: 'Na ondertekening betaalt u de borg en regelen we de sleutel.',
+    // TODO: verify when the rent is due. Assumed: together with the deposit, after signing.
+    signed: { title: 'Na ondertekening', depositLabel: 'Borg', rentLabel: 'Huur' },
+    returned: {
+      title: 'Na oplevering',
+      text: `${formatEuro(deposit, true)} borg terug op uw rekening`,
     },
-    {
-      title: 'Genieten',
-      text: 'U geniet van uw dag en levert het clubhuis netjes op.',
-    },
-  ],
-  remarksHint: 'Wat voor activiteit plant u? Zijn er bijzonderheden of vragen?',
-  summary: {
-    title: 'Tarieven in het kort',
-    note: `Per dagdeel. Borg ${formatEuro(deposit, true)}, na oplevering terug.`,
+    cancelPrefix: 'Kosteloos annuleren tot en met',
   },
   notice: 'Het clubhuis is alleen overdag te huur. Overnachten is niet mogelijk.',
   questionsTitle: 'Vragen voor u begint?',
