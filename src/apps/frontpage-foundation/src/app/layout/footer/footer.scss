@@ -36,3 +36,17 @@
   border-top: 1px solid rgb(255 255 255 / 0.2);
   font-size: 0.9rem;
 }
+
+@media (min-width: 64rem) {
+  .footer {
+    margin-top: 0;
+    padding-top: 3.5rem;
+  }
+  .footer__grid {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr) minmax(0, 1fr);
+    gap: 3rem;
+  }
+  .footer__copy {
+    margin-top: 3rem;
+  }
+}

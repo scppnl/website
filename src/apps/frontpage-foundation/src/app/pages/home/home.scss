@@ -27,3 +27,31 @@
     }
   }
 }
+
+@media (min-width: 64rem) {
+  .hero {
+    padding-block: 4.5rem;
+  }
+  .hero__grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  }
+  .hero h1 {
+    font-size: clamp(2.75rem, 3.6vw, 3.5rem);
+    max-width: 16ch;
+  }
+  .hero .lead {
+    font-size: 1.125rem;
+  }
+  .hero__actions {
+    margin-bottom: 0;
+  }
+  .intro {
+    max-width: var(--max-width);
+  }
+  .intro p {
+    max-width: 65ch;
+  }
+  .more {
+    margin-top: 2.5rem;
+  }
+}

@@ -111,7 +111,7 @@ describe('Header', () => {
   });
 
   it('resets the mobile menu when the desktop breakpoint is reached', async () => {
-    expect(window.matchMedia).toHaveBeenCalledWith('(min-width: 75rem)');
+    expect(window.matchMedia).toHaveBeenCalledWith('(min-width: 64rem)');
     await openMenu();
     Object.assign(desktop, { matches: true });
     desktop.dispatchEvent(new Event('change'));

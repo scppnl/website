@@ -13,3 +13,13 @@
   display: grid;
   gap: 1.5rem;
 }
+
+@media (min-width: 64rem) {
+  .contact-layout {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: 3rem;
+  }
+  .contact-aside {
+    gap: 2rem;
+  }
+}
