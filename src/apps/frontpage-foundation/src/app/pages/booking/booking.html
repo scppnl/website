@@ -1,190 +1,264 @@
 <app-page-header [title]="content.title" [lead]="content.lead" />
 
-<section class="section">
+<section class="steps-section">
   <div class="container">
-    <h2>Zo werkt het</h2>
+    <h2 class="visually-hidden">{{ content.stepsTitle }}</h2>
     <ol class="steps">
-      @for (step of content.steps; track step.title) {
-        <li class="card">
-          <h3>{{ step.title }}</h3>
-          <p>{{ step.text }}</p>
+      @for (step of content.steps; track step.title; let first = $first; let index = $index) {
+        <li>
+          <span class="steps__number" [class.steps__number--active]="first">{{ index + 1 }}</span>
+          <span class="steps__text">
+            <strong>{{ step.title }}</strong>
+            <span>{{ step.text }}</span>
+          </span>
         </li>
       }
     </ol>
-    <p class="notice">{{ content.notice }}</p>
   </div>
 </section>
 
-<section class="section section--tint">
-  <div class="container form-wrap">
-    <h2>Reserveringsaanvraag</h2>
+<section class="booking">
+  <div class="container booking__layout">
+    <form class="booking__form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <h2>Reserveringsaanvraag</h2>
 
-    @if (status() === 'success') {
-      <div class="alert alert--success" role="status">
-        <strong>Bedankt voor uw aanvraag!</strong> Wij nemen zo snel mogelijk contact met u op.
-        Heeft u haast? Mail ons dan op
-        <a [href]="'mailto:' + foundation.email">{{ foundation.email }}</a
-        >.
-      </div>
-    }
-    @if (status() === 'error') {
-      <div class="alert alert--error" role="alert">
-        Het versturen is niet gelukt. Probeer het later opnieuw of mail ons op
-        <a [href]="'mailto:' + foundation.email">{{ foundation.email }}</a
-        >.
-      </div>
-    }
+      @if (status() === 'success') {
+        <div class="alert alert--success" role="status">
+          <strong>Bedankt voor uw aanvraag!</strong> Wij nemen zo snel mogelijk contact met u op.
+          Heeft u haast? Mail ons dan op
+          <a [href]="'mailto:' + foundation.email">{{ foundation.email }}</a
+          >.
+        </div>
+      }
+      @if (status() === 'error') {
+        <div class="alert alert--error" role="alert">
+          Het versturen is niet gelukt. Probeer het later opnieuw of mail ons op
+          <a [href]="'mailto:' + foundation.email">{{ foundation.email }}</a
+          >.
+        </div>
+      }
 
-    <form class="form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
-      <div class="field">
-        <label for="name">Naam *</label>
-        <input
-          id="name"
-          type="text"
-          formControlName="name"
-          autocomplete="name"
-          [attr.aria-invalid]="showError('name')"
-        />
-        @if (showError('name')) {
-          <p class="error">Vul uw naam in.</p>
-        }
-      </div>
+      <fieldset>
+        <legend>Uw gegevens</legend>
+        <div class="form">
+          <div class="field">
+            <label for="name">Naam *</label>
+            <input
+              id="name"
+              type="text"
+              formControlName="name"
+              autocomplete="name"
+              [attr.aria-invalid]="showError('name')"
+            />
+            @if (showError('name')) {
+              <p class="error">Vul uw naam in.</p>
+            }
+          </div>
 
-      <div class="field">
-        <label for="organisation">Organisatie</label>
-        <input
-          id="organisation"
-          type="text"
-          formControlName="organisation"
-          autocomplete="organization"
-        />
-      </div>
+          <div class="field">
+            <label for="organisation">Organisatie</label>
+            <input
+              id="organisation"
+              type="text"
+              formControlName="organisation"
+              autocomplete="organization"
+            />
+          </div>
 
-      <div class="field">
-        <label for="email">E-mailadres *</label>
-        <input
-          id="email"
-          type="email"
-          formControlName="email"
-          autocomplete="email"
-          [attr.aria-invalid]="showError('email')"
-        />
-        @if (showError('email')) {
-          <p class="error">Vul een geldig e-mailadres in.</p>
-        }
-      </div>
+          <div class="field">
+            <label for="email">E-mailadres *</label>
+            <input
+              id="email"
+              type="email"
+              formControlName="email"
+              autocomplete="email"
+              [attr.aria-invalid]="showError('email')"
+            />
+            @if (showError('email')) {
+              <p class="error">Vul een geldig e-mailadres in.</p>
+            }
+          </div>
 
-      <div class="field">
-        <label for="phone">Telefoonnummer</label>
-        <input id="phone" type="tel" formControlName="phone" autocomplete="tel" />
-      </div>
+          <div class="field">
+            <label for="phone">Telefoonnummer</label>
+            <input id="phone" type="tel" formControlName="phone" autocomplete="tel" />
+          </div>
+        </div>
+      </fieldset>
 
-      <div class="field">
-        <label for="groupType">Type groep *</label>
-        <select
-          id="groupType"
-          formControlName="groupType"
-          [attr.aria-invalid]="showError('groupType')"
-        >
-          <option value="" disabled>Maak een keuze</option>
-          @for (type of content.groupTypes; track type.value) {
-            <option [value]="type.value">{{ type.label }}</option>
+      <fieldset>
+        <legend>Welk gebouw wilt u huren? *</legend>
+        <div class="radio-cards">
+          @for (option of options; track option.id) {
+            <label class="radio-card">
+              <input
+                type="radio"
+                name="building"
+                formControlName="building"
+                [value]="option.id"
+                [attr.value]="option.id"
+              />
+              <span class="radio-card__text">
+                <strong>{{ option.label }}</strong>
+                <span>{{ formatEuro(option.amount) }} per dagdeel</span>
+              </span>
+            </label>
           }
-        </select>
-        @if (showError('groupType')) {
-          <p class="error">Kies het type groep.</p>
+        </div>
+        @if (showError('building')) {
+          <p class="error">Kies het gebouw dat u wilt huren.</p>
         }
-      </div>
+      </fieldset>
 
-      <div class="field">
-        <label for="guests">Aantal personen * (max. {{ capacity }})</label>
-        <input
-          id="guests"
-          type="number"
-          min="1"
-          [max]="capacity"
-          formControlName="guests"
-          [attr.aria-invalid]="showError('guests')"
-        />
-        @if (showError('guests')) {
-          <p class="error">Vul een aantal in tussen 1 en {{ capacity }}.</p>
-        }
-      </div>
+      <fieldset>
+        <legend>Wanneer en met hoeveel?</legend>
+        <div class="form">
+          <div class="field">
+            <label for="groupType">Type groep *</label>
+            <select
+              id="groupType"
+              formControlName="groupType"
+              [attr.aria-invalid]="showError('groupType')"
+            >
+              <option value="" disabled>Maak een keuze</option>
+              @for (type of content.groupTypes; track type.value) {
+                <option [value]="type.value">{{ type.label }}</option>
+              }
+            </select>
+            @if (showError('groupType')) {
+              <p class="error">Kies het type groep.</p>
+            }
+          </div>
 
-      <div class="field field--desktop-wide">
-        <label for="date">Datum *</label>
-        <input
-          id="date"
-          type="date"
-          formControlName="date"
-          [attr.aria-invalid]="showError('date')"
-        />
-        @if (showError('date')) {
-          <p class="error">Kies een datum.</p>
-        }
-      </div>
+          <div class="field">
+            <label for="guests"
+              >Aantal personen * <span class="optional">(max. {{ capacity }})</span></label
+            >
+            <input
+              id="guests"
+              type="number"
+              min="1"
+              [max]="capacity"
+              inputmode="numeric"
+              formControlName="guests"
+              [attr.aria-invalid]="showError('guests')"
+            />
+            @if (showError('guests')) {
+              <p class="error">Vul een aantal in tussen 1 en {{ capacity }}.</p>
+            }
+          </div>
 
-      <div class="field">
-        <label for="startTime">Starttijd * (vanaf {{ earliestStart }})</label>
-        <input
-          id="startTime"
-          type="time"
-          [min]="earliestStart"
-          [max]="latestEnd"
-          formControlName="startTime"
-          [attr.aria-invalid]="showError('startTime')"
-        />
-        @if (showError('startTime')) {
-          <p class="error">Vul een starttijd in.</p>
-        }
-      </div>
+          <div class="field field--wide">
+            <label for="date">Datum *</label>
+            <input
+              id="date"
+              type="date"
+              formControlName="date"
+              [attr.aria-invalid]="showError('date')"
+            />
+            @if (showError('date')) {
+              <p class="error">Kies een datum.</p>
+            }
+          </div>
 
-      <div class="field">
-        <label for="endTime">Eindtijd * (tot {{ latestEnd }})</label>
-        <input
-          id="endTime"
-          type="time"
-          [min]="earliestStart"
-          [max]="latestEnd"
-          formControlName="endTime"
-          [attr.aria-invalid]="showError('endTime') || timeRangeError() !== null"
-        />
-        @if (showError('endTime')) {
-          <p class="error">Vul een eindtijd in.</p>
-        } @else if (timeRangeError() === 'timeOrder') {
-          <p class="error">De eindtijd moet na de starttijd liggen.</p>
-        } @else if (timeRangeError() === 'openingHours') {
-          <p class="error">
-            Het clubhuis is te huur tussen {{ earliestStart }} en {{ latestEnd }} uur.
-          </p>
-        }
-      </div>
+          <div class="field">
+            <label for="startTime"
+              >Starttijd * <span class="optional">(vanaf {{ earliestStart }})</span></label
+            >
+            <input
+              id="startTime"
+              type="time"
+              [min]="earliestStart"
+              [max]="latestEnd"
+              formControlName="startTime"
+              [attr.aria-invalid]="showError('startTime')"
+            />
+            @if (showError('startTime')) {
+              <p class="error">Vul een starttijd in.</p>
+            }
+          </div>
 
-      <div class="field field--wide">
+          <div class="field">
+            <label for="endTime"
+              >Eindtijd * <span class="optional">(tot {{ latestEnd }})</span></label
+            >
+            <input
+              id="endTime"
+              type="time"
+              [min]="earliestStart"
+              [max]="latestEnd"
+              formControlName="endTime"
+              [attr.aria-invalid]="showError('endTime') || timeRangeError() !== null"
+            />
+            @if (showError('endTime')) {
+              <p class="error">Vul een eindtijd in.</p>
+            } @else if (timeRangeError() === 'timeOrder') {
+              <p class="error">De eindtijd moet na de starttijd liggen.</p>
+            } @else if (timeRangeError() === 'openingHours') {
+              <p class="error">
+                Het clubhuis is te huur tussen {{ earliestStart }} en {{ latestEnd }} uur.
+              </p>
+            }
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="field remarks">
         <label for="remarks">Opmerkingen</label>
+        <p id="remarks-hint" class="hint">{{ content.remarksHint }}</p>
         <textarea
           id="remarks"
-          rows="5"
+          rows="4"
           formControlName="remarks"
-          placeholder="Bijvoorbeeld: welk gebouw u wilt huren (groot, klein of beide), wat voor activiteit u plant, bijzonderheden of vragen"
+          aria-describedby="remarks-hint"
         ></textarea>
       </div>
 
-      <div class="field field--wide field--check">
-        <input id="acceptRules" type="checkbox" formControlName="acceptRules" />
-        <label for="acceptRules"
-          >Ik heb de tarieven en huisregels gelezen en ga hiermee akkoord *</label
-        >
-        @if (showError('acceptRules')) {
-          <p class="error">U moet akkoord gaan met de huisregels.</p>
-        }
-      </div>
-
-      <div class="field--wide">
-        <button type="submit" class="btn btn--accent" [disabled]="status() === 'submitting'">
-          {{ status() === 'submitting' ? 'Bezig met versturen…' : 'Aanvraag versturen' }}
-        </button>
+      <div class="submit">
+        <div class="field field--check">
+          <input id="acceptRules" type="checkbox" formControlName="acceptRules" />
+          <label for="acceptRules"
+            >Ik heb de <a routerLink="/tarieven">tarieven en huisregels</a> gelezen en ga hiermee
+            akkoord *</label
+          >
+          @if (showError('acceptRules')) {
+            <p class="error">U moet akkoord gaan met de huisregels.</p>
+          }
+        </div>
+        <div class="submit__row">
+          <button type="submit" class="btn btn--accent" [disabled]="status() === 'submitting'">
+            {{ status() === 'submitting' ? 'Bezig met versturen…' : 'Aanvraag versturen' }}
+          </button>
+          <span class="hint">Vrijblijvend · velden met * zijn verplicht</span>
+        </div>
       </div>
     </form>
+
+    <aside class="summary" aria-label="Samenvatting">
+      <div class="summary__rates">
+        <h2>{{ content.summary.title }}</h2>
+        <dl>
+          @for (option of options; track option.id) {
+            <div>
+              <dt>{{ option.label }}</dt>
+              <dd>{{ formatEuro(option.amount, true) }}</dd>
+            </div>
+          }
+        </dl>
+        <p>{{ content.summary.note }}</p>
+      </div>
+      <div class="summary__notice">
+        <app-icon name="info" />
+        <p>{{ content.notice }}</p>
+      </div>
+      <div class="summary__questions">
+        <p>
+          <strong>{{ content.questionsTitle }}</strong>
+        </p>
+        <p>
+          <a [href]="'mailto:' + foundation.email">{{ foundation.email }}</a>
+        </p>
+      </div>
+    </aside>
   </div>
 </section>

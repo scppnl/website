@@ -1,23 +1,23 @@
 import { Component } from '@angular/core';
-import { buildingPage } from '../../content/site-content';
+import { buildingPage, type GalleryPhoto } from '../../content/site-content';
 import { CtaBanner } from '../../shared/cta-banner/cta-banner';
+import { Icon } from '../../shared/icon/icon';
 import { PageHeader } from '../../shared/page-header/page-header';
 import { Photo } from '../../shared/photo/photo';
+import { PhotoLightbox } from '../../shared/photo-lightbox/photo-lightbox';
 
 @Component({
   selector: 'app-building',
-  imports: [PageHeader, Photo, CtaBanner],
+  imports: [PageHeader, Photo, PhotoLightbox, CtaBanner, Icon],
   styleUrl: './building.scss',
   templateUrl: './building.html',
 })
 export class Building {
   protected readonly content = buildingPage;
-  protected roomPhotoSizes(count: number): string {
-    const desktop =
-      count === 4
-        ? '(min-width: 76rem) 206px, (min-width: 75rem) calc((100vw - 392px) / 4), (min-width: 64rem) calc(50vw - 106px), '
-        : '(min-width: 76rem) 305px, (min-width: 64rem) calc((100vw - 302px) / 3), ';
-    const intermediate = count === 4 ? '' : '(min-width: 53rem) calc((100vw - 230px) / 3), ';
-    return desktop + intermediate + '(min-width: 35.5rem) calc(50vw - 78px), calc(100vw - 82px)';
+
+  protected gallerySizes(photo: GalleryPhoto): string {
+    return photo.span === 2
+      ? '(min-width: 75rem) 760px, (min-width: 64rem) calc(66vw - 60px), calc(100vw - 40px)'
+      : '(min-width: 75rem) 370px, (min-width: 64rem) calc(33vw - 40px), (min-width: 35.5rem) 50vw, calc(100vw - 40px)';
   }
 }

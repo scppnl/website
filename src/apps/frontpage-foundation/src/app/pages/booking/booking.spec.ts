@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { vi } from 'vitest';
 import { BookingRequestService } from '../../booking/booking-request.service';
 import { Booking } from './booking';
@@ -10,7 +11,7 @@ describe('Booking', () => {
     submit.mockClear();
     await TestBed.configureTestingModule({
       imports: [Booking],
-      providers: [{ provide: BookingRequestService, useValue: { submit } }],
+      providers: [provideRouter([]), { provide: BookingRequestService, useValue: { submit } }],
     }).compileComponents();
   });
 
@@ -26,6 +27,7 @@ describe('Booking', () => {
     const fillValidForm = () => {
       setValue('name', 'Jan Jansen');
       setValue('email', 'jan@example.nl');
+      (element.querySelector('input[name="building"][value="beide"]') as HTMLInputElement).click();
       setValue('groupType', 'business');
       setValue('guests', '20');
       setValue('date', '2027-06-04');
@@ -43,6 +45,22 @@ describe('Booking', () => {
 
     expect(element.querySelectorAll('.error').length).toBeGreaterThan(0);
     expect(submit).not.toHaveBeenCalled();
+  });
+
+  it('requires a building choice', async () => {
+    const { fixture, element, fillValidForm } = await setup();
+    fillValidForm();
+    const checked = element.querySelector('input[name="building"]:checked') as HTMLInputElement;
+    expect(checked.value).toBe('beide');
+    // A fresh form has no building selected, so the request cannot be submitted.
+    const fresh = await setup();
+    fresh.setValue('name', 'Jan Jansen');
+    (fresh.element.querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit'));
+    await fresh.fixture.whenStable();
+    expect(fresh.element.textContent).toContain('Kies het gebouw dat u wilt huren.');
+    expect(fresh.element.querySelector('input[name="building"]:checked')).toBeNull();
+    expect(submit).not.toHaveBeenCalled();
+    await fixture.whenStable();
   });
 
   it('rejects an end time before the start time', async () => {
@@ -76,6 +94,7 @@ describe('Booking', () => {
     expect(submit).toHaveBeenCalledOnce();
     expect(submit.mock.calls[0][0]).toMatchObject({
       name: 'Jan Jansen',
+      building: 'beide',
       groupType: 'business',
       date: '2027-06-04',
       startTime: '10:00',

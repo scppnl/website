@@ -1,66 +1,145 @@
-<section class="hero">
-  <div class="container grid grid--two hero__grid">
-    <div>
-      <h1>{{ content.heroTitle }}</h1>
-      <p class="lead">{{ content.heroText }}</p>
-      <p class="hero__actions">
-        <a class="btn btn--accent" routerLink="/reserveren">Reserveer nu</a>
-        <a class="btn btn--outline" routerLink="/tarieven">Tarieven & info</a>
-      </p>
-    </div>
-    <app-photo
-      [src]="content.heroPhoto.src"
-      [alt]="content.heroPhoto.alt"
-      sizes="(min-width: 76rem) 552px, (min-width: 64rem) calc(50vw - 56px), (min-width: 43.5rem) calc(50vw - 28px), calc(100vw - 32px)"
-      priority
-    />
+<section class="hero on-dark">
+  <app-photo
+    class="hero__photo"
+    [src]="content.heroPhoto.src"
+    [alt]="content.heroPhoto.alt"
+    sizes="100vw"
+    fill
+    priority
+  />
+  <div class="hero__shade" aria-hidden="true"></div>
+  <div class="container hero__content">
+    <p class="eyebrow"><app-copy [text]="content.eyebrow" /></p>
+    <h1>{{ content.heroTitle }}</h1>
+    <p class="hero__text"><app-copy [text]="content.heroText" /></p>
+    <p class="hero__actions">
+      <a class="btn btn--accent" routerLink="/reserveren">Reserveer nu</a>
+      <a class="btn btn--on-dark" routerLink="/tarieven">Tarieven & info</a>
+    </p>
   </div>
 </section>
 
-<section class="section">
-  <div class="container intro">
-    <h2>{{ content.intro.title }}</h2>
-    @for (paragraph of content.intro.paragraphs; track paragraph) {
-      <p>{{ paragraph }}</p>
+<section class="facts-wrap" aria-label="Kerngegevens">
+  <ul class="container facts">
+    @for (fact of content.facts; track fact.text) {
+      <li>
+        <span class="facts__icon"><app-icon [name]="fact.icon" /></span>
+        <span class="facts__text">
+          <strong><app-copy [text]="fact.title" /></strong>
+          <span>{{ fact.text }}</span>
+        </span>
+      </li>
     }
+  </ul>
+</section>
+
+<section class="section welcome">
+  <div class="container welcome__grid">
+    <div class="welcome__text">
+      <h2>{{ content.intro.title }}</h2>
+      @for (paragraph of content.intro.paragraphs; track paragraph.long) {
+        <p><app-copy [text]="paragraph" /></p>
+      }
+      <a class="link-arrow" routerLink="/gebouw">{{ content.intro.linkLabel }}</a>
+    </div>
+    <div class="mosaic">
+      @for (photo of content.intro.mosaic; track photo.alt; let first = $first) {
+        <app-photo
+          [class.mosaic__tall]="first"
+          [src]="photo.src"
+          [alt]="photo.alt"
+          sizes="(min-width: 64rem) 330px, (min-width: 35.5rem) 40vw, 45vw"
+          fill
+        />
+      }
+    </div>
   </div>
 </section>
 
 <section class="section section--tint">
   <div class="container">
-    <div class="grid grid--four">
-      @for (item of content.highlights; track item.title) {
-        <article class="card">
-          <h3>{{ item.title }}</h3>
-          <p>{{ item.text }}</p>
+    <h2>{{ content.buildings.title }}</h2>
+    <p class="lead section-intro"><app-copy [text]="content.buildings.intro" /></p>
+    <div class="building-cards">
+      @for (card of content.buildings.cards; track card.id) {
+        <article class="building-card">
+          <app-photo
+            [src]="card.photo.src"
+            [alt]="card.photo.alt"
+            ratio="auto"
+            sizes="(min-width: 64rem) 560px, (min-width: 35.5rem) 50vw, calc(100vw - 40px)"
+            class="building-card__photo"
+          />
+          <div class="building-card__body">
+            <div class="building-card__head">
+              <h3>{{ card.name }}</h3>
+              <span class="price">
+                {{ price(card) }}
+                <span class="price__unit"
+                  ><span class="long">per dagdeel</span><span class="short">/ dagdeel</span></span
+                >
+              </span>
+            </div>
+            <p class="long">{{ card.text }}</p>
+            <ul class="pill-list">
+              @for (pill of card.pills; track pill) {
+                <li class="pill">{{ pill }}</li>
+              }
+            </ul>
+            <a class="link-arrow" [routerLink]="'/gebouw'" [fragment]="card.id">{{
+              card.linkLabel
+            }}</a>
+          </div>
         </article>
       }
     </div>
   </div>
 </section>
 
-<section class="section">
-  <div class="container">
-    <h2>{{ content.audiencesTitle }}</h2>
-    <div class="grid grid--three">
+<section class="section audiences">
+  <div class="container audiences__grid">
+    <div>
+      <h2>{{ content.audiencesTitle }}</h2>
+      <p class="audiences__intro"><app-copy [text]="content.audiencesIntro" /></p>
+    </div>
+    <ul class="audiences__list">
       @for (item of content.audiences; track item.title) {
-        <article class="card">
-          <h3>{{ item.title }}</h3>
-          <p>{{ item.text }}</p>
-        </article>
+        <li>
+          <span class="circle"><app-icon [name]="item.icon" /></span>
+          <div>
+            <h3>{{ item.title }}</h3>
+            <p><app-copy [text]="item.text" /></p>
+          </div>
+        </li>
       }
-    </div>
+    </ul>
   </div>
 </section>
 
-<section class="section section--tint">
-  <div class="container">
-    <div class="grid grid--three">
-      @for (photo of content.photoStrip; track photo.alt) {
-        <app-photo [src]="photo.src" [alt]="photo.alt" />
-      }
+<section class="section section--tint location">
+  <div class="container location__grid">
+    <div>
+      <h2>{{ content.location.title }}</h2>
+      <p><app-copy [text]="content.location.text" /></p>
+      <address>
+        {{ foundation.address.street }}<br />
+        {{ foundation.address.postalCode }} {{ foundation.address.city }}
+      </address>
+      <a class="btn btn--outline" [href]="foundation.mapsUrl" target="_blank" rel="noopener">{{
+        content.location.routeLabel
+      }}</a>
     </div>
-    <p class="more"><a class="btn btn--outline" routerLink="/gebouw">Bekijk het hele gebouw</a></p>
+    <div class="facilities">
+      <h3>{{ content.location.facilitiesTitle }}</h3>
+      <ul class="check-list facilities__list">
+        @for (item of facilities; track item.long) {
+          <li>
+            <app-icon name="check" [size]="22" [strokeWidth]="2.2" />
+            <app-copy [text]="item" />
+          </li>
+        }
+      </ul>
+    </div>
   </div>
 </section>
 

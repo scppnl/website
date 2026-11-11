@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import {
   AbstractControl,
   NonNullableFormBuilder,
@@ -6,9 +7,16 @@ import {
   ValidationErrors,
   Validators,
 } from '@angular/forms';
-import { BookingRequest, GroupType } from '../../booking/booking-request';
+import { BookingRequest, BuildingChoice, GroupType } from '../../booking/booking-request';
 import { BookingRequestService } from '../../booking/booking-request.service';
-import { bookingPage, building, foundation } from '../../content/site-content';
+import {
+  bookingPage,
+  building,
+  formatEuro,
+  foundation,
+  rentalOptions,
+} from '../../content/site-content';
+import { Icon } from '../../shared/icon/icon';
 import { PageHeader } from '../../shared/page-header/page-header';
 
 type SubmitStatus = 'idle' | 'submitting' | 'success' | 'error';
@@ -31,7 +39,7 @@ function timeRangeValidator(group: AbstractControl): ValidationErrors | null {
 
 @Component({
   selector: 'app-booking',
-  imports: [ReactiveFormsModule, PageHeader],
+  imports: [ReactiveFormsModule, RouterLink, PageHeader, Icon],
   styleUrl: './booking.scss',
   templateUrl: './booking.html',
 })
@@ -41,6 +49,8 @@ export class Booking {
 
   protected readonly content = bookingPage;
   protected readonly foundation = foundation;
+  protected readonly options = rentalOptions;
+  protected readonly formatEuro = formatEuro;
   protected readonly capacity = building.capacity;
   protected readonly earliestStart = building.earliestStart;
   protected readonly latestEnd = building.latestEnd;
@@ -52,6 +62,7 @@ export class Booking {
       organisation: [''],
       email: ['', [Validators.required, Validators.email]],
       phone: [''],
+      building: ['' as BuildingChoice | '', Validators.required],
       groupType: ['' as GroupType | '', Validators.required],
       date: ['', Validators.required],
       startTime: ['', Validators.required],
@@ -98,7 +109,18 @@ export class Booking {
   }
 
   private toRequest(): BookingRequest {
-    const { acceptRules: _acceptRules, groupType, guests, ...rest } = this.form.getRawValue();
-    return { ...rest, groupType: groupType as GroupType, guests: guests as number };
+    const {
+      acceptRules: _acceptRules,
+      building: choice,
+      groupType,
+      guests,
+      ...rest
+    } = this.form.getRawValue();
+    return {
+      ...rest,
+      building: choice as BuildingChoice,
+      groupType: groupType as GroupType,
+      guests: guests as number,
+    };
   }
 }

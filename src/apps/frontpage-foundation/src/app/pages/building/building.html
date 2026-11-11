@@ -1,63 +1,61 @@
-<app-page-header [title]="content.title" [lead]="content.lead" />
+<app-page-header [title]="content.title" [lead]="content.lead">
+  <nav class="jump" aria-label="Op deze pagina">
+    @for (building of content.buildings; track building.id) {
+      <a [href]="'#' + building.id">{{ building.name }}</a>
+    }
+  </nav>
+</app-page-header>
 
-@for (building of content.buildings; track building.name; let odd = $odd) {
-  <section class="section" [class.section--tint]="odd">
+@for (building of content.buildings; track building.id; let odd = $odd) {
+  <section class="section building" [class.section--tint]="odd" [id]="building.id">
     <div class="container">
-      <div class="grid grid--two building-intro">
+      <div class="building__intro" [class.building__intro--flip]="odd">
         <app-photo
+          class="building__photo"
           [src]="building.photo.src"
           [alt]="building.photo.alt"
-          sizes="(min-width: 76rem) 552px, (min-width: 64rem) calc(50vw - 56px), (min-width: 43.5rem) calc(50vw - 28px), calc(100vw - 32px)"
+          sizes="(min-width: 75rem) 560px, (min-width: 64rem) calc(50vw - 56px), calc(100vw - 40px)"
         />
-        <div>
+        <div class="building__text">
+          <p class="eyebrow">{{ building.eyebrow }}</p>
           <h2>{{ building.name }}</h2>
-          <p class="lead">{{ building.summary }}</p>
+          <p>{{ building.summary }}</p>
+          <ul class="features">
+            @for (feature of building.features; track feature.strong) {
+              <li>
+                <app-icon [name]="feature.icon" [size]="22" [strokeWidth]="2" />
+                <span
+                  ><b>{{ feature.strong }}</b
+                  >{{ feature.rest }}</span
+                >
+              </li>
+            }
+          </ul>
         </div>
       </div>
-      <div
-        class="grid"
-        [class.grid--four]="building.areas.length === 4"
-        [class.grid--three]="building.areas.length === 3"
-      >
-        @for (area of building.areas; track area.title) {
-          <article class="card">
-            <app-photo
-              [src]="area.photo.src"
-              [alt]="area.photo.alt"
-              [sizes]="roomPhotoSizes(building.areas.length)"
-            />
-            <h3>{{ area.title }}</h3>
-            <p>{{ area.text }}</p>
-          </article>
+
+      <div class="gallery" [class.gallery--three]="building.id === 'groot'">
+        @for (photo of building.gallery; track photo.src) {
+          <app-photo-lightbox
+            class="gallery__item"
+            [style.--span]="photo.span ?? 1"
+            [src]="photo.src"
+            [alt]="photo.alt"
+            [title]="photo.title"
+            [text]="photo.text"
+            [label]="photo.label"
+            [ratio]="photo.ratio"
+            [sizes]="gallerySizes(photo)"
+          />
         }
       </div>
     </div>
   </section>
 }
 
-<section class="section">
-  <div class="container grid grid--two">
-    <app-photo
-      [src]="content.grounds.photo.src"
-      [alt]="content.grounds.photo.alt"
-      sizes="(min-width: 76rem) 552px, (min-width: 64rem) calc(50vw - 56px), (min-width: 43.5rem) calc(50vw - 28px), calc(100vw - 32px)"
-    />
-    <div>
-      <h2>{{ content.grounds.title }}</h2>
-      <p>{{ content.grounds.text }}</p>
-    </div>
-  </div>
-</section>
-
-<section class="section section--tint">
-  <div class="container">
-    <h2>Aanwezig</h2>
-    <ul class="checklist facilities">
-      @for (item of content.facilities; track item) {
-        <li>{{ item }}</li>
-      }
-    </ul>
-  </div>
-</section>
-
-<app-cta-banner />
+<app-cta-banner
+  [title]="content.cta.title"
+  [text]="content.cta.text"
+  [secondaryLabel]="content.cta.secondaryLabel"
+  secondaryLink="/contact"
+/>

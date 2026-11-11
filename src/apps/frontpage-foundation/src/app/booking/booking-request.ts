@@ -1,3 +1,6 @@
+import type { BuildingChoice } from '../content/site-content';
+
+export type { BuildingChoice };
 export type GroupType = 'family' | 'school' | 'business' | 'other';
 
 export interface BookingRequest {
@@ -5,6 +8,7 @@ export interface BookingRequest {
   readonly organisation: string;
   readonly email: string;
   readonly phone: string;
+  readonly building: BuildingChoice;
   readonly groupType: GroupType;
   /** ISO date (yyyy-MM-dd). */
   readonly date: string;
