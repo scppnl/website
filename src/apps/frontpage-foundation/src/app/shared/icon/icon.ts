@@ -25,6 +25,7 @@ const PATHS = {
   plus: ['M12 5v14M5 12h14'],
   'chevron-right': ['M9 6l6 6-6 6'],
   'chevron-down': ['M6 9l6 6 6-6'],
+  'chevron-up': ['M6 15l6-6 6 6'],
   menu: ['M4 7h16M4 12h16M4 17h16'],
   close: ['M6 6l12 12M18 6L6 18'],
   mail: ['M5 5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z', 'M3 7l9 6 9-6'],

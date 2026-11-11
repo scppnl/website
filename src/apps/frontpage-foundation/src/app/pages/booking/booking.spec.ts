@@ -4,6 +4,9 @@ import { vi } from 'vitest';
 import { BookingRequestService } from '../../booking/booking-request.service';
 import { Booking } from './booking';
 
+/** Far enough ahead that the "not in the past" rule never trips these tests. */
+const RENTAL_DATE = '2099-06-04';
+
 describe('Booking', () => {
   const submit = vi.fn().mockResolvedValue(undefined);
 
@@ -24,83 +27,228 @@ describe('Booking', () => {
       input.value = value;
       input.dispatchEvent(new Event(input instanceof HTMLSelectElement ? 'change' : 'input'));
     };
+    const chooseBuilding = (id: string) =>
+      (element.querySelector(`input[name="building"][value="${id}"]`) as HTMLInputElement).click();
+    /** The dagdelen in day order: 0 is ochtend, 1 is middag, 2 is avond. */
+    const toggleDaypart = (index: number) =>
+      (element.querySelectorAll('.daypart-card input')[index] as HTMLInputElement).click();
     const fillValidForm = () => {
       setValue('name', 'Jan Jansen');
       setValue('email', 'jan@example.nl');
-      (element.querySelector('input[name="building"][value="beide"]') as HTMLInputElement).click();
+      chooseBuilding('beide');
       setValue('groupType', 'business');
       setValue('guests', '20');
-      setValue('date', '2027-06-04');
-      setValue('startTime', '10:00');
-      setValue('endTime', '16:00');
+      setValue('date', RENTAL_DATE);
+      toggleDaypart(0);
+      toggleDaypart(1);
       (element.querySelector('#acceptRules') as HTMLInputElement).click();
     };
-    return { fixture, element, setValue, fillValidForm };
+    const submitForm = async () => {
+      (element.querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit'));
+      await fixture.whenStable();
+    };
+    const text = (selector: string) =>
+      (element.querySelector(selector)?.textContent ?? '').replace(/\s+/g, ' ').trim();
+    return {
+      fixture,
+      element,
+      setValue,
+      chooseBuilding,
+      toggleDaypart,
+      fillValidForm,
+      submitForm,
+      text,
+    };
   }
 
   it('shows required-field errors and does not submit an empty form', async () => {
-    const { fixture, element } = await setup();
-    (element.querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit'));
-    await fixture.whenStable();
+    const { element, submitForm } = await setup();
+    await submitForm();
 
     expect(element.querySelectorAll('.error').length).toBeGreaterThan(0);
     expect(submit).not.toHaveBeenCalled();
   });
 
   it('requires a building choice', async () => {
-    const { fixture, element, fillValidForm } = await setup();
-    fillValidForm();
-    const checked = element.querySelector('input[name="building"]:checked') as HTMLInputElement;
-    expect(checked.value).toBe('beide');
-    // A fresh form has no building selected, so the request cannot be submitted.
-    const fresh = await setup();
-    fresh.setValue('name', 'Jan Jansen');
-    (fresh.element.querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit'));
-    await fresh.fixture.whenStable();
-    expect(fresh.element.textContent).toContain('Kies het gebouw dat u wilt huren.');
-    expect(fresh.element.querySelector('input[name="building"]:checked')).toBeNull();
-    expect(submit).not.toHaveBeenCalled();
-    await fixture.whenStable();
-  });
+    const { element, setValue, submitForm } = await setup();
+    setValue('name', 'Jan Jansen');
+    await submitForm();
 
-  it('rejects an end time before the start time', async () => {
-    const { fixture, element, fillValidForm, setValue } = await setup();
-    fillValidForm();
-    setValue('endTime', '09:00');
-    (element.querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit'));
-    await fixture.whenStable();
-
-    expect(element.textContent).toContain('De eindtijd moet na de starttijd liggen.');
+    expect(element.textContent).toContain('Kies het gebouw dat u wilt huren.');
+    expect(element.querySelector('input[name="building"]:checked')).toBeNull();
     expect(submit).not.toHaveBeenCalled();
   });
 
-  it('rejects times outside the opening hours', async () => {
-    const { fixture, element, fillValidForm, setValue } = await setup();
+  it('requires at least one dagdeel', async () => {
+    const { element, fillValidForm, toggleDaypart, submitForm } = await setup();
     fillValidForm();
-    setValue('endTime', '23:30');
-    (element.querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit'));
-    await fixture.whenStable();
+    toggleDaypart(0);
+    toggleDaypart(1);
+    await submitForm();
 
-    expect(element.textContent).toContain('Het clubhuis is te huur tussen');
+    expect(element.textContent).toContain('Kies minstens één dagdeel.');
     expect(submit).not.toHaveBeenCalled();
+  });
+
+  it('rejects a date in the past', async () => {
+    const { element, fillValidForm, setValue, submitForm } = await setup();
+    fillValidForm();
+    setValue('date', '2001-01-01');
+    await submitForm();
+
+    expect(element.textContent).toContain('Kies een datum in de toekomst.');
+    expect(submit).not.toHaveBeenCalled();
+  });
+
+  it('rejects more guests than the clubhouse holds', async () => {
+    const { element, fillValidForm, setValue, submitForm } = await setup();
+    fillValidForm();
+    setValue('guests', '46');
+    await submitForm();
+
+    expect(element.textContent).toContain(
+      'Er kunnen maximaal 45 personen tegelijk op het terrein.',
+    );
+    expect(submit).not.toHaveBeenCalled();
+  });
+
+  describe('price calculator', () => {
+    it('asks for a building and a dagdeel before it shows a price', async () => {
+      const { fixture, text, chooseBuilding, toggleDaypart } = await setup();
+      expect(text('.summary__calc .price-total__amount')).toBe('€ –');
+      expect(text('.summary__calc .price-hint')).toContain(
+        'Kies een gebouw en minstens één dagdeel',
+      );
+
+      chooseBuilding('groot');
+      await fixture.whenStable();
+      expect(text('.summary__calc .price-hint')).toContain('Kies nog minstens één dagdeel');
+
+      toggleDaypart(0);
+      await fixture.whenStable();
+      expect(text('.summary__calc .price-total__amount')).toBe('€ 75,00');
+    });
+
+    it('works out the rent, the deposit and the total while the renter chooses', async () => {
+      const { fixture, text, chooseBuilding, toggleDaypart, setValue } = await setup();
+      chooseBuilding('groot');
+      setValue('date', RENTAL_DATE);
+      toggleDaypart(0);
+      toggleDaypart(1);
+      await fixture.whenStable();
+
+      const summary = text('.summary__calc');
+      expect(text('.summary__calc .price-total__amount')).toBe('€ 150,00');
+      expect(summary).toContain('2 dagdelen × € 75,00');
+      expect(text('.summary__calc .price-row--muted')).toContain('Gas, water en elektra');
+      expect(text('.summary__calc .price-row--muted')).toContain('inbegrepen');
+      expect(text('.summary__calc .price-row--divided .price-row__label')).toContain(
+        'krijgt u terug na oplevering',
+      );
+      expect(text('.summary__calc .price-row--divided .price-row__amount')).toBe('€ 250,00');
+      expect(summary).toContain('U maakt in totaal € 400,00 over');
+      expect(summary).toContain('08:00 – 17:00');
+      expect(summary).toContain('Huur € 150,00');
+
+      toggleDaypart(2);
+      await fixture.whenStable();
+      expect(text('.summary__calc .price-total__amount')).toBe('€ 225,00');
+      expect(text('.summary__calc')).toContain('U maakt in totaal € 475,00 over');
+      expect(text('.dayparts__summary')).toContain('3 dagdelen');
+    });
+
+    it('prices a single dagdeel in the singular', async () => {
+      const { fixture, text, chooseBuilding, toggleDaypart } = await setup();
+      chooseBuilding('terrein');
+      toggleDaypart(2);
+      await fixture.whenStable();
+
+      expect(text('.summary__calc')).toContain('1 dagdeel × € 40,00');
+      expect(text('.summary__calc .price-total__amount')).toBe('€ 40,00');
+    });
+
+    it('shows the same price in the total bar on phones', async () => {
+      const { fixture, text, chooseBuilding, toggleDaypart } = await setup();
+      expect(text('.total-bar__amount')).toBe('€ –');
+
+      chooseBuilding('klein');
+      toggleDaypart(0);
+      toggleDaypart(1);
+      await fixture.whenStable();
+
+      expect(text('.total-bar__amount')).toBe('€ 90,00');
+      expect(text('.total-bar__note')).toContain('+ € 250 borg (krijgt u terug)');
+    });
+
+    it('offers the whole clubhouse when a single building is chosen', async () => {
+      const { fixture, element, text, chooseBuilding, toggleDaypart } = await setup();
+      chooseBuilding('groot');
+      toggleDaypart(0);
+      await fixture.whenStable();
+
+      expect(text('.summary__calc .price-note--upsell')).toContain('Voor € 25,00 meer per dagdeel');
+
+      (element.querySelector('.summary__calc .link-button') as HTMLButtonElement).click();
+      await fixture.whenStable();
+
+      expect(
+        (element.querySelector('input[name="building"]:checked') as HTMLInputElement).value,
+      ).toBe('beide');
+      expect(text('.summary__calc .price-total__amount')).toBe('€ 100,00');
+      expect(element.querySelector('.summary__calc .price-note--upsell')).toBeNull();
+    });
+
+    it('shows the last day for free cancellation once a date is chosen', async () => {
+      const { fixture, text, setValue } = await setup();
+      expect(text('.summary__calc .cancel')).toBe('');
+
+      setValue('date', RENTAL_DATE);
+      await fixture.whenStable();
+
+      // Four weeks before 4 June 2099.
+      expect(text('.summary__calc .cancel')).toContain('Kosteloos annuleren tot en met');
+      expect(text('.summary__calc .cancel')).toContain('7 mei 2099');
+    });
+
+    it('opens and closes the breakdown sheet', async () => {
+      const { fixture, element, chooseBuilding, toggleDaypart } = await setup();
+      chooseBuilding('beide');
+      toggleDaypart(1);
+      await fixture.whenStable();
+
+      const dialog = element.querySelector('dialog.sheet') as HTMLDialogElement;
+      const open = element.querySelector('.total-bar__button') as HTMLButtonElement;
+      expect(dialog.open).toBe(false);
+      expect(open.getAttribute('aria-expanded')).toBe('false');
+
+      open.click();
+      await fixture.whenStable();
+      expect(dialog.open).toBe(true);
+      expect(open.getAttribute('aria-expanded')).toBe('true');
+      expect(dialog.textContent).toContain('U maakt in totaal € 350,00 over');
+
+      (element.querySelector('.sheet__close') as HTMLButtonElement).click();
+      await fixture.whenStable();
+      expect(dialog.open).toBe(false);
+      expect(open.getAttribute('aria-expanded')).toBe('false');
+    });
   });
 
   it('submits a valid request and shows the success message', async () => {
-    const { fixture, element, fillValidForm } = await setup();
+    const { element, fillValidForm, submitForm } = await setup();
     fillValidForm();
-    (element.querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit'));
-    await fixture.whenStable();
+    await submitForm();
 
     expect(submit).toHaveBeenCalledOnce();
     expect(submit.mock.calls[0][0]).toMatchObject({
       name: 'Jan Jansen',
       building: 'beide',
       groupType: 'business',
-      date: '2027-06-04',
-      startTime: '10:00',
-      endTime: '16:00',
+      date: RENTAL_DATE,
+      dayparts: ['ochtend', 'middag'],
       guests: 20,
     });
+    expect(submit.mock.calls[0][0]).not.toHaveProperty('startTime');
     expect(element.querySelector('.alert--success')).toBeTruthy();
   });
 });

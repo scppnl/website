@@ -1,7 +1,10 @@
 import {
+  building,
   bundleSaving,
+  dayparts,
   deposit,
   formatEuro,
+  freeCancellationWeeks,
   lowestRate,
   rentalOption,
   rentalOptions,
@@ -32,6 +35,24 @@ describe('site content', () => {
     const fact = home.facts.find((item) => item.icon === 'tag');
     expect(fact?.title.long).toBe(`Vanaf ${formatEuro(lowestRate())}`);
     expect(ratesPage.savingLabel.long).toContain(formatEuro(bundleSaving()));
-    expect(bookingPage.summary.note).toContain(formatEuro(deposit, true));
+    expect(bookingPage.payment.returned.text).toContain(formatEuro(deposit, true));
+  });
+
+  it('keeps the dagdelen unique, in day order and inside the opening hours', () => {
+    const ids = dayparts.map((part) => part.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(dayparts[0].from).toBe(building.earliestStart);
+    expect(dayparts[dayparts.length - 1].to).toBe(building.latestEnd);
+    dayparts.forEach((part, index) => {
+      expect(part.from < part.to).toBe(true);
+      if (index > 0) {
+        expect(part.from >= dayparts[index - 1].to).toBe(true);
+      }
+    });
+  });
+
+  it('uses the free cancellation window in the FAQ answer', () => {
+    const answer = ratesPage.faq.find((item) => item.question.includes('annuleren'))?.answer;
+    expect(answer?.long).toContain(`${freeCancellationWeeks} weken`);
   });
 });
