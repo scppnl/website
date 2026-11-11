@@ -6,9 +6,6 @@
         {{ foundation.address.street }}<br />
         {{ foundation.address.postalCode }} {{ foundation.address.city }}
       </address>
-      <p class="footer__mail-phone">
-        <a [href]="'mailto:' + foundation.email">{{ foundation.email }}</a>
-      </p>
     </section>
 
     <nav aria-label="Voettekst">
@@ -22,13 +19,6 @@
         <li><a routerLink="/reserveren">Reserveren</a></li>
       </ul>
     </nav>
-
-    <section class="footer__contact">
-      <p class="footer__heading">Contact</p>
-      <p>
-        <a [href]="'mailto:' + foundation.email">{{ foundation.email }}</a>
-      </p>
-    </section>
   </div>
   <p class="footer__copy container">© {{ year() }} {{ foundation.name }}</p>
 </footer>
