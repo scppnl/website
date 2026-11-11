@@ -1,0 +1,59 @@
+{
+  "version": 1,
+  "projects": {
+    "scouting": {
+      "projectType": "application",
+      "root": "",
+      "sourceRoot": "src",
+      "architect": {
+        "build": {
+          "builder": "@angular/build:application",
+          "options": {
+            "browser": "src/main.ts",
+            "tsConfig": "tsconfig.json",
+            "index": "src/index.html",
+            "outputPath": {
+              "base": "dist",
+              "browser": "client",
+              "server": "server"
+            },
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "public"
+              }
+            ],
+            "styles": [
+              "src/styles.css"
+            ],
+            "server": "src/main.server.ts",
+            "outputMode": "server",
+            "ssr": {
+              "entry": "src/server.ts",
+              "platform": "neutral"
+            },
+            "security": {
+              "allowedHosts": [
+                "scouting-petrus-paulus.michelsown.chatgpt.site",
+                "localhost",
+                "127.0.0.1"
+              ]
+            }
+          }
+        },
+        "serve": {
+          "builder": "@angular/build:dev-server",
+          "options": {
+            "buildTarget": "scouting:build",
+            "allowedHosts": [
+              "terminal.local"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "cli": {
+    "analytics": false
+  }
+}

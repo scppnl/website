@@ -1,0 +1,28 @@
+{
+  "name": "scouting-petrus-paulus",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "ng serve --host 0.0.0.0 --port 4173",
+    "dev": "ng serve --host 0.0.0.0 --port 4173",
+    "build": "ng build && node scripts/package-worker.mjs",
+    "check:ssr": "node scripts/check-ssr.mjs"
+  },
+  "dependencies": {
+    "@angular/common": "22.2.0",
+    "@angular/compiler": "22.2.0",
+    "@angular/core": "22.2.0",
+    "@angular/platform-browser": "22.2.0",
+    "@angular/platform-server": "22.2.0",
+    "@angular/router": "22.2.0",
+    "@angular/ssr": "22.2.0",
+    "rxjs": "~7.8.2",
+    "tslib": "^2.8.1"
+  },
+  "devDependencies": {
+    "@angular/build": "22.2.0",
+    "@angular/cli": "22.2.0",
+    "@angular/compiler-cli": "22.2.0",
+    "typescript": "~6.0.2"
+  }
+}
