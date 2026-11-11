@@ -22,6 +22,7 @@ jobs:
     timeout-minutes: 30
     outputs:
       sites: ${{ steps.ci.outputs.sites }}
+      containers: ${{ steps.ci.outputs.containers }}
     env:
       CI: 'true'
       NX_DAEMON: 'false'
@@ -77,6 +78,46 @@ jobs:
           retention-days: 7
           include-hidden-files: true
           overwrite: true
+
+  docker:
+    name: Build affected API images
+    needs: check
+    if: needs.check.outputs.containers != '' && needs.check.outputs.containers != '[]'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CI: 'true'
+      NX_DAEMON: 'false'
+      NX_NO_CLOUD: 'true'
+      NX_TUI: 'false'
+    steps:
+      - name: Check out the tested commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Pin npm
+        run: npm install --global npm@11.19.1
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Install Native AOT prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes clang zlib1g-dev
+      - name: Install orchestration dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Publish native APIs and build images
+        run: node eng/containers.mjs
+        env:
+          CONTAINERS: ${{ needs.check.outputs.containers }}
 
   deploy:
     name: Publish ${{ matrix.project }}

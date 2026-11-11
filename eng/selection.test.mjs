@@ -19,6 +19,8 @@ for (const [files, expected] of [
   [[`${bookingRoot}/tests/Scpp.Foundation.Booking.Api.UnitTests/DummyEndpointTests.cs`], ['booking-api']],
   [[`${bookingRoot}/tests/Scpp.Foundation.Booking.Api.UnitTests/Scpp.Foundation.Booking.Api.UnitTests.csproj`], ['booking-api']],
   [[`${bookingRoot}/project.json`], ['booking-api']],
+  [[`${bookingRoot}/Dockerfile`], ['booking-api']],
+  [['.dockerignore'], ['booking-api']],
   [[`${bookingRoot}/Scpp.Foundation.Booking.Api.slnx`], ['booking-api']],
   [['Scpp.slnx'], ['booking-api']],
   [['eng/ci.mjs'], all],

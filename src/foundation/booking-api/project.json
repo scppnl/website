@@ -10,6 +10,7 @@
       "!{projectRoot}/**/obj/**/*",
       "!{projectRoot}/**/TestResults/**/*",
       "{workspaceRoot}/Scpp.slnx",
+      "{workspaceRoot}/.dockerignore",
       "sharedGlobals"
     ]
   },
@@ -27,6 +28,21 @@
       "dependsOn": ["restore"],
       "options": {
         "command": "node eng/dotnet.mjs build src/foundation/booking-api/Scpp.Foundation.Booking.Api.slnx"
+      }
+    },
+    "publish": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "command": "dotnet publish src/foundation/booking-api/src/Scpp.Foundation.Booking.Api/Scpp.Foundation.Booking.Api.csproj --configuration Release --runtime linux-x64 --self-contained true -p:PublishAot=true --output artifacts/publish/booking-api"
+      }
+    },
+    "docker": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "dependsOn": ["publish"],
+      "options": {
+        "command": "docker build --platform linux/amd64 --file src/foundation/booking-api/Dockerfile --tag booking-api:ci ."
       }
     },
     "test": {

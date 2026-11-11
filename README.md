@@ -197,8 +197,14 @@ curl http://localhost:5080/
 
 CI registers the entire component as the Nx project `booking-api`. An affected
 run restores, builds Release, and runs MSTest without rebuilding or restoring.
-Native publishing and executable smoke tests are deferred. API sources, tests,
-project configuration, and either solution affect only `booking-api`;
+The separate Docker job publishes Native AOT executables and builds images for
+affected projects with a `docker` target, after the check job passes. It runs on
+Ubuntu 24.04 with `clang` and `zlib1g-dev`, targets Linux amd64, and checks out the
+same commit as the check job. Images stay on the ephemeral runner; registry
+hosting and publishing are deferred. A Docker failure fails the workflow and
+keeps those changes in the next main run's affected selection. Manual runs build
+all registered images; Markdown-only and frontend-only changes build none.
+API sources, tests, project configuration, and either solution affect only `booking-api`;
 frontend-only changes select only the corresponding frontend. Shared SDK,
 build/package configuration, and CI tooling changes affect every project.
 Markdown-only changes select no projects.
@@ -210,6 +216,40 @@ npm run dotnet -- restore Scpp.slnx
 npm run dotnet -- build Scpp.slnx
 npm run dotnet -- test Scpp.slnx
 ```
+
+### Build and run the API image
+
+Use Ubuntu 24.04 amd64, matching CI and the runtime image, with the selected .NET
+SDK, Docker, `clang` and `zlib1g-dev` installed. Run from the repository root:
+
+```sh
+npm run nx -- run booking-api:docker
+docker run --rm -p 8080:8080 booking-api:ci
+```
+
+Then `curl http://localhost:8080/` returns `Booking API`. The uncached `docker`
+target first runs the uncached `publish` target, publishing the API project in
+Release for `linux-x64`, self-contained with Native AOT, into
+`artifacts/publish/booking-api/`. Publishing performs its own RID-specific restore
+and compilation. To perform those steps separately:
+
+```sh
+npm run nx -- run booking-api:publish
+docker build --platform linux/amd64 -f src/foundation/booking-api/Dockerfile -t booking-api:ci .
+```
+
+The Dockerfile only packages the published files. It uses the .NET 10 Ubuntu
+Noble chiseled runtime-dependencies image with globalization support, runs the
+native executable as the image's non-root user, and listens on port 8080. The
+root `.dockerignore` permits publish artifacts while excluding debug symbols
+and local secrets; changing it affects API builds.
+
+To opt another API into image builds, register an uncached Nx `docker` target
+depending on its own uncached `publish` target. Use a dedicated publish directory,
+Dockerfile and image tag, and include `.dockerignore` in that project's inputs.
+CI discovers Docker targets from the checked affected projects and exports them
+as the check job's `containers` output. No API allowlist or hosting credentials
+are required.
 
 `eng/dotnet.mjs` accepts explicitly supplied, existing project or solution paths,
 resolved from the repository root; absolute paths and multiple paths also work.
