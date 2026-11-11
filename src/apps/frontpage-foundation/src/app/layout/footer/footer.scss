@@ -1,52 +1,104 @@
+:where(.footer p) {
+  margin: 0;
+}
+
 .footer {
-  margin-top: 2rem;
-  padding-top: 3rem;
+  padding-top: 2.5rem;
   background: var(--color-primary-dark);
   color: #e9efe6;
 
-  h2 {
-    color: #fff;
-    font-size: 1.1rem;
-  }
-
-  a:not(.btn) {
+  a {
     color: #fff;
   }
 
   address {
-    font-style: normal;
+    margin: 0 0 0.375rem;
   }
 
   ul {
     list-style: none;
     margin: 0;
     padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 1rem;
   }
+
+  li a {
+    display: block;
+    padding-block: 0.5rem;
+  }
+}
+
+.footer__name {
+  margin-bottom: 0.5rem;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1.1875rem;
+  color: #fff;
+}
+
+.footer__heading {
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+nav .footer__heading {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
 }
 
 .footer__grid {
   display: grid;
-  gap: 2rem;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: 1.5rem;
+}
+
+/* The contact column is only needed beside the menu on wide screens. */
+.footer__contact {
+  display: none;
 }
 
 .footer__copy {
-  margin: 2rem auto 0;
-  padding-block: 1.25rem;
+  margin: 1.5rem auto 0;
+  padding-block: 1rem 1.5rem;
   border-top: 1px solid rgb(255 255 255 / 0.2);
-  font-size: 0.9rem;
+  font-size: 0.875rem;
 }
 
 @media (min-width: 64rem) {
   .footer {
-    margin-top: 0;
     padding-top: 3.5rem;
   }
   .footer__grid {
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr) minmax(0, 1fr);
-    gap: 3rem;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: 2.5rem 4rem;
+  }
+  .footer__mail-phone {
+    display: none;
+  }
+  .footer__contact {
+    display: block;
+  }
+  .footer ul {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+  .footer li a {
+    padding-block: 0.125rem;
+  }
+  .footer nav .footer__heading {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
   }
   .footer__copy {
-    margin-top: 3rem;
+    margin-top: 2.5rem;
+    padding-block: 1.25rem;
   }
 }

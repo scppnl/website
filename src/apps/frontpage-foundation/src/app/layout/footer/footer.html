@@ -1,16 +1,18 @@
-<footer class="footer">
+<footer class="footer on-dark">
   <div class="container footer__grid">
-    <section>
-      <h2>{{ foundation.name }}</h2>
+    <section class="footer__about">
+      <p class="footer__name">{{ foundation.name }}</p>
       <address>
         {{ foundation.address.street }}<br />
-        {{ foundation.address.postalCode }} {{ foundation.address.city }}<br />
-        <a [href]="'mailto:' + foundation.email">{{ foundation.email }}</a>
+        {{ foundation.address.postalCode }} {{ foundation.address.city }}
       </address>
+      <p class="footer__mail-phone">
+        <a [href]="'mailto:' + foundation.email">{{ foundation.email }}</a>
+      </p>
     </section>
 
     <nav aria-label="Voettekst">
-      <h2>Menu</h2>
+      <p class="footer__heading">Menu</p>
       <ul>
         @for (item of navItems; track item.path) {
           <li>
@@ -21,10 +23,11 @@
       </ul>
     </nav>
 
-    <section>
-      <h2>Wilt u huren?</h2>
-      <p>Controleer de tarieven en vraag vrijblijvend een reservering aan.</p>
-      <a class="btn btn--accent" routerLink="/reserveren">Reserveer nu</a>
+    <section class="footer__contact">
+      <p class="footer__heading">Contact</p>
+      <p>
+        <a [href]="'mailto:' + foundation.email">{{ foundation.email }}</a>
+      </p>
     </section>
   </div>
   <p class="footer__copy container">© {{ year() }} {{ foundation.name }}</p>

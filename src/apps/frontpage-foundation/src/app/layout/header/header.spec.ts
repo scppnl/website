@@ -55,10 +55,14 @@ describe('Header', () => {
   it('starts collapsed and toggles the controlled navigation', async () => {
     expectClosed();
     expect(toggle.getAttribute('aria-controls')).toBe(root.querySelector('nav')?.id);
+    expect(toggle.getAttribute('aria-label')).toBe('Menu openen');
     await openMenu();
+    expect(toggle.getAttribute('aria-label')).toBe('Menu sluiten');
+    expect(document.documentElement.classList.contains('menu-open')).toBe(true);
     toggle.click();
     await fixture.whenStable();
     expectClosed();
+    expect(document.documentElement.classList.contains('menu-open')).toBe(false);
   });
 
   it('closes on Escape and returns focus to the toggle', async () => {
@@ -111,7 +115,7 @@ describe('Header', () => {
   });
 
   it('resets the mobile menu when the desktop breakpoint is reached', async () => {
-    expect(window.matchMedia).toHaveBeenCalledWith('(min-width: 64rem)');
+    expect(window.matchMedia).toHaveBeenCalledWith('(min-width: 68.75rem)');
     await openMenu();
     Object.assign(desktop, { matches: true });
     desktop.dispatchEvent(new Event('change'));

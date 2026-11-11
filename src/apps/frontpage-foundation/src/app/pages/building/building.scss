@@ -1,17 +1,120 @@
-.building-intro {
+/* Anchor pills in the page header */
+.jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  padding-top: 1rem;
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: 0 1.125rem;
+    border: 1px solid #ccd6c3;
+    border-radius: 999px;
+    background: var(--color-surface);
+    color: var(--color-primary-dark);
+    font-weight: 700;
+    font-size: 0.97rem;
+    text-decoration: none;
+
+    &:hover {
+      background: var(--color-primary);
+      border-color: var(--color-primary);
+      color: #fff;
+    }
+  }
+}
+
+/* Keep the anchor target clear of the sticky header. */
+.building {
+  scroll-margin-top: 4.5rem;
+}
+
+.building__intro {
+  display: grid;
+  gap: 1.5rem;
   margin-bottom: 2rem;
 }
 
+.building__photo {
+  --photo-radius: 1.125rem;
+}
+
+.building__text {
+  p:not(.eyebrow) {
+    max-width: 46ch;
+  }
+
+  h2 {
+    margin-bottom: 1rem;
+  }
+}
+
+.features {
+  list-style: none;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  border-top: 1px solid #e7e1d3;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding-block: 0.75rem;
+    border-bottom: 1px solid #e7e1d3;
+  }
+
+  app-icon {
+    color: var(--color-primary);
+  }
+}
+
+.section--tint .features,
+.section--tint .features li {
+  border-color: #d5dcc9;
+}
+
+.gallery {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16.25rem), 1fr));
+}
+
+.gallery__item {
+  --photo-radius: 0.875rem;
+}
+
+@media (max-width: 47.9375rem) {
+  .gallery--three {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (min-width: 48rem) {
+  .gallery--three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .gallery--three .gallery__item {
+    grid-column: span var(--span, 1);
+  }
+}
+
 @media (min-width: 64rem) {
-  .building-intro {
-    margin-bottom: 3rem;
+  .building {
+    scroll-margin-top: 5rem;
   }
-  .facilities {
-    display: grid;
+
+  .building__intro {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.5rem 3rem;
+    align-items: center;
+    gap: 3.5rem;
+    margin-bottom: 2.5rem;
   }
-  .card h3 {
-    min-height: 2.4em;
+
+  /* The second building puts its text on the left and its photo on the right. */
+  .building__intro--flip .building__photo {
+    order: 2;
   }
 }
