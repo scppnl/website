@@ -1,0 +1,50 @@
+{
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "neverConnectToCloud": true,
+  "defaultBase": "main",
+  "namedInputs": {
+    "default": [
+      "{projectRoot}/**/*",
+      "!{projectRoot}/**/*.md",
+      "!{projectRoot}/dist/**/*",
+      "!{projectRoot}/node_modules/**/*",
+      "!{projectRoot}/.angular/**/*",
+      "sharedGlobals"
+    ],
+    "sharedGlobals": [
+      "{workspaceRoot}/eng/**/*",
+      "{workspaceRoot}/.github/workflows/**/*",
+      "{workspaceRoot}/package.json",
+      "{workspaceRoot}/package-lock.json",
+      "{workspaceRoot}/nx.json",
+      "{workspaceRoot}/.nvmrc",
+      "{workspaceRoot}/.npmrc",
+      "{workspaceRoot}/.gitignore",
+      "{workspaceRoot}/global.json",
+      "{workspaceRoot}/**/Directory.Build.*",
+      "{workspaceRoot}/**/Directory.Packages.props",
+      "{workspaceRoot}/**/[Nn]u[Gg]et.[Cc]onfig",
+      "{workspaceRoot}/.config/dotnet-tools.json",
+      "{workspaceRoot}/.nxignore",
+      "{workspaceRoot}/.editorconfig",
+      "{workspaceRoot}/.gitattributes",
+      "{workspaceRoot}/.github/actions/**/*"
+    ]
+  },
+  "targetDefaults": {
+    "build": {
+      "inputs": [
+        "default",
+        "^default"
+      ],
+      "cache": true
+    },
+    "test": {
+      "inputs": [
+        "default",
+        "^default"
+      ],
+      "cache": true
+    }
+  }
+}

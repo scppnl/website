@@ -1,0 +1,2 @@
+# Documentation does not affect application builds or tests.
+**/*.md
