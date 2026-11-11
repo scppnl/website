@@ -20,8 +20,9 @@ writeFileSync(join(directory, 'app/package-lock.json'), '{}');
 writeFileSync(join(directory, 'npm.cjs'), 'process.exit(23);');
 writeFileSync(join(directory, 'node_modules/nx/bin/nx.js'), `
 const args = process.argv.slice(2);
-if (args[0] === 'show' && args[1] === 'projects') console.log(JSON.stringify([process.env.TEST_PROJECT || 'app']));
-else if (args[0] === 'show') console.log(JSON.stringify({root: 'app', metadata: {ci: {npm: process.env.FAIL_INSTALL === 'true'}}}));
+if (args[0] === 'show' && args[1] === 'projects') console.log(process.env.TEST_PROJECTS || '["app"]');
+else if (args[0] === 'show') console.log(JSON.stringify({root: 'app', metadata: {ci: {npm: process.env.FAIL_INSTALL === 'true'}},
+  targets: ['booking-api', 'another-api'].includes(args[2]) ? {docker: {}} : {}}));
 else process.exit(Number(process.env.TEST_NX_EXIT ?? 29));
 `);
 
@@ -34,19 +35,39 @@ test('CI exits unsuccessfully when npm installation or Nx execution fails', () =
     });
     assert.equal(result.status, 1);
     assert.match(result.stderr, failInstall ? /failed \(23\)/ : /failed \(29\)/);
-    assert.equal(existsSync(output), false, 'Failed checks must not export deployable sites');
+    assert.equal(existsSync(output), false, 'Failed checks must not export sites or containers');
   }
 });
 
-test('successful CI exports only its checked production websites', () => {
-  for (const project of ['frontpage-association', 'frontpage-foundation', 'future-api']) {
-    const output = join(directory, `output-${project}`);
+test('successful CI exports checked websites and projects with a Docker target', () => {
+  const cases = [
+    {projects: [], sites: [], containers: []},
+    {projects: ['frontpage-association'], sites: ['frontpage-association'], containers: []},
+    {projects: ['frontpage-foundation'], sites: ['frontpage-foundation'], containers: []},
+    {projects: ['future-api'], sites: [], containers: []},
+    {projects: ['booking-api'], sites: [], containers: ['booking-api']},
+    {projects: ['another-api', 'booking-api', 'frontpage-association'],
+      sites: ['frontpage-association'], containers: ['another-api', 'booking-api']},
+  ];
+  for (const [index, {projects, sites, containers}] of cases.entries()) {
+    const output = join(directory, `selection-${index}`);
     const result = spawnSync(process.execPath, ['eng/ci.mjs', '--all'], {
       cwd: directory, encoding: 'utf8', env: { ...childEnv,
-        FAIL_INSTALL: 'false', TEST_PROJECT: project, TEST_NX_EXIT: '0', GITHUB_OUTPUT: output },
+        FAIL_INSTALL: 'false', TEST_PROJECTS: JSON.stringify(projects), TEST_NX_EXIT: '0', GITHUB_OUTPUT: output },
     });
     assert.equal(result.status, 0, result.stderr);
-    assert.equal(readFileSync(output, 'utf8'), `sites=${JSON.stringify(project === 'future-api' ? [] : [project])}\n`);
+    assert.equal(readFileSync(output, 'utf8'),
+      `containers=${JSON.stringify(containers)}\nsites=${JSON.stringify(sites)}\n`);
+  }
+});
+
+test('container runner skips an empty selection and propagates Docker target failures', () => {
+  for (const [selection, status] of [['[]', 0], ['["booking-api"]', 1], ['null', 1], ['["--all"]', 1]]) {
+    const result = spawnSync(process.execPath, ['eng/containers.mjs'], {
+      cwd: directory, encoding: 'utf8', env: { ...childEnv, CONTAINERS: selection, TEST_NX_EXIT: '31' },
+    });
+    assert.equal(result.status, status, result.stderr);
+    if (selection.includes('booking-api')) assert.match(result.stderr, /--target=docker.*--projects=booking-api.*failed \(31\)/);
   }
 });
 

@@ -41,6 +41,7 @@
 **/*.snupkg
 **/*.binlog
 **/*.pdb
+**/*.dbg
 
 # Tests / coverage
 **/TestResults
