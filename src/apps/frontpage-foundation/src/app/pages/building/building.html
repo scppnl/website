@@ -1,7 +1,7 @@
 <app-page-header [title]="content.title" [lead]="content.lead">
   <nav class="jump" aria-label="Op deze pagina">
     @for (building of content.buildings; track building.id) {
-      <a [href]="'#' + building.id">{{ building.name }}</a>
+      <a routerLink="/gebouw" [fragment]="building.id">{{ building.name }}</a>
     }
   </nav>
 </app-page-header>

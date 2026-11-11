@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { buildingPage, type GalleryPhoto } from '../../content/site-content';
 import { CtaBanner } from '../../shared/cta-banner/cta-banner';
 import { Icon } from '../../shared/icon/icon';
@@ -8,7 +9,7 @@ import { PhotoLightbox } from '../../shared/photo-lightbox/photo-lightbox';
 
 @Component({
   selector: 'app-building',
-  imports: [PageHeader, Photo, PhotoLightbox, CtaBanner, Icon],
+  imports: [RouterLink, PageHeader,Photo, PhotoLightbox, CtaBanner, Icon],
   styleUrl: './building.scss',
   templateUrl: './building.html',
 })
