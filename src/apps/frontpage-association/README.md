@@ -53,18 +53,25 @@ The build preserves the Nx output location. Routes `/`, `/speltakken`, `/verhuur
 The `404` Angular route is copied to root `404.html` for Workers' `404-page`
 handling, so unknown direct URLs return HTTP 404 with the site's own content.
 Client navigation also renders the not-found component. `drop-trailing-slash`
-redirects route URLs to the version without a trailing slash. Footer years and the rental date minimum
-use the prerendered value during hydration and refresh to the visitor's local
-date after hydration, so old builds remain current without a mismatch.
+redirects route URLs to the version without a trailing slash. Footer years use
+the prerendered value during hydration and refresh to the visitor's local year
+after hydration, so old builds remain current without a mismatch.
 Static asset requests are free and unlimited on Workers, with no Worker CPU
 execution here. The Free plan permits 20,000 files per deployment and 25 MiB per
 file; `check:hosting` enforces those limits. See [Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/)
 and [limits](https://developers.cloudflare.com/workers/platform/limits/#static-assets).
 
+## Rental enquiries
+
+The `/verhuur` page refers visitors to Stichting Clubhuis De Wildert, which
+manages and rents out the accommodation. Rental information and reservations
+are handled on the separate foundation site:
+https://scpp-foundation.de-wildert-penp.workers.dev/. The association has no rental form.
+
 ## Forms
 
 
-The contact and rental forms use native required-field/email validation. Submission is prevented and displays an explicit not-sent message. No information is transmitted or persisted. Replace this behavior only when a submission service is intentionally added.
+The association contact form uses native required-field/email validation. Submission is prevented and displays an explicit not-sent message. No information is transmitted or persisted. Replace this behavior only when a submission service is intentionally added.
 
 ## Content provenance
 
@@ -74,6 +81,6 @@ Content was retrieved from the exact user-provided Wayback pages:
 - https://web.archive.org/web/20260617044726/https://scpp.nl/verhuur/
 - https://www.facebook.com/scppnl/ (public search index; direct access restricted)
 
-Age groups, three free introductory visits, founding year, rental facilities, rental restrictions, address, emergency telephone, and social links are taken from those archived pages. No rental prices or meeting times are invented. Older approximate membership counts were deliberately omitted. Reconfirm historical contact details and rental rules before a public launch.
+Age groups, three free introductory visits, founding year, address, emergency telephone, and social links are taken from those archived pages. No meeting times are invented. Older approximate membership counts were deliberately omitted. Reconfirm historical contact details before a public launch.
 
 The original logo and photos are retrieved from archived scpp.nl assets for this organization's redesign. Original paths: `/wp-content/uploads/2023/05/SCPP-logo-1.png`, `/wp-content/uploads/2023/10/Brug.png`, `/wp-content/uploads/2023/10/Blokhut.png`. The downloads page labels its documents as archived versions; their external availability depends on Wayback. Facebook is linked, not embedded, and no unverified recent posts are reproduced.
