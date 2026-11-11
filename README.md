@@ -179,7 +179,7 @@ and runs `npm ci` in the project root. No hard-coded application list needs an
 update. Add its lockfile path to the workflow's npm cache paths if it is outside
 `src/apps/*`. CI automatically runs any registered `build` and `test` targets.
 
-## Booking API and .NET components
+## APIs and .NET components
 
 `Scpp.slnx` is the root .NET solution. The component solution is
 `src/foundation/booking-api/Scpp.Foundation.Booking.Api.slnx`; both contain the API
@@ -187,7 +187,19 @@ under the component's `src/` directory and its MSTest unit tests under `tests/`.
 `global.json` selects .NET 10 starting at 10.0.404, allows stable feature-band
 updates within .NET 10 (`latestFeature`), and disallows prereleases.
 
-The API uses the slim minimal API host with Native AOT enabled. `GET /` returns
+The shared contact API follows the same layout in `src/shared/contact-api/`,
+with component solution `Scpp.Shared.ContactApi.slnx`, API sources under `src/`,
+and MSTest unit tests under `tests/`. Both projects are also in `Scpp.slnx`.
+It uses the slim minimal API host with Native AOT enabled; `GET /` returns
+HTTP 200 with plain text `Contact API`.
+
+```sh
+dotnet run --project src/shared/contact-api/src/Scpp.Shared.ContactApi -- --urls http://localhost:5081
+curl http://localhost:5081/
+npm run nx -- run contact-api:test
+```
+
+The booking API uses the slim minimal API host with Native AOT enabled. `GET /` returns
 HTTP 200 with plain text `Booking API`. To run it locally:
 
 ```sh
@@ -195,7 +207,7 @@ dotnet run --project src/foundation/booking-api/src/Scpp.Foundation.Booking.Api 
 curl http://localhost:5080/
 ```
 
-CI registers the entire component as the Nx project `booking-api`. An affected
+CI registers the components as Nx projects `booking-api` and `contact-api`. An affected
 run restores, builds Release, and runs MSTest without rebuilding or restoring.
 The separate Docker job publishes Native AOT executables and builds images for
 affected projects with a `docker` target, after the check job passes. It runs on
@@ -204,8 +216,11 @@ same commit as the check job. Images stay on the ephemeral runner; registry
 hosting and publishing are deferred. A Docker failure fails the workflow and
 keeps those changes in the next main run's affected selection. Manual runs build
 all registered images; Markdown-only and frontend-only changes build none.
-API sources, tests, project configuration, and either solution affect only `booking-api`;
-frontend-only changes select only the corresponding frontend. Shared SDK,
+The booking API has a `docker` target; native publishing and container builds
+for the contact API are deferred.
+API sources, tests, project configuration, and component solutions affect only
+their own API; the root solution affects both APIs.
+Frontend-only changes select only the corresponding frontend. Shared SDK,
 build/package configuration, and CI tooling changes affect every project.
 Markdown-only changes select no projects.
 

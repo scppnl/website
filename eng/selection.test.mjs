@@ -7,8 +7,9 @@ import { root } from './process.mjs';
 const env = { ...process.env };
 delete env.NODE_TEST_CONTEXT;
 const both = ['frontpage-association', 'frontpage-foundation'];
-const all = ['booking-api', ...both];
+const all = ['booking-api', 'contact-api', ...both];
 const bookingRoot = 'src/foundation/booking-api';
+const contactRoot = 'src/shared/contact-api';
 for (const [files, expected] of [
   [['src/apps/frontpage-association/src/app.ts'], [both[0]]],
   [['src/apps/frontpage-association/package-lock.json'], [both[0]]],
@@ -22,7 +23,13 @@ for (const [files, expected] of [
   [[`${bookingRoot}/Dockerfile`], ['booking-api']],
   [['.dockerignore'], ['booking-api']],
   [[`${bookingRoot}/Scpp.Foundation.Booking.Api.slnx`], ['booking-api']],
-  [['Scpp.slnx'], ['booking-api']],
+  [[`${contactRoot}/src/Scpp.Shared.ContactApi/Program.cs`], ['contact-api']],
+  [[`${contactRoot}/src/Scpp.Shared.ContactApi/Scpp.Shared.ContactApi.csproj`], ['contact-api']],
+  [[`${contactRoot}/tests/Scpp.Shared.ContactApi.UnitTests/DummyEndpointTests.cs`], ['contact-api']],
+  [[`${contactRoot}/tests/Scpp.Shared.ContactApi.UnitTests/Scpp.Shared.ContactApi.UnitTests.csproj`], ['contact-api']],
+  [[`${contactRoot}/project.json`], ['contact-api']],
+  [[`${contactRoot}/Scpp.Shared.ContactApi.slnx`], ['contact-api']],
+  [['Scpp.slnx'], ['booking-api', 'contact-api']],
   [['eng/ci.mjs'], all],
   [['.github/workflows/ci.yml'], all],
   [['global.json'], all],
@@ -30,7 +37,7 @@ for (const [files, expected] of [
   [['Directory.Build.props'], all],
   [['Directory.Packages.props'], all],
   [['NuGet.Config'], all],
-  [['README.md', 'src/apps/frontpage-association/README.md', 'src/apps/frontpage-foundation/README.md', `${bookingRoot}/README.md`], []],
+  [['README.md', 'src/apps/frontpage-association/README.md', 'src/apps/frontpage-foundation/README.md', `${bookingRoot}/README.md`, `${contactRoot}/README.md`], []],
 ]) {
   test(`affected selection: ${files.join(', ')}`, () => {
     const result = spawnSync(process.execPath,
