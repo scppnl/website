@@ -1,0 +1,41 @@
+{
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "name": "booking-api",
+  "projectType": "application",
+  "namedInputs": {
+    "default": [
+      "{projectRoot}/**/*",
+      "!{projectRoot}/**/*.md",
+      "!{projectRoot}/**/bin/**/*",
+      "!{projectRoot}/**/obj/**/*",
+      "!{projectRoot}/**/TestResults/**/*",
+      "{workspaceRoot}/Scpp.slnx",
+      "sharedGlobals"
+    ]
+  },
+  "targets": {
+    "restore": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "command": "node eng/dotnet.mjs restore src/foundation/booking-api/Scpp.Foundation.Booking.Api.slnx"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "dependsOn": ["restore"],
+      "options": {
+        "command": "node eng/dotnet.mjs build src/foundation/booking-api/Scpp.Foundation.Booking.Api.slnx"
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "dependsOn": ["build"],
+      "options": {
+        "command": "node eng/dotnet.mjs test src/foundation/booking-api/Scpp.Foundation.Booking.Api.slnx"
+      }
+    }
+  }
+}
