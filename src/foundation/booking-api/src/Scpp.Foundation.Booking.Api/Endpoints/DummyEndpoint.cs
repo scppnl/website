@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 
-namespace Scpp.Foundation.Booking.Api;
+namespace Scpp.Foundation.Booking.Api.Endpoints;
 
 internal static class DummyEndpoint
 {

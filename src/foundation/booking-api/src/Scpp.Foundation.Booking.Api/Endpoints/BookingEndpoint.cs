@@ -1,8 +1,10 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Scpp.Foundation.Booking.Api.Serialization;
+using Scpp.Foundation.Booking.Api.Validation;
 using Scpp.Foundation.Booking.Contracts;
 
-namespace Scpp.Foundation.Booking.Api;
+namespace Scpp.Foundation.Booking.Api.Endpoints;
 
 internal sealed class BookingEndpoint
 {
