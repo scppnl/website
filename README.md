@@ -207,6 +207,24 @@ dotnet run --project src/foundation/booking-api/src/Scpp.Foundation.Booking.Api 
 curl http://localhost:5080/
 ```
 
+Both APIs route Microsoft `ILogger<T>` events through Serilog to readable console
+output. The default minimum level is Information, with Microsoft.AspNetCore and
+System at Warning. Each event includes its timestamp, level, logger category,
+message, remaining structured properties, and exception when present. Application
+name, environment, and `BeginScope` properties enrich the events.
+
+Serilog records one completion event per HTTP request with method, path, status,
+and duration; unhandled exceptions and HTTP 5xx responses use Error. Application
+code should inject `ILogger<T>` and use structured message templates, such as
+`logger.LogInformation("Completed operation {OperationId}", operationId)`.
+Do not log request bodies, credentials, or contact/booking payloads. Sinks and
+levels are configured explicitly in each API's `LoggingSetup` to preserve Native
+AOT compatibility; the host owns logger disposal and flushing. This logging setup
+is required when creating an API, as described in `AGENTS.md`.
+Serilog 4.4 disables reflection-based object destructuring in trimmed/native
+builds. Use named scalar properties and collections in message templates rather
+than relying on `{@Object}` to reflect over arbitrary objects.
+
 CI registers the components as Nx projects `booking-api` and `contact-api`. An affected
 run restores, builds Release, and runs MSTest without rebuilding or restoring.
 The separate Docker job publishes Native AOT executables and builds images for
