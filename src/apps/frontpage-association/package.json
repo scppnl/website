@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "ng serve --host 0.0.0.0 --port 4173",
-    "dev": "ng serve --host 0.0.0.0 --port 4173",
-    "build": "ng build && node ../../../eng/static-hosting.mjs prepare",
+    "start": "node ../../../eng/frontend.mjs serve --host 0.0.0.0 --port 4173",
+    "dev": "node ../../../eng/frontend.mjs serve --host 0.0.0.0 --port 4173",
+    "build": "node ../../../eng/frontend.mjs build",
     "check:ssr": "npm run check:hosting",
     "preview": "npm run build && npm run check:hosting && wrangler dev",
     "deploy": "npm run build && npm run check:hosting && wrangler deploy",

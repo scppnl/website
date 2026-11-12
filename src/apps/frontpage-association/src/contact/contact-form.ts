@@ -1,4 +1,5 @@
-import { Component, inject, signal } from "@angular/core";
+import { TurnstileWidget } from "./turnstile-widget";
+import { Component, inject, signal, viewChild } from "@angular/core";
 import { HttpErrorResponse } from "@angular/common/http";
 import { NonNullableFormBuilder, ReactiveFormsModule } from "@angular/forms";
 import { ContactMessageService } from "./contact-message.service";
@@ -12,7 +13,7 @@ import {
 @Component({
     selector: "contact-form",
     standalone: true,
-    imports: [ReactiveFormsModule],
+    imports: [TurnstileWidget, ReactiveFormsModule],
     templateUrl: "./contact-form.html",
     styles: [
         "fieldset { border: 0; padding: 0; margin: 0; min-width: 0; } .error { color: #8b241d; font-size: 14px; }",
@@ -20,6 +21,8 @@ import {
 })
 export class ContactForm {
     private readonly service = inject(ContactMessageService);
+    protected readonly turnstileToken = signal<string | null>(null);
+    private readonly widget = viewChild(TurnstileWidget);
     protected readonly available = this.service.available;
     protected readonly status = signal<
         "idle" | "submitting" | "success" | "error"
@@ -46,11 +49,13 @@ export class ContactForm {
             this.form.markAllAsTouched();
             return;
         }
+        const token = this.turnstileToken();
+        if (!token) return;
         const message = this.form.getRawValue();
         this.status.set("submitting");
         this.form.disable();
         try {
-            await this.service.submit(message);
+            await this.service.submit(message, token);
             this.form.reset();
             this.status.set("success");
         } catch (error) {
@@ -64,6 +69,8 @@ export class ContactForm {
             }
             this.status.set("error");
         } finally {
+            this.turnstileToken.set(null);
+            this.widget()?.reset();
             if (this.form.disabled) this.form.enable();
         }
     }

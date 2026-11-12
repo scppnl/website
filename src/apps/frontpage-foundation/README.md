@@ -71,3 +71,16 @@ production submissions stay disabled until an API URL is configured. See the
 
 The booking component and `BookingRequestService` remain a separate stub. Booking
 submissions send and store nothing; review that behavior before a public launch.
+
+## Turnstile protection
+
+Contact submissions require a current Turnstile token. Set the public site key
+through the frontend process environment (`TURNSTILE_SITE_KEY`); CI reads it from
+the GitHub repository secret `CONTACT_TURNSTILE_SITE_KEY`. Keep the hosted API origin in
+`src/environments/environment.ts`. The `CONTACT_TURNSTILE_SECRET_KEY` verification
+secret belongs only in the
+.NET API runtime; it must never be supplied to the frontend build.
+
+See the [contact API deployment/setup guide](../../shared/contact-api/README.md#turnstile-github-and-cloudflare-deployment-setup)
+for Cloudflare widget creation, GitHub settings, the four production hostnames,
+API runtime configuration, local development, and the deployment checklist.

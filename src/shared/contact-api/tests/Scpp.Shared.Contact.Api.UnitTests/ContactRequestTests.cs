@@ -20,17 +20,22 @@ public sealed class ContactRequestTests
     private WebApplication app = null!;
     private HttpClient client = null!;
     private readonly RequestLogs logs = new();
+    private readonly SiteverifyStub siteverify = new();
     private static ContactRequest Valid(string source = "foundation") =>
         new(source, " Jan Jansen ", " jan@example.nl ", " Hello\nworld ",
             source == "association" ? " Piet " : null,
             source == "foundation" ? " 0164 123456 " : null,
-            source == "foundation" ? "question" : null);
+            source == "foundation" ? "question" : null, "test-token");
 
     [TestInitialize]
     public async Task Start()
     {
-        app = ContactApi.Build(["--urls", "http://127.0.0.1:0", "--Cors:AllowedOrigins:0", "http://localhost:4173"],
-            builder => builder.Services.AddSingleton<ILogEventSink>(logs));
+        app = ContactApi.Build(["--urls", "http://127.0.0.1:0", "--Cors:AllowedOrigins:0", "http://localhost:4173",
+            "--CONTACT_TURNSTILE_SECRET_KEY", "test-secret", "--Turnstile:AllowedHostnames:0", "scpp.nl"],
+            builder => {
+                builder.Services.AddSingleton<ILogEventSink>(logs);
+                builder.Services.AddHttpClient<TurnstileVerifier>().ConfigurePrimaryHttpMessageHandler(() => siteverify);
+            });
         await app.StartAsync();
         var addresses = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!;
         client = new HttpClient { BaseAddress = new Uri(addresses.Addresses.Single()) };
@@ -158,6 +163,71 @@ public sealed class ContactRequestTests
             Assert.AreEqual(origin == "http://localhost:4173", response.Headers.Contains("Access-Control-Allow-Origin"));
             Assert.IsFalse(response.Headers.Contains("Access-Control-Allow-Credentials"));
         }
+    }
+
+    [TestMethod]
+    public async Task RequiresVerificationBeforeReceipt()
+    {
+        foreach (var token in new[] { null, "", "  ", new string('x', 2049) })
+        {
+            var response = await client.PostAsJsonAsync("/api/contact", Valid() with { TurnstileToken = token });
+            Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
+            StringAssert.Contains(await response.Content.ReadAsStringAsync(), "turnstileToken");
+        }
+        Assert.AreEqual(0, siteverify.Calls);
+        Assert.AreEqual(0, logs.Entries.Count);
+    }
+
+    [TestMethod]
+    public async Task SendsOnlySecretAndTokenToCanonicalSiteverify()
+    {
+        Assert.AreEqual(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/api/contact", Valid())).StatusCode);
+        Assert.AreEqual("https://challenges.cloudflare.com/turnstile/v0/siteverify", siteverify.Url);
+        Assert.AreEqual("secret=test-secret&response=test-token", siteverify.Body);
+        Assert.IsFalse(logs.Entries.Single().ContainsKey("TurnstileToken"));
+    }
+
+    [TestMethod]
+    public async Task AcceptsMaximumTokenLength()
+    {
+        Assert.AreEqual(HttpStatusCode.NoContent,
+            (await client.PostAsJsonAsync("/api/contact", Valid() with { TurnstileToken = new string('x', 2048) })).StatusCode);
+        Assert.AreEqual(1, siteverify.Calls);
+    }
+
+    [TestMethod]
+    [DataRow("{\"success\":false,\"error-codes\":[\"timeout-or-duplicate\"]}")]
+    [DataRow("{\"success\":true,\"hostname\":\"evil.example\",\"action\":\"contact\"}")]
+    [DataRow("{\"success\":true,\"hostname\":\"scpp.nl\",\"action\":\"login\"}")]
+    [DataRow("{\"success\":true}")]
+    public async Task RejectsFailedExpiredDuplicateAndMismatchedVerification(string body)
+    {
+        siteverify.Response = body;
+        var response = await client.PostAsJsonAsync("/api/contact", Valid());
+        Assert.AreEqual(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.AreEqual("application/problem+json", response.Content.Headers.ContentType!.MediaType);
+        Assert.AreEqual(0, logs.Entries.Count);
+    }
+
+    [TestMethod]
+    [DataRow("null", 200)]
+    [DataRow("{}", 200)]
+    [DataRow("not json", 200)]
+    [DataRow("{}", 500)]
+    public async Task ProviderFailuresAreUnavailableWithoutReceipt(string body, int status)
+    {
+        siteverify.Response = body;
+        siteverify.Status = (HttpStatusCode)status;
+        Assert.AreEqual(HttpStatusCode.ServiceUnavailable, (await client.PostAsJsonAsync("/api/contact", Valid())).StatusCode);
+        Assert.AreEqual(0, logs.Entries.Count);
+    }
+
+    [TestMethod]
+    public async Task ValidationErrorsDoNotRedeemTokens()
+    {
+        Assert.AreEqual(HttpStatusCode.BadRequest,
+            (await client.PostAsJsonAsync("/api/contact", Valid() with { Name = null })).StatusCode);
+        Assert.AreEqual(0, siteverify.Calls);
     }
 
     private sealed class RequestLogs : ILogEventSink

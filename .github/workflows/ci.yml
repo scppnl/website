@@ -58,6 +58,8 @@ jobs:
         run: npm run ci
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          TURNSTILE_SITE_KEY: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && secrets.CONTACT_TURNSTILE_SITE_KEY || '1x00000000000000000000AA' }}
+          REQUIRE_TURNSTILE_SITE_KEY: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
       - name: Upload association assets
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && contains(steps.ci.outputs.sites, 'frontpage-association')
         uses: actions/upload-artifact@v4
