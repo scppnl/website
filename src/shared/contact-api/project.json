@@ -10,6 +10,7 @@
       "!{projectRoot}/**/obj/**/*",
       "!{projectRoot}/**/TestResults/**/*",
       "{workspaceRoot}/Scpp.slnx",
+      "{workspaceRoot}/.dockerignore",
       "sharedGlobals"
     ]
   },
@@ -27,6 +28,21 @@
       "dependsOn": ["restore"],
       "options": {
         "command": "node eng/dotnet.mjs build src/shared/contact-api/Scpp.Shared.ContactApi.slnx"
+      }
+    },
+    "publish": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "command": "dotnet publish src/shared/contact-api/src/Scpp.Shared.ContactApi/Scpp.Shared.ContactApi.csproj --configuration Release --runtime linux-x64 --self-contained true -p:PublishAot=true --output artifacts/publish/contact-api"
+      }
+    },
+    "docker": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "dependsOn": ["publish"],
+      "options": {
+        "command": "docker build --platform linux/amd64 --file src/shared/contact-api/Dockerfile --tag contact-api:ci ."
       }
     },
     "test": {
