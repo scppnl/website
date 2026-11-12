@@ -13,6 +13,17 @@ After pushing, verify that GitHub attributes both identities to `michelmegens`.
 Put every type in its own file, including classes, records, structs, interfaces,
 enums, and delegates.
 
+# API path design
+
+API hosts already identify the service as an API. Do not include an `/api` or
+`/API` segment in endpoint paths or route groups. Use paths such as `/contact`
+and `/bookings`, for example `https://api.example.org/bookings`.
+
+Use lowercase, resource-oriented paths with hyphens between words. Use HTTP
+methods to express operations, keeping resource names consistent across endpoints.
+When changing a path, update backend routes, frontend callers, tests, and
+documentation together so they all use the same URL.
+
 # API setup
 
 When setting up an API, configure Serilog through Microsoft.Extensions.Logging
