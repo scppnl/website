@@ -107,8 +107,14 @@ API URL. Later delivery behavior belongs behind the request handler, after valid
 
 ## Turnstile: GitHub and Cloudflare deployment setup
 
-API hosting/deployment is still separate: CI builds the native container but does
-not publish or deploy it. A frontend deployment alone does not deploy this API.
+CI builds the native container and publishes affected images on pushes to `main`;
+manual CI runs on `main` publish both APIs. The contact image is
+`scppnl/contact-api:<Version>`, using the API `.csproj` version. Existing tags
+require a version bump. Repository variable `DOCKER_HUB_USER` must be `scppnl`,
+and repository secret `DOCKER_HUB_KEY` must permit pushes. See the root
+[Docker Hub publication instructions](../../../README.md#publish-api-images-to-docker-hub)
+for setup and retry behavior. API hosting/deployment is still separate: neither
+image publication nor a frontend deployment deploys this API.
 
 ### 1. Create the production Cloudflare widget
 

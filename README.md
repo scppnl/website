@@ -286,9 +286,10 @@ run restores, builds Release, and runs MSTest without rebuilding or restoring.
 The separate Docker job publishes Native AOT executables and builds images for
 affected projects with a `docker` target, after the check job passes. It runs on
 Ubuntu 24.04 with `clang` and `zlib1g-dev`, targets Linux amd64, and checks out the
-same commit as the check job. Images stay on the ephemeral runner; registry
-hosting and publishing are deferred. A Docker failure fails the workflow and
-keeps those changes in the next main run's affected selection. Manual runs build
+same commit as the check job. On pushes to `main`, CI pushes affected images to
+Docker Hub after building them. Manual runs on `main` publish both APIs; PRs and
+manual runs on other branches only build. A Docker build or publication failure
+fails the workflow and keeps those changes in the next main run's affected selection. Manual runs build
 all registered images; Markdown-only and frontend-only changes build none.
 Both APIs have `publish` and `docker` targets and participate in these image builds.
 API sources, tests, project configuration, and component solutions affect only
@@ -352,8 +353,44 @@ To opt another API into image builds, register an uncached Nx `docker` target
 depending on its own uncached `publish` target. Use a dedicated publish directory,
 Dockerfile and image tag, and include `.dockerignore` in that project's inputs.
 CI discovers Docker targets from the checked affected projects and exports them
-as the check job's `containers` output. No API allowlist or hosting credentials
-are required.
+as the check job's `containers` output. Image builds need no API allowlist or
+hosting credentials. Docker Hub publication explicitly registers the two APIs in
+`eng/publish-containers.mjs`; register new publication targets there as well.
+
+### Publish API images to Docker Hub
+
+In repository **Settings → Secrets and variables → Actions**, configure repository
+variable `DOCKER_HUB_USER` as `scppnl` and repository secret `DOCKER_HUB_KEY` as a
+Docker Hub token with read/write access to both `scppnl/booking-api` and
+`scppnl/contact-api`. Only eligible main runs log in; the key is supplied only to
+the login action, which logs out at job completion.
+
+CI uses each API project's evaluated Release `Version` as its exact image tag:
+`scppnl/booking-api:<Version>` and `scppnl/contact-api:<Version>`. The versions
+are independent, currently `0.0.1`. There is no `latest`, `v` prefix, or commit tag.
+Versions must be valid Docker tags; for example, `1.2.3-rc.1` is supported but
+SemVer build metadata containing `+` is not. Local builds still use `<api>:ci`.
+
+Before pushing anything, CI checks that every selected version tag is absent.
+An existing tag fails the job with a request to bump that API's `.csproj`
+`Version`; authentication, rate-limit, or registry errors also fail the job.
+The already-built images are retagged and pushed without rebuilding. CI verifies
+the published manifests against the built images and records each verified image
+reference, manifest digest, and source commit in the run summary.
+
+Bump the version of each selected API whenever its tag has already been
+published. This applies to manual runs, reruns, API test changes, and shared
+tooling/workflow changes that select both APIs. A manual **CI → Run workflow →
+main** run publishes both APIs and therefore needs unused versions for both.
+The first run may use `0.0.1` only if those tags are available in Docker Hub.
+
+Main runs are serialized, and CI refuses to overwrite existing tags. Publication
+across repositories is not atomic: if one image is pushed before another fails,
+bump the version of any already-published API selected on retry, fix the failure,
+and push or dispatch again. A push can also succeed before verification fails;
+check Docker Hub when recovering. The summary preserves verified partial results.
+These guards apply to this workflow; Docker Hub immutability settings are unchanged.
+Publishing an image does not deploy or restart an API server.
 
 `eng/dotnet.mjs` accepts explicitly supplied, existing project or solution paths,
 resolved from the repository root; absolute paths and multiple paths also work.
