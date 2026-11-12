@@ -13,5 +13,9 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../src/Scpp.Shared.Contact.Api/Scpp.Shared.Contact.Api.csproj" />
+    <ProjectReference Include="../../src/Scpp.Shared.Contact.Application/Scpp.Shared.Contact.Application.csproj" />
+    <ProjectReference Include="../../src/Scpp.Shared.Contact.Domain/Scpp.Shared.Contact.Domain.csproj" />
+    <ProjectReference Include="../../src/Scpp.Shared.Contact.Infrastructure/Scpp.Shared.Contact.Infrastructure.csproj" />
+    <ProjectReference Include="../../src/Scpp.Shared.Contact.Models/Scpp.Shared.Contact.Models.csproj" />
   </ItemGroup>
 </Project>

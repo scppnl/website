@@ -5,10 +5,12 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Scpp.Shared.Contact.Api.Configuration;
+using Scpp.Shared.Contact.Api.Endpoints;
 using Serilog.Core;
 using Serilog.Events;
 
-namespace Scpp.Shared.Contact.Api.UnitTests;
+namespace Scpp.Shared.Contact.Api.UnitTests.Logging;
 
 [TestClass]
 public sealed class LoggingTests

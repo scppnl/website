@@ -192,11 +192,18 @@ with component solution `Scpp.Shared.Contact.slnx` and these projects:
 
 - `src/Scpp.Shared.Contact.Api`: the slim minimal API host with Native AOT enabled.
 - `src/Scpp.Shared.Contact.Models`: shared contact request models in a class library
-  referenced by the API without depending on ASP.NET Core.
-- `tests/Scpp.Shared.Contact.Api.UnitTests`: MSTest tests for the API.
+  without dependencies on ASP.NET Core.
+- `src/Scpp.Shared.Contact.Domain`: immutable normalized submission models.
+- `src/Scpp.Shared.Contact.Application`: validation, submission orchestration and
+  destination interfaces, referencing Models and Domain.
+- `src/Scpp.Shared.Contact.Infrastructure`: the logging submission destination,
+  referencing Application and Domain.
+- `tests/Scpp.Shared.Contact.Api.UnitTests`: MSTest tests for application behavior,
+  HTTP endpoints and logging.
 
-All three projects are also in `Scpp.slnx` and belong to the `contact-api` Nx
-component, so changes to the models library also build and test the API.
+All six projects are also in `Scpp.slnx` and belong to the `contact-api` Nx
+component, so changes to any layer also build and test the API. The API host
+references Application, Infrastructure and Models and wires their dependencies.
 `GET /` returns HTTP 200 with plain text `Contact API`. `POST /api/contact` validates
 and logs requests from both sites. See the [contact API guide](src/shared/contact-api/README.md)
 for its contract, local setup and frontend configuration.

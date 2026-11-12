@@ -7,6 +7,37 @@ An additional request completion event records method, path, status, and duratio
 It does not send email or persist requests. Logs contain submitted names,
 email addresses and message text. A successful response confirms receipt only.
 
+## Structure
+
+The component uses separate .NET projects with these responsibilities:
+
+| Project | Responsibility | Project dependencies |
+| --- | --- | --- |
+| `Scpp.Shared.Contact.Api` | HTTP endpoints, JSON serialization, CORS, dependency registration and host logging setup | Application, Infrastructure, Models |
+| `Scpp.Shared.Contact.Models` | Public `ContactRequest` JSON contract | None |
+| `Scpp.Shared.Contact.Domain` | Immutable normalized `ContactSubmission` model | None |
+| `Scpp.Shared.Contact.Application` | Normalization, validation, submission orchestration and destination interfaces | Domain, Models |
+| `Scpp.Shared.Contact.Infrastructure` | Structured logging implementation of the submission destination | Application, Domain |
+
+Within the API, `Endpoints`, `Serialization` and `Configuration` separate HTTP
+handling from host configuration. Application code is grouped into `Interfaces`,
+`Services` and `Validation`; Domain owns `Models`, and Infrastructure owns `Logging`.
+All projects live under `src/` and belong to both the component and repository solutions.
+
+`ContactApi.Build` is the composition root. It registers scoped
+`IContactSubmissionService` and `IContactSubmissionSink` implementations.
+The endpoint passes the request, trace identifier and request cancellation token
+to the application service. Validation produces either field errors or a normalized
+domain submission; only valid submissions reach the sink. The endpoint maps errors
+to validation Problem Details and returns `204` after the sink completes.
+Unexpected sink failures propagate to the existing server error handling.
+
+Submission events use the logger category
+`Scpp.Shared.Contact.Infrastructure.Logging.LoggingContactSubmissionSink`.
+The message template and named properties retain the established submission log
+contract. Serilog configuration and request completion logging stay in the API host;
+the sink uses Microsoft `ILogger<T>`.
+
 ## Local development
 
 From the repository root, with the SDK selected by `global.json`:
@@ -87,4 +118,6 @@ Publishing requires the platform's native compiler and zlib development librarie
 HTTP tests start a local Kestrel server to verify actual binding, status codes,
 Problem Details serialization, logging and CORS. Frontend tests cover request
 mapping, validation, pending state, successful reset, failure/retry and an absent
-API URL. Later delivery behavior belongs behind the request handler, after validation.
+API URL. Application tests verify validation and submission orchestration without
+starting a web host. Later delivery behavior belongs behind `IContactSubmissionSink`,
+after validation; the current implementation only logs submissions.
