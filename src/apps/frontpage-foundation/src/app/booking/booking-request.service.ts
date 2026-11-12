@@ -1,13 +1,24 @@
-import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { inject, Injectable, InjectionToken } from '@angular/core';
+import { firstValueFrom } from 'rxjs';
+import { environment } from '../../environments/environment';
 import { BookingRequest } from './booking-request';
+
+export const BOOKING_API_BASE_URL = new InjectionToken<string>('Booking API base URL', {
+  providedIn: 'root',
+  factory: () => environment.bookingApiBaseUrl,
+});
 
 @Injectable({ providedIn: 'root' })
 export class BookingRequestService {
-  /**
-   * TODO: POST the request to the booking API once it exists. Until then nothing is sent,
-   * so the site must not go live with this stub in place.
-   */
-  async submit(_request: BookingRequest): Promise<void> {
-    console.warn('BookingRequestService: the booking API is not connected yet; nothing was sent.');
+  private readonly http = inject(HttpClient);
+  private readonly baseUrl = inject(BOOKING_API_BASE_URL);
+
+  async submit(request: BookingRequest): Promise<void> {
+    const baseUrl = this.baseUrl.trim().replace(/\/+$/, '');
+    if (!baseUrl) {
+      throw new Error('The booking API base URL is not configured.');
+    }
+    await firstValueFrom(this.http.post<void>(`${baseUrl}/api/bookings`, request));
   }
 }

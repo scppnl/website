@@ -11,6 +11,7 @@
     <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="../Scpp.Foundation.Booking.Contracts/Scpp.Foundation.Booking.Contracts.csproj" />
     <InternalsVisibleTo Include="Scpp.Foundation.Booking.Api.UnitTests" />
   </ItemGroup>
 </Project>
