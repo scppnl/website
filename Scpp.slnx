@@ -6,6 +6,8 @@
   </Folder>
   <Folder Name="/src/shared/contact-api/">
     <Project Path="src/shared/contact-api/src/Scpp.Shared.Contact.Api/Scpp.Shared.Contact.Api.csproj" />
+    <Project Path="src/shared/contact-api/src/Scpp.Shared.Contact.Domain/Scpp.Shared.Contact.Domain.csproj" />
+    <Project Path="src/shared/contact-api/src/Scpp.Shared.Contact.Infrastructure/Scpp.Shared.Contact.Infrastructure.csproj" />
     <Project Path="src/shared/contact-api/src/Scpp.Shared.Contact.Models/Scpp.Shared.Contact.Models.csproj" />
     <Project Path="src/shared/contact-api/tests/Scpp.Shared.Contact.Api.UnitTests/Scpp.Shared.Contact.Api.UnitTests.csproj" />
   </Folder>

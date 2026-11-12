@@ -55,7 +55,7 @@ public sealed class BookingApiTests
             Dayparts = ["ochtend"],
             Guests = 10
         };
-        using var response = await client.PostAsJsonAsync("/api/bookings", request,
+        using var response = await client.PostAsJsonAsync("/bookings", request,
             BookingJsonContext.Default.BookingRequestDto);
 
         Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
@@ -65,7 +65,7 @@ public sealed class BookingApiTests
     [TestMethod]
     public async Task InvalidBookingReturnsSerializedFieldErrors()
     {
-        using var response = await client.PostAsJsonAsync("/api/bookings", new BookingRequestDto(),
+        using var response = await client.PostAsJsonAsync("/bookings", new BookingRequestDto(),
             BookingJsonContext.Default.BookingRequestDto);
 
         Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
@@ -82,7 +82,7 @@ public sealed class BookingApiTests
     [DataRow("hello", "text/plain", HttpStatusCode.UnsupportedMediaType)]
     public async Task InvalidRequestBodyIsRejected(string body, string contentType, HttpStatusCode status)
     {
-        using var response = await client.PostAsync("/api/bookings",
+        using var response = await client.PostAsync("/bookings",
             new StringContent(body, Encoding.UTF8, contentType));
 
         Assert.AreEqual(status, response.StatusCode);
@@ -93,7 +93,7 @@ public sealed class BookingApiTests
     [DataRow("https://untrusted.example.org", false)]
     public async Task CorsOnlyAllowsConfiguredOrigin(string origin, bool allowed)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Options, "/api/bookings");
+        using var request = new HttpRequestMessage(HttpMethod.Options, "/bookings");
         request.Headers.Add("Origin", origin);
         request.Headers.Add("Access-Control-Request-Method", "POST");
         request.Headers.Add("Access-Control-Request-Headers", "content-type");

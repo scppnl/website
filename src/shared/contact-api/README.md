@@ -7,6 +7,44 @@ An additional request completion event records method, path, status, and duratio
 It does not send email or persist requests. Logs contain submitted names,
 email addresses and message text. A successful response confirms receipt only.
 
+## Structure
+
+The component uses separate .NET projects with these responsibilities:
+
+| Project | Responsibility | Project dependencies |
+| --- | --- | --- |
+| `Scpp.Shared.Contact.Api` | HTTP endpoints, validation, submission orchestration, result models, service interfaces, JSON serialization and host configuration | Domain, Infrastructure, Models |
+| `Scpp.Shared.Contact.Models` | Public `ContactRequest` JSON contract | None |
+| `Scpp.Shared.Contact.Domain` | Immutable normalized `ContactSubmission` model | None |
+| `Scpp.Shared.Contact.Infrastructure` | Turnstile Siteverify client and structured logging submission destination | Domain |
+
+Within the API, `Endpoints`, `Serialization` and `Configuration` separate HTTP
+handling from host configuration. The API also owns `Interfaces`, `Services`,
+`Models`, `Validation` and `Verification`; Domain owns submission `Models`, and
+Infrastructure owns `Logging`, `Verification` and its provider JSON `Serialization`.
+All projects live under `src/` and belong to both the component and repository solutions.
+
+`ContactApi.Build` is the composition root. It registers scoped
+`IContactSubmissionService` and `IContactSubmissionSink` implementations.
+The endpoint passes the request, trace identifier and request cancellation token
+to the submission service. Validation produces either field errors or a normalized
+domain submission. The submission service verifies valid requests through
+`IContactVerificationService`; only accepted submissions reach the sink. The endpoint
+maps validation errors to `400`, rejected verification to `403`, unavailable
+verification to `503`, and returns `204` after the sink completes.
+Unexpected sink failures propagate to the existing server error handling.
+The API's service adapters connect its interfaces to concrete Infrastructure
+implementations. Infrastructure references Domain only and never references the API.
+
+Submission events use the logger category
+`Scpp.Shared.Contact.Infrastructure.Logging.LoggingContactSubmissionSink`.
+The message template and named properties retain the established submission log
+contract. Serilog configuration and request completion logging stay in the API host;
+the sink uses Microsoft `ILogger<T>`. Verification debug events use
+`Scpp.Shared.Contact.Infrastructure.Verification.TurnstileVerifier`. Tokens stay in
+the request contract and verification flow and are excluded from the domain submission
+and submission logs. Turnstile settings validation remains in the API configuration.
+
 ## Local development
 
 From the repository root, with the SDK selected by `global.json`:
@@ -29,17 +67,17 @@ build with `npm run build -- --configuration development`, then run
 Do not use the `preview` script for this: it rebuilds the production configuration.
 
 ```sh
-curl -i http://localhost:5081/api/contact \
+curl -i http://localhost:5081/contact \
   -H 'Content-Type: application/json' \
   -d '{"source":"association","name":"Jan","email":"jan@example.nl","childName":"Piet","message":"Kunnen we kennismaken?","turnstileToken":"<fresh-token>"}'
-curl -i http://localhost:5081/api/contact \
+curl -i http://localhost:5081/contact \
   -H 'Content-Type: application/json' \
   -d '{"source":"foundation","name":"Jan","email":"jan@example.nl","phone":"","subject":"viewing","message":"Kunnen we het clubhuis bekijken?","turnstileToken":"<fresh-token>"}'
 ```
 
 ## Contract
 
-`GET /` returns the existing plain-text identity. `POST /api/contact` accepts JSON:
+`GET /` returns the existing plain-text identity. `POST /contact` accepts JSON:
 
 | Field | Validation |
 | --- | --- |
@@ -72,7 +110,8 @@ in the contact handler logs. Cancellation propagates to the verification request
 API hosting and deployment are deferred. Both frontends use an injectable
 `CONTACT_API_BASE_URL`, whose default is their Angular environment's
 `contactApiBaseUrl`. In each app, set `src/environments/environment.ts` to the hosted
-HTTPS API origin (without `/api/contact`) and rebuild. The development replacement
+HTTPS API origin `https://api.scpp.nl` (without `/contact`) and rebuild. Both
+frontends then submit to `https://api.scpp.nl/contact`. The development replacement
 is `environment.development.ts`. The public Turnstile site key is supplied at build time as `TURNSTILE_SITE_KEY`.
 A Worker runtime variable cannot configure these static Angular assets.
 Production defaults to an empty API URL; the forms
@@ -103,12 +142,20 @@ Publishing requires the platform's native compiler and zlib development librarie
 HTTP tests start a local Kestrel server to verify actual binding, status codes,
 Problem Details serialization, logging and CORS. Frontend tests cover request
 mapping, validation, pending state, successful reset, failure/retry and an absent
-API URL. Later delivery behavior belongs behind the request handler, after validation.
+API URL. Service tests verify validation and submission orchestration without
+starting a web host. Later delivery behavior belongs behind `IContactSubmissionSink`,
+after validation; the current implementation only logs submissions.
 
 ## Turnstile: GitHub and Cloudflare deployment setup
 
-API hosting/deployment is still separate: CI builds the native container but does
-not publish or deploy it. A frontend deployment alone does not deploy this API.
+CI builds the native container and publishes affected images on pushes to `main`;
+manual CI runs on `main` publish both APIs. The contact image is
+`scppnl/contact-api:<Version>`, using the API `.csproj` version. Existing tags
+require a version bump. Repository variable `DOCKER_HUB_USER` must be `scppnl`,
+and repository secret `DOCKER_HUB_KEY` must permit pushes. See the root
+[Docker Hub publication instructions](../../../README.md#publish-api-images-to-docker-hub)
+for setup and retry behavior. API hosting/deployment is still separate: neither
+image publication nor a frontend deployment deploys this API.
 
 ### 1. Create the production Cloudflare widget
 
@@ -188,7 +235,7 @@ omits optional `remoteip` until the host's proxy trust model is configured.
 ### 4. Enable the frontends and verify
 
 Set `contactApiBaseUrl` in **each** app's `src/environments/environment.ts` to the
-hosted HTTPS API origin (without `/api/contact`). Deploy the protected API first,
+hosted HTTPS API origin (without `/contact`). Deploy the protected API first,
 then commit the frontend URL configuration and let CI rebuild/deploy both sites.
 Until both URL and site key exist, forms remain disabled with an unavailable notice.
 

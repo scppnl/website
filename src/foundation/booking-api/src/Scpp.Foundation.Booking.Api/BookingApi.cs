@@ -28,7 +28,7 @@ internal static class BookingApi
         app.UseApiRequestLogging();
         app.UseCors();
         app.MapGet("/", DummyEndpoint.Get);
-        app.MapPost("/api/bookings", BookingEndpoint.Post);
+        app.MapPost("/bookings", BookingEndpoint.Post);
         return app;
     }
 }

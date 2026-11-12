@@ -1,5 +1,6 @@
 using Scpp.Shared.Contact.Models;
-using System.Collections.Concurrent;
+using Scpp.Shared.Contact.Infrastructure.Verification;
+using Scpp.Shared.Contact.Api.UnitTests.Testing;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text;
@@ -12,7 +13,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Serilog.Core;
 using Serilog.Events;
 
-namespace Scpp.Shared.Contact.Api.UnitTests;
+namespace Scpp.Shared.Contact.Api.UnitTests.Endpoints;
 
 [TestClass]
 public sealed class ContactRequestTests
@@ -53,10 +54,15 @@ public sealed class ContactRequestTests
     [DataRow("foundation")]
     public async Task AcceptsBothFormsAndLogsEveryNormalizedFieldOnce(string source)
     {
-        var response = await client.PostAsJsonAsync("/api/contact", Valid(source));
+        var response = await client.PostAsJsonAsync("/contact", Valid(source));
         Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
         Assert.AreEqual("", await response.Content.ReadAsStringAsync());
-        var entry = logs.Entries.Single();
+        var logEvent = logs.Entries.Single();
+        Assert.AreEqual(
+            "Contact request received at {Timestamp} ({TraceId}): {Source}, {Name}, {Email}, {Message}, {ChildName}, {Phone}, {Subject}",
+            logEvent.MessageTemplate.Text);
+        var entry = logEvent.Properties.ToDictionary(property => property.Key,
+            property => ((ScalarValue)property.Value).Value);
         Assert.AreEqual(source, entry["Source"]);
         Assert.AreEqual("Jan Jansen", entry["Name"]);
         Assert.AreEqual("jan@example.nl", entry["Email"]);
@@ -64,17 +70,18 @@ public sealed class ContactRequestTests
         Assert.AreEqual(source == "association" ? "Piet" : null, entry["ChildName"]);
         Assert.AreEqual(source == "foundation" ? "0164 123456" : null, entry["Phone"]);
         Assert.AreEqual(source == "foundation" ? "question" : null, entry["Subject"]);
-        Assert.IsNotNull(entry["Timestamp"]);
+        Assert.IsInstanceOfType<DateTimeOffset>(entry["Timestamp"]);
+        Assert.AreEqual(TimeSpan.Zero, ((DateTimeOffset)entry["Timestamp"]!).Offset);
         Assert.IsFalse(string.IsNullOrEmpty(entry["TraceId"]?.ToString()));
     }
 
     [TestMethod]
-    public void NormalizesBlankOptionalValues()
+    public async Task RemovedApiPrefixedRouteDoesNotProcessSubmissions()
     {
-        var (request, errors) = ContactRequestValidator.Validate(Valid() with { Phone = "  ", ChildName = " " });
-        Assert.IsNull(request.Phone);
-        Assert.IsNull(request.ChildName);
-        Assert.AreEqual(0, errors.Count);
+        var response = await client.PostAsJsonAsync("/api/contact", Valid());
+        Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.AreEqual(0, siteverify.Calls);
+        Assert.AreEqual(0, logs.Entries.Count);
     }
 
     [TestMethod]
@@ -83,38 +90,13 @@ public sealed class ContactRequestTests
     [DataRow(" \t\n ")]
     public async Task RejectsMissingAndWhitespaceRequiredFields(string? value)
     {
-        var response = await client.PostAsJsonAsync("/api/contact", Valid() with { Name = value, Email = value, Message = value });
+        var response = await client.PostAsJsonAsync("/contact", Valid() with { Name = value, Email = value, Message = value });
         Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.AreEqual("application/problem+json", response.Content.Headers.ContentType!.MediaType);
         using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var errors = body.RootElement.GetProperty("errors");
         foreach (var key in new[] { "name", "email", "message" }) Assert.IsTrue(errors.TryGetProperty(key, out _));
         Assert.AreEqual(0, logs.Entries.Count);
-    }
-
-    [TestMethod]
-    [DataRow("name", 200)]
-    [DataRow("email", 254)]
-    [DataRow("message", 10000)]
-    [DataRow("childName", 200)]
-    [DataRow("phone", 50)]
-    public void EnforcesLengthBoundariesAfterTrimming(string field, int max)
-    {
-        ContactRequest Set(int length)
-        {
-            var value = field == "email" ? new string('a', length - 5) + "@b.nl" : new string('x', length);
-            value = " " + value + " ";
-            return field switch
-            {
-                "name" => Valid() with { Name = value },
-                "email" => Valid() with { Email = value },
-                "message" => Valid() with { Message = value },
-                "childName" => Valid() with { ChildName = value },
-                _ => Valid() with { Phone = value }
-            };
-        }
-        Assert.IsFalse(ContactRequestValidator.Validate(Set(max)).Errors.ContainsKey(field));
-        Assert.IsTrue(ContactRequestValidator.Validate(Set(max + 1)).Errors.ContainsKey(field));
     }
 
     [TestMethod]
@@ -125,7 +107,7 @@ public sealed class ContactRequestTests
             Valid() with { Source = null }, Valid() with { Subject = "bad" },
             Valid() with { Subject = null }, Valid("association") with { Subject = "question" }
         })
-            Assert.AreEqual(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/api/contact", request)).StatusCode);
+            Assert.AreEqual(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/contact", request)).StatusCode);
         Assert.AreEqual(0, logs.Entries.Count);
     }
 
@@ -135,7 +117,7 @@ public sealed class ContactRequestTests
     [DataRow("other")]
     public async Task AcceptsAllFoundationSubjects(string subject) =>
         Assert.AreEqual(HttpStatusCode.NoContent,
-            (await client.PostAsJsonAsync("/api/contact", Valid() with { Subject = subject })).StatusCode);
+            (await client.PostAsJsonAsync("/contact", Valid() with { Subject = subject })).StatusCode);
 
     [TestMethod]
     [DataRow("{", "application/json", HttpStatusCode.BadRequest)]
@@ -144,7 +126,7 @@ public sealed class ContactRequestTests
     [DataRow("hello", "text/plain", HttpStatusCode.UnsupportedMediaType)]
     public async Task RejectsMalformedBodies(string body, string type, HttpStatusCode status)
     {
-        var response = await client.PostAsync("/api/contact", new StringContent(body, Encoding.UTF8, type));
+        var response = await client.PostAsync("/contact", new StringContent(body, Encoding.UTF8, type));
         Assert.AreEqual(status, response.StatusCode);
         Assert.AreEqual(0, logs.Entries.Count);
     }
@@ -154,7 +136,7 @@ public sealed class ContactRequestTests
     {
         foreach (var origin in new[] { "http://localhost:4173", "https://untrusted.example" })
         {
-            using var request = new HttpRequestMessage(HttpMethod.Options, "/api/contact");
+            using var request = new HttpRequestMessage(HttpMethod.Options, "/contact");
             request.Headers.Add("Origin", origin);
             request.Headers.Add("Access-Control-Request-Method", "POST");
             request.Headers.Add("Access-Control-Request-Headers", "content-type");
@@ -170,7 +152,7 @@ public sealed class ContactRequestTests
     {
         foreach (var token in new[] { null, "", "  ", new string('x', 2049) })
         {
-            var response = await client.PostAsJsonAsync("/api/contact", Valid() with { TurnstileToken = token });
+            var response = await client.PostAsJsonAsync("/contact", Valid() with { TurnstileToken = token });
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
             StringAssert.Contains(await response.Content.ReadAsStringAsync(), "turnstileToken");
         }
@@ -181,17 +163,17 @@ public sealed class ContactRequestTests
     [TestMethod]
     public async Task SendsOnlySecretAndTokenToCanonicalSiteverify()
     {
-        Assert.AreEqual(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/api/contact", Valid())).StatusCode);
+        Assert.AreEqual(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/contact", Valid())).StatusCode);
         Assert.AreEqual("https://challenges.cloudflare.com/turnstile/v0/siteverify", siteverify.Url);
         Assert.AreEqual("secret=test-secret&response=test-token", siteverify.Body);
-        Assert.IsFalse(logs.Entries.Single().ContainsKey("TurnstileToken"));
+        Assert.IsFalse(logs.Entries.Single().Properties.ContainsKey("TurnstileToken"));
     }
 
     [TestMethod]
     public async Task AcceptsMaximumTokenLength()
     {
         Assert.AreEqual(HttpStatusCode.NoContent,
-            (await client.PostAsJsonAsync("/api/contact", Valid() with { TurnstileToken = new string('x', 2048) })).StatusCode);
+            (await client.PostAsJsonAsync("/contact", Valid() with { TurnstileToken = new string('x', 2048) })).StatusCode);
         Assert.AreEqual(1, siteverify.Calls);
     }
 
@@ -203,7 +185,7 @@ public sealed class ContactRequestTests
     public async Task RejectsFailedExpiredDuplicateAndMismatchedVerification(string body)
     {
         siteverify.Response = body;
-        var response = await client.PostAsJsonAsync("/api/contact", Valid());
+        var response = await client.PostAsJsonAsync("/contact", Valid());
         Assert.AreEqual(HttpStatusCode.Forbidden, response.StatusCode);
         Assert.AreEqual("application/problem+json", response.Content.Headers.ContentType!.MediaType);
         Assert.AreEqual(0, logs.Entries.Count);
@@ -218,7 +200,7 @@ public sealed class ContactRequestTests
     {
         siteverify.Response = body;
         siteverify.Status = (HttpStatusCode)status;
-        Assert.AreEqual(HttpStatusCode.ServiceUnavailable, (await client.PostAsJsonAsync("/api/contact", Valid())).StatusCode);
+        Assert.AreEqual(HttpStatusCode.ServiceUnavailable, (await client.PostAsJsonAsync("/contact", Valid())).StatusCode);
         Assert.AreEqual(0, logs.Entries.Count);
     }
 
@@ -226,21 +208,7 @@ public sealed class ContactRequestTests
     public async Task ValidationErrorsDoNotRedeemTokens()
     {
         Assert.AreEqual(HttpStatusCode.BadRequest,
-            (await client.PostAsJsonAsync("/api/contact", Valid() with { Name = null })).StatusCode);
+            (await client.PostAsJsonAsync("/contact", Valid() with { Name = null })).StatusCode);
         Assert.AreEqual(0, siteverify.Calls);
-    }
-
-    private sealed class RequestLogs : ILogEventSink
-    {
-        internal ConcurrentBag<Dictionary<string, object?>> Entries { get; } = [];
-
-        public void Emit(LogEvent logEvent)
-        {
-            if (logEvent.Level == LogEventLevel.Information &&
-                logEvent.Properties.TryGetValue("SourceContext", out var category) &&
-                ((ScalarValue)category).Value?.ToString() == typeof(ContactRequestHandler).FullName)
-                Entries.Add(logEvent.Properties.ToDictionary(property => property.Key,
-                    property => ((ScalarValue)property.Value).Value));
-        }
     }
 }
