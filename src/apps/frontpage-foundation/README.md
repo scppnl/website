@@ -63,8 +63,20 @@ and [limits](https://developers.cloudflare.com/workers/platform/limits/#static-a
 
 ## Forms
 
-The booking and contact components keep their existing client validation and
-service interfaces. `BookingRequestService` and `ContactMessageService` are still
-stubs: they send and store nothing, while the current UI displays its existing
-success state. Connect the intended APIs and review that behavior before a public
-launch. Static hosting does not add a form backend.
+The booking form posts to the .NET booking API and retains its existing validation,
+success, and error presentation. Run the API in Development on port 5080 (see the
+[booking API guide](../../../README.md#booking-requests)) alongside `npm start`.
+The development build uses `http://localhost:5080`; the API allows the development
+frontend origin `http://localhost:4200`.
+
+Before a production build, set `bookingApiBaseUrl` in
+`src/environments/environment.ts` to the separately hosted API origin and configure
+that API's `Cors:AllowedOrigins` with the frontend origin. An empty URL, the default
+in production, rejects submission without sending a request. This configuration is
+compiled into the static assets; changing it requires a rebuild.
+
+The API currently only validates and logs accepted requests, including contact
+details and remarks. HTTP 204 triggers the existing success state; no booking is
+stored, email sent, or follow-up arranged. `ContactMessageService` remains a stub.
+Review these temporary behaviors before a public launch. Static hosting does not
+add a form backend, and this change does not deploy the booking API.
