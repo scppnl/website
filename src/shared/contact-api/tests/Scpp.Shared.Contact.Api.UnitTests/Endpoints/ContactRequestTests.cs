@@ -1,5 +1,6 @@
 using Scpp.Shared.Contact.Models;
-using System.Collections.Concurrent;
+using Scpp.Shared.Contact.Infrastructure.Verification;
+using Scpp.Shared.Contact.Api.UnitTests.Testing;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text;
@@ -12,7 +13,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Serilog.Core;
 using Serilog.Events;
 
-namespace Scpp.Shared.Contact.Api.UnitTests;
+namespace Scpp.Shared.Contact.Api.UnitTests.Endpoints;
 
 [TestClass]
 public sealed class ContactRequestTests
@@ -56,7 +57,12 @@ public sealed class ContactRequestTests
         var response = await client.PostAsJsonAsync("/contact", Valid(source));
         Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
         Assert.AreEqual("", await response.Content.ReadAsStringAsync());
-        var entry = logs.Entries.Single();
+        var logEvent = logs.Entries.Single();
+        Assert.AreEqual(
+            "Contact request received at {Timestamp} ({TraceId}): {Source}, {Name}, {Email}, {Message}, {ChildName}, {Phone}, {Subject}",
+            logEvent.MessageTemplate.Text);
+        var entry = logEvent.Properties.ToDictionary(property => property.Key,
+            property => ((ScalarValue)property.Value).Value);
         Assert.AreEqual(source, entry["Source"]);
         Assert.AreEqual("Jan Jansen", entry["Name"]);
         Assert.AreEqual("jan@example.nl", entry["Email"]);
@@ -64,7 +70,8 @@ public sealed class ContactRequestTests
         Assert.AreEqual(source == "association" ? "Piet" : null, entry["ChildName"]);
         Assert.AreEqual(source == "foundation" ? "0164 123456" : null, entry["Phone"]);
         Assert.AreEqual(source == "foundation" ? "question" : null, entry["Subject"]);
-        Assert.IsNotNull(entry["Timestamp"]);
+        Assert.IsInstanceOfType<DateTimeOffset>(entry["Timestamp"]);
+        Assert.AreEqual(TimeSpan.Zero, ((DateTimeOffset)entry["Timestamp"]!).Offset);
         Assert.IsFalse(string.IsNullOrEmpty(entry["TraceId"]?.ToString()));
     }
 
@@ -75,15 +82,6 @@ public sealed class ContactRequestTests
         Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
         Assert.AreEqual(0, siteverify.Calls);
         Assert.AreEqual(0, logs.Entries.Count);
-    }
-
-    [TestMethod]
-    public void NormalizesBlankOptionalValues()
-    {
-        var (request, errors) = ContactRequestValidator.Validate(Valid() with { Phone = "  ", ChildName = " " });
-        Assert.IsNull(request.Phone);
-        Assert.IsNull(request.ChildName);
-        Assert.AreEqual(0, errors.Count);
     }
 
     [TestMethod]
@@ -99,31 +97,6 @@ public sealed class ContactRequestTests
         var errors = body.RootElement.GetProperty("errors");
         foreach (var key in new[] { "name", "email", "message" }) Assert.IsTrue(errors.TryGetProperty(key, out _));
         Assert.AreEqual(0, logs.Entries.Count);
-    }
-
-    [TestMethod]
-    [DataRow("name", 200)]
-    [DataRow("email", 254)]
-    [DataRow("message", 10000)]
-    [DataRow("childName", 200)]
-    [DataRow("phone", 50)]
-    public void EnforcesLengthBoundariesAfterTrimming(string field, int max)
-    {
-        ContactRequest Set(int length)
-        {
-            var value = field == "email" ? new string('a', length - 5) + "@b.nl" : new string('x', length);
-            value = " " + value + " ";
-            return field switch
-            {
-                "name" => Valid() with { Name = value },
-                "email" => Valid() with { Email = value },
-                "message" => Valid() with { Message = value },
-                "childName" => Valid() with { ChildName = value },
-                _ => Valid() with { Phone = value }
-            };
-        }
-        Assert.IsFalse(ContactRequestValidator.Validate(Set(max)).Errors.ContainsKey(field));
-        Assert.IsTrue(ContactRequestValidator.Validate(Set(max + 1)).Errors.ContainsKey(field));
     }
 
     [TestMethod]
@@ -193,7 +166,7 @@ public sealed class ContactRequestTests
         Assert.AreEqual(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/contact", Valid())).StatusCode);
         Assert.AreEqual("https://challenges.cloudflare.com/turnstile/v0/siteverify", siteverify.Url);
         Assert.AreEqual("secret=test-secret&response=test-token", siteverify.Body);
-        Assert.IsFalse(logs.Entries.Single().ContainsKey("TurnstileToken"));
+        Assert.IsFalse(logs.Entries.Single().Properties.ContainsKey("TurnstileToken"));
     }
 
     [TestMethod]
@@ -237,19 +210,5 @@ public sealed class ContactRequestTests
         Assert.AreEqual(HttpStatusCode.BadRequest,
             (await client.PostAsJsonAsync("/contact", Valid() with { Name = null })).StatusCode);
         Assert.AreEqual(0, siteverify.Calls);
-    }
-
-    private sealed class RequestLogs : ILogEventSink
-    {
-        internal ConcurrentBag<Dictionary<string, object?>> Entries { get; } = [];
-
-        public void Emit(LogEvent logEvent)
-        {
-            if (logEvent.Level == LogEventLevel.Information &&
-                logEvent.Properties.TryGetValue("SourceContext", out var category) &&
-                ((ScalarValue)category).Value?.ToString() == typeof(ContactRequestHandler).FullName)
-                Entries.Add(logEvent.Properties.ToDictionary(property => property.Key,
-                    property => ((ScalarValue)property.Value).Value));
-        }
     }
 }

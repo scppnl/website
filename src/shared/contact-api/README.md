@@ -7,6 +7,44 @@ An additional request completion event records method, path, status, and duratio
 It does not send email or persist requests. Logs contain submitted names,
 email addresses and message text. A successful response confirms receipt only.
 
+## Structure
+
+The component uses separate .NET projects with these responsibilities:
+
+| Project | Responsibility | Project dependencies |
+| --- | --- | --- |
+| `Scpp.Shared.Contact.Api` | HTTP endpoints, validation, submission orchestration, result models, service interfaces, JSON serialization and host configuration | Domain, Infrastructure, Models |
+| `Scpp.Shared.Contact.Models` | Public `ContactRequest` JSON contract | None |
+| `Scpp.Shared.Contact.Domain` | Immutable normalized `ContactSubmission` model | None |
+| `Scpp.Shared.Contact.Infrastructure` | Turnstile Siteverify client and structured logging submission destination | Domain |
+
+Within the API, `Endpoints`, `Serialization` and `Configuration` separate HTTP
+handling from host configuration. The API also owns `Interfaces`, `Services`,
+`Models`, `Validation` and `Verification`; Domain owns submission `Models`, and
+Infrastructure owns `Logging`, `Verification` and its provider JSON `Serialization`.
+All projects live under `src/` and belong to both the component and repository solutions.
+
+`ContactApi.Build` is the composition root. It registers scoped
+`IContactSubmissionService` and `IContactSubmissionSink` implementations.
+The endpoint passes the request, trace identifier and request cancellation token
+to the submission service. Validation produces either field errors or a normalized
+domain submission. The submission service verifies valid requests through
+`IContactVerificationService`; only accepted submissions reach the sink. The endpoint
+maps validation errors to `400`, rejected verification to `403`, unavailable
+verification to `503`, and returns `204` after the sink completes.
+Unexpected sink failures propagate to the existing server error handling.
+The API's service adapters connect its interfaces to concrete Infrastructure
+implementations. Infrastructure references Domain only and never references the API.
+
+Submission events use the logger category
+`Scpp.Shared.Contact.Infrastructure.Logging.LoggingContactSubmissionSink`.
+The message template and named properties retain the established submission log
+contract. Serilog configuration and request completion logging stay in the API host;
+the sink uses Microsoft `ILogger<T>`. Verification debug events use
+`Scpp.Shared.Contact.Infrastructure.Verification.TurnstileVerifier`. Tokens stay in
+the request contract and verification flow and are excluded from the domain submission
+and submission logs. Turnstile settings validation remains in the API configuration.
+
 ## Local development
 
 From the repository root, with the SDK selected by `global.json`:
@@ -104,7 +142,9 @@ Publishing requires the platform's native compiler and zlib development librarie
 HTTP tests start a local Kestrel server to verify actual binding, status codes,
 Problem Details serialization, logging and CORS. Frontend tests cover request
 mapping, validation, pending state, successful reset, failure/retry and an absent
-API URL. Later delivery behavior belongs behind the request handler, after validation.
+API URL. Service tests verify validation and submission orchestration without
+starting a web host. Later delivery behavior belongs behind `IContactSubmissionSink`,
+after validation; the current implementation only logs submissions.
 
 ## Turnstile: GitHub and Cloudflare deployment setup
 

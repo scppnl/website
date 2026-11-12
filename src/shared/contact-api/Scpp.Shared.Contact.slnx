@@ -1,6 +1,8 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Scpp.Shared.Contact.Api/Scpp.Shared.Contact.Api.csproj" />
+    <Project Path="src/Scpp.Shared.Contact.Domain/Scpp.Shared.Contact.Domain.csproj" />
+    <Project Path="src/Scpp.Shared.Contact.Infrastructure/Scpp.Shared.Contact.Infrastructure.csproj" />
     <Project Path="src/Scpp.Shared.Contact.Models/Scpp.Shared.Contact.Models.csproj" />
   </Folder>
   <Folder Name="/tests/">

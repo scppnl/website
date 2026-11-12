@@ -1,26 +1,10 @@
 using System.Net;
-using System.Text;
+using Microsoft.Extensions.Logging.Abstractions;
+using Scpp.Shared.Contact.Infrastructure.Verification;
+using Scpp.Shared.Contact.Api.UnitTests.Testing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Scpp.Shared.Contact.Api.UnitTests;
-
-internal sealed class SiteverifyStub : HttpMessageHandler
-{
-    internal int Calls;
-    internal string? Url;
-    internal string? Body;
-    internal string Response = "{\"success\":true,\"hostname\":\"scpp.nl\",\"action\":\"contact\"}";
-    internal HttpStatusCode Status = HttpStatusCode.OK;
-    internal Func<CancellationToken, Task<HttpResponseMessage>>? Respond;
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
-    {
-        Calls++;
-        Url = request.RequestUri!.ToString();
-        Body = await request.Content!.ReadAsStringAsync(cancellationToken);
-        return Respond is not null ? await Respond(cancellationToken) :
-            new HttpResponseMessage(Status) { Content = new StringContent(Response, Encoding.UTF8, "application/json") };
-    }
-}
+namespace Scpp.Shared.Contact.Api.UnitTests.Verification;
 
 [TestClass]
 public sealed class TurnstileTests
@@ -39,8 +23,8 @@ public sealed class TurnstileTests
                 }
             };
             using var client = new HttpClient(stub) { Timeout = TimeSpan.FromMilliseconds(25) };
-            var verifier = new TurnstileVerifier(client, new("secret", ["scpp.nl"]));
-            Assert.AreEqual(VerificationOutcome.Unavailable, await verifier.Verify("token", CancellationToken.None));
+            var verifier = new TurnstileVerifier(client, new("secret", ["scpp.nl"]), NullLogger<TurnstileVerifier>.Instance);
+            Assert.AreEqual(TurnstileVerificationOutcome.Unavailable, await verifier.VerifyAsync("token", "test-trace", CancellationToken.None));
         }
     }
 
@@ -53,8 +37,8 @@ public sealed class TurnstileTests
         } };
         using var client = new HttpClient(stub);
         using var cancellation = new CancellationTokenSource(25);
-        var verifier = new TurnstileVerifier(client, new("secret", ["scpp.nl"]));
-        await Assert.ThrowsAsync<OperationCanceledException>(() => verifier.Verify("token", cancellation.Token));
+        var verifier = new TurnstileVerifier(client, new("secret", ["scpp.nl"]), NullLogger<TurnstileVerifier>.Instance);
+        await Assert.ThrowsAsync<OperationCanceledException>(() => verifier.VerifyAsync("token", "test-trace", cancellation.Token));
     }
 
     [TestMethod]

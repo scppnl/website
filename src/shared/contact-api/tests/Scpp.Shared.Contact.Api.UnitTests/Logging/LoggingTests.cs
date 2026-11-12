@@ -5,10 +5,12 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Scpp.Shared.Contact.Api.Configuration;
+using Scpp.Shared.Contact.Api.Endpoints;
 using Serilog.Core;
 using Serilog.Events;
 
-namespace Scpp.Shared.Contact.Api.UnitTests;
+namespace Scpp.Shared.Contact.Api.UnitTests.Logging;
 
 [TestClass]
 public sealed class LoggingTests
@@ -115,12 +117,5 @@ public sealed class LoggingTests
         });
         builder.Services.AddSingleton<ILogEventSink>(sink);
         return builder;
-    }
-
-    private sealed class CollectingSink : ILogEventSink
-    {
-        internal ConcurrentQueue<LogEvent> Events { get; } = new();
-
-        public void Emit(LogEvent logEvent) => Events.Enqueue(logEvent);
     }
 }

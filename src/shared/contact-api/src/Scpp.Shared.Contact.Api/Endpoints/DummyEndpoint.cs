@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http.HttpResults;
 
-namespace Scpp.Shared.Contact.Api;
+namespace Scpp.Shared.Contact.Api.Endpoints;
 
 internal static class DummyEndpoint
 {
