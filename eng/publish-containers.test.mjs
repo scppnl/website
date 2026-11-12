@@ -40,6 +40,32 @@ function fixture(override = () => undefined) {
   return { exec, calls };
 }
 
+test('exports verified deployment digests on success, empty selection and partial publication failure', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'published-outputs-'));
+  try {
+    const cases = [
+      { selection: '[]', expected: [] },
+      { selection: '["contact-api"]', expected: [{ service: 'contact-api', digest: manifestDigest }] },
+      { selection: env.CONTAINERS, expected: ['booking-api', 'contact-api'].map(service => ({ service, digest: manifestDigest })) },
+      { selection: env.CONTAINERS, fail: 'push', expected: [{ service: 'booking-api', digest: manifestDigest }] },
+      { selection: env.CONTAINERS, fail: 'manifest', expected: [{ service: 'booking-api', digest: manifestDigest }] },
+      { selection: env.CONTAINERS, fail: 'image', expected: [] },
+    ];
+    for (const [index, entry] of cases.entries()) {
+      const output = join(directory, String(index));
+      const { exec } = fixture((command, args) => entry.fail && command === 'docker'
+        && args[0] === entry.fail && args.at(-1).includes('contact-api')
+        // Fail manifest verification, after the successful push, rather than preflight.
+        && (entry.fail !== 'manifest' || args.includes('--verbose'))
+        ? { status: 23, stderr: 'operation failed' } : undefined);
+      const action = () => publishContainers({ ...env, CONTAINERS: entry.selection, GITHUB_OUTPUT: output }, exec);
+      if (entry.fail) assert.throws(action, /failed/);
+      else action();
+      assert.equal(readFileSync(output, 'utf8'), `published=${JSON.stringify(entry.expected)}\n`);
+    }
+  } finally { rmSync(directory, { recursive: true, force: true }); }
+});
+
 test('publishes independent csproj versions from built images after checking the entire batch', () => {
   const { exec, calls } = fixture();
   assert.deepEqual(publishContainers(env, exec), [
@@ -124,7 +150,11 @@ test('verifies the pushed manifest against the local image and records partial s
     assert.ok(content.includes(manifestDigest));
     assert.ok(!content.includes('contact-api'));
   } finally { rmSync(directory, { recursive: true, force: true }); }
-  for (const manifest of [{}, { Descriptor: { digest: 'invalid' } }]) {
+  for (const manifest of [
+    {}, { Descriptor: { digest: 'invalid' } },
+    { Descriptor: { digest: `${manifestDigest}\n` }, SchemaV2Manifest: { config: { digest: configDigest } } },
+    { Descriptor: { digest: 123 }, SchemaV2Manifest: { config: { digest: configDigest } } },
+  ]) {
     const { exec } = fixture((command, args) => args.includes('--verbose') ? ok(JSON.stringify(manifest)) : undefined);
     assert.throws(() => publishContainers(env, exec), /does not match/);
   }

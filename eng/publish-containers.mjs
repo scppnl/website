@@ -44,6 +44,17 @@ function requireMissing(reference, exec) {
 }
 
 export function publishContainers(env = process.env, exec = execute) {
+  const deployments = [];
+  try {
+    return publish(env, exec, deployments);
+  } finally {
+    // Failed steps still expose outputs. Only verified images can reach deployment,
+    // even when a later image fails to push or verify.
+    if (env.GITHUB_OUTPUT) appendFileSync(env.GITHUB_OUTPUT, `published=${JSON.stringify(deployments)}\n`);
+  }
+}
+
+function publish(env, exec, deployments) {
   if (!canPublish(env)) throw new Error('API images may only be published by push or workflow_dispatch on main');
   const selected = JSON.parse(env.CONTAINERS ?? 'null');
   if (!Array.isArray(selected) || selected.some(name => typeof name !== 'string' || !projects.has(name))) {
@@ -61,8 +72,8 @@ export function publishContainers(env = process.env, exec = execute) {
     }
     const local = `${project}:ci`;
     const configDigest = checked('docker', ['image', 'inspect', '--format', '{{.Id}}', local], exec);
-    if (!digestPattern.test(configDigest)) throw new Error(`Invalid local image digest for ${local}`);
-    return { local, reference: `scppnl/${project}:${version}`, configDigest };
+    if (configDigest.length !== 71 || !digestPattern.test(configDigest)) throw new Error(`Invalid local image digest for ${local}`);
+    return { service: project, local, reference: `scppnl/${project}:${version}`, configDigest };
   });
 
   // Check the entire batch before any tag/push so a version collision cannot
@@ -79,11 +90,12 @@ export function publishContainers(env = process.env, exec = execute) {
     const manifest = JSON.parse(checked('docker', ['manifest', 'inspect', '--verbose', image.reference], exec));
     const digest = manifest.Descriptor?.digest;
     const config = manifest.SchemaV2Manifest?.config ?? manifest.OCIManifest?.config;
-    if (!digestPattern.test(digest ?? '') || config?.digest !== image.configDigest) {
+    if (typeof digest !== 'string' || digest.length !== 71 || !digestPattern.test(digest) || config?.digest !== image.configDigest) {
       throw new Error(`Published manifest does not match the built image: ${image.reference}`);
     }
     const result = { reference: image.reference, digest };
     published.push(result);
+    deployments.push({ service: image.service, digest });
     console.log(`Published ${image.reference}@${digest}`);
     // Write each verified result immediately so partial publication remains visible.
     if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, `- \`${image.reference}\` — \`${digest}\`\n`);
