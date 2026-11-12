@@ -18,7 +18,9 @@ internal static class ContactApi
             if (origins.Length > 0)
                 policy.WithOrigins(origins).WithMethods("POST").WithHeaders("Content-Type");
         }));
+        builder.Services.AddHttpClient<TurnstileVerifier>(client => client.Timeout = TimeSpan.FromSeconds(10));
         configure?.Invoke(builder);
+        builder.Services.AddSingleton(TurnstileSettings.Load(builder.Configuration, builder.Environment));
         var app = builder.Build();
         app.UseApiRequestLogging();
         app.UseCors();
@@ -31,4 +33,6 @@ internal static class ContactApi
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(ContactRequest))]
 [JsonSerializable(typeof(HttpValidationProblemDetails))]
+[JsonSerializable(typeof(ProblemDetails))]
+[JsonSerializable(typeof(TurnstileResponse))]
 internal partial class ContactJsonContext : JsonSerializerContext;

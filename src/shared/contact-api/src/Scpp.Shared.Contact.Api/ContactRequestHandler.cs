@@ -5,11 +5,19 @@ namespace Scpp.Shared.Contact.Api;
 
 internal sealed class ContactRequestHandler
 {
-    internal static Results<NoContent, ValidationProblem> Post(
-        ContactRequest request, HttpContext context, ILogger<ContactRequestHandler> logger)
+    internal static async Task<Results<NoContent, ValidationProblem, ProblemHttpResult>> Post(
+        ContactRequest request, HttpContext context, ILogger<ContactRequestHandler> logger,
+        TurnstileVerifier verifier, CancellationToken cancellationToken)
     {
         var (normalized, errors) = ContactRequestValidator.Validate(request);
         if (errors.Count > 0) return TypedResults.ValidationProblem(errors);
+
+        var verification = await verifier.Verify(request.TurnstileToken!, cancellationToken);
+        logger.LogDebug("Contact verification outcome: {Outcome} ({TraceId})", verification, context.TraceIdentifier);
+        if (verification != VerificationOutcome.Accepted)
+            return TypedResults.Problem(
+                statusCode: verification == VerificationOutcome.Rejected ? 403 : 503,
+                title: "Contact verification failed. Please try again.");
 
         logger.LogInformation(
             "Contact request received at {Timestamp} ({TraceId}): {Source}, {Name}, {Email}, {Message}, {ChildName}, {Phone}, {Subject}",

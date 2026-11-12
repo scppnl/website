@@ -1,3 +1,4 @@
+import { turnstileProviders } from '../../contact/turnstile-testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { vi } from 'vitest';
@@ -13,6 +14,7 @@ describe('Contact', () => {
     await TestBed.configureTestingModule({
       imports: [Contact],
       providers: [
+        ...turnstileProviders(),
         provideRouter([]),
         { provide: ContactMessageService, useValue: { submit, available: true } },
       ],
@@ -85,13 +87,16 @@ describe('Contact', () => {
     setValue('message', 'Wat kost het clubhuis?');
     await submitForm();
 
-    expect(submit).toHaveBeenCalledExactlyOnceWith({
-      name: 'Jan Jansen',
-      email: 'jan@example.nl',
-      phone: '',
-      subject: 'question',
-      message: 'Wat kost het clubhuis?',
-    });
+    expect(submit).toHaveBeenCalledExactlyOnceWith(
+      {
+        name: 'Jan Jansen',
+        email: 'jan@example.nl',
+        phone: '',
+        subject: 'question',
+        message: 'Wat kost het clubhuis?',
+      },
+      'test-token',
+    );
   });
 
   it('submits a valid message and shows the success message', async () => {
@@ -102,13 +107,16 @@ describe('Contact', () => {
     setValue('message', 'Kunnen we het clubhuis komen bekijken?');
     await submitForm();
 
-    expect(submit).toHaveBeenCalledExactlyOnceWith({
-      name: 'Jan Jansen',
-      email: 'jan@example.nl',
-      phone: '',
-      subject: 'viewing',
-      message: 'Kunnen we het clubhuis komen bekijken?',
-    });
+    expect(submit).toHaveBeenCalledExactlyOnceWith(
+      {
+        name: 'Jan Jansen',
+        email: 'jan@example.nl',
+        phone: '',
+        subject: 'viewing',
+        message: 'Kunnen we het clubhuis komen bekijken?',
+      },
+      'test-token',
+    );
     expect(element.querySelector('.alert--success')).toBeTruthy();
   });
 

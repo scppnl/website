@@ -25,6 +25,10 @@ internal static class ContactRequestValidator
         Field("message", normalized.Message, 10_000, true);
         Field("childName", normalized.ChildName, 200);
         Field("phone", normalized.Phone, 50);
+        if (string.IsNullOrWhiteSpace(request.TurnstileToken))
+            errors["turnstileToken"] = ["Verification is required."];
+        else if (request.TurnstileToken.Length > 2048)
+            errors["turnstileToken"] = ["Invalid verification token."];
         if (normalized.Email is not null && (!new EmailAddressAttribute().IsValid(normalized.Email) || normalized.Email.Any(char.IsWhiteSpace)))
             errors["email"] = ["Enter a valid email address."];
         if (normalized.Source is not ("association" or "foundation"))

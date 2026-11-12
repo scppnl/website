@@ -1,3 +1,4 @@
+import { TURNSTILE_SITE_KEY } from "./turnstile-loader";
 import { TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import {
@@ -18,6 +19,7 @@ describe("ContactMessageService", () => {
     beforeEach(() =>
         TestBed.configureTestingModule({
             providers: [
+                { provide: TURNSTILE_SITE_KEY, useValue: "test-site-key" },
                 provideHttpClient(),
                 provideHttpClientTesting(),
                 {
@@ -32,7 +34,7 @@ describe("ContactMessageService", () => {
     it("posts the complete payload and fixed source, awaiting the response", async () => {
         let done = false;
         const pending = TestBed.inject(ContactMessageService)
-            .submit(message)
+            .submit(message, "test-token")
             .then(() => {
                 done = true;
             });
@@ -42,6 +44,7 @@ describe("ContactMessageService", () => {
         expect(request.request.method).toBe("POST");
         expect(request.request.body).toEqual({
             ...message,
+            turnstileToken: "test-token",
             source: "association",
         });
         expect(done).toBe(false);
@@ -54,6 +57,7 @@ describe("ContactMessageService", () => {
         for (const network of [false, true]) {
             const pending = TestBed.inject(ContactMessageService).submit(
                 message,
+                "test-token",
             );
             const assertion = expect(pending).rejects.toBeTruthy();
             const request = TestBed.inject(HttpTestingController).expectOne(
@@ -73,7 +77,18 @@ describe("ContactMessageService", () => {
         TestBed.overrideProvider(CONTACT_API_BASE_URL, { useValue: "" });
         const service = TestBed.inject(ContactMessageService);
         expect(service.available).toBe(false);
-        await expect(service.submit(message)).rejects.toThrow("not configured");
+        await expect(service.submit(message, "test-token")).rejects.toThrow(
+            "not configured",
+        );
+        TestBed.inject(HttpTestingController).expectNone(() => true);
+    });
+    it("does not post when the site key is unconfigured", async () => {
+        TestBed.overrideProvider(TURNSTILE_SITE_KEY, { useValue: "" });
+        const service = TestBed.inject(ContactMessageService);
+        expect(service.available).toBe(false);
+        await expect(service.submit(message, "test-token")).rejects.toThrow(
+            "not configured",
+        );
         TestBed.inject(HttpTestingController).expectNone(() => true);
     });
 });

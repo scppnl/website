@@ -1,3 +1,4 @@
+import { TURNSTILE_SITE_KEY } from './turnstile-loader';
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
@@ -8,13 +9,14 @@ import { CONTACT_API_BASE_URL } from './contact-api-config';
 export class ContactMessageService {
   private readonly http = inject(HttpClient);
   private readonly baseUrl = inject(CONTACT_API_BASE_URL).trim().replace(/\/+$/, '');
-  readonly available = this.baseUrl.length > 0;
+  readonly available = this.baseUrl.length > 0 && inject(TURNSTILE_SITE_KEY).length > 0;
 
-  async submit(message: ContactMessage): Promise<void> {
+  async submit(message: ContactMessage, turnstileToken: string): Promise<void> {
     if (!this.available) throw new Error('Contact API is not configured');
     await firstValueFrom(
       this.http.post<void>(`${this.baseUrl}/contact`, {
         ...message,
+        turnstileToken,
         source: 'foundation',
       }),
     );

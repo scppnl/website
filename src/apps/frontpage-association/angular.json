@@ -25,7 +25,10 @@
             ],
             "styles": ["src/styles.css"],
             "server": "src/main.server.ts",
-            "outputMode": "static"
+            "outputMode": "static",
+            "define": {
+              "__TURNSTILE_SITE_KEY__": "\"\""
+            }
           },
           "defaultConfiguration": "production",
           "configurations": {
