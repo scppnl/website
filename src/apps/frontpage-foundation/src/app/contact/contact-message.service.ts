@@ -13,7 +13,7 @@ export class ContactMessageService {
   async submit(message: ContactMessage): Promise<void> {
     if (!this.available) throw new Error('Contact API is not configured');
     await firstValueFrom(
-      this.http.post<void>(`${this.baseUrl}/api/contact`, {
+      this.http.post<void>(`${this.baseUrl}/contact`, {
         ...message,
         source: 'foundation',
       }),

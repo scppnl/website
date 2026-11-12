@@ -5,7 +5,7 @@ import { provideRouter } from '@angular/router';
 import { Contact } from './contact';
 import { CONTACT_API_BASE_URL } from '../../contact/contact-api-config';
 
-const url = 'http://localhost:5081/api/contact';
+const url = 'http://localhost:5081/contact';
 
 describe('foundation contact submission', () => {
   beforeEach(() =>

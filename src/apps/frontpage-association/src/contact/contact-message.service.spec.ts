@@ -37,7 +37,7 @@ describe("ContactMessageService", () => {
                 done = true;
             });
         const request = TestBed.inject(HttpTestingController).expectOne(
-            "http://localhost:5081/api/contact",
+            "http://localhost:5081/contact",
         );
         expect(request.request.method).toBe("POST");
         expect(request.request.body).toEqual({
@@ -57,7 +57,7 @@ describe("ContactMessageService", () => {
             );
             const assertion = expect(pending).rejects.toBeTruthy();
             const request = TestBed.inject(HttpTestingController).expectOne(
-                "http://localhost:5081/api/contact",
+                "http://localhost:5081/contact",
             );
             if (network) request.error(new ProgressEvent("error"));
             else

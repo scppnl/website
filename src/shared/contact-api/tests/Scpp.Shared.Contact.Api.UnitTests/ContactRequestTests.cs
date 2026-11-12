@@ -48,7 +48,7 @@ public sealed class ContactRequestTests
     [DataRow("foundation")]
     public async Task AcceptsBothFormsAndLogsEveryNormalizedFieldOnce(string source)
     {
-        var response = await client.PostAsJsonAsync("/api/contact", Valid(source));
+        var response = await client.PostAsJsonAsync("/contact", Valid(source));
         Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
         Assert.AreEqual("", await response.Content.ReadAsStringAsync());
         var entry = logs.Entries.Single();
@@ -61,6 +61,14 @@ public sealed class ContactRequestTests
         Assert.AreEqual(source == "foundation" ? "question" : null, entry["Subject"]);
         Assert.IsNotNull(entry["Timestamp"]);
         Assert.IsFalse(string.IsNullOrEmpty(entry["TraceId"]?.ToString()));
+    }
+
+    [TestMethod]
+    public async Task RemovedApiPrefixedRouteDoesNotProcessSubmissions()
+    {
+        var response = await client.PostAsJsonAsync("/api/contact", Valid());
+        Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.AreEqual(0, logs.Entries.Count);
     }
 
     [TestMethod]
@@ -78,7 +86,7 @@ public sealed class ContactRequestTests
     [DataRow(" \t\n ")]
     public async Task RejectsMissingAndWhitespaceRequiredFields(string? value)
     {
-        var response = await client.PostAsJsonAsync("/api/contact", Valid() with { Name = value, Email = value, Message = value });
+        var response = await client.PostAsJsonAsync("/contact", Valid() with { Name = value, Email = value, Message = value });
         Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.AreEqual("application/problem+json", response.Content.Headers.ContentType!.MediaType);
         using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -120,7 +128,7 @@ public sealed class ContactRequestTests
             Valid() with { Source = null }, Valid() with { Subject = "bad" },
             Valid() with { Subject = null }, Valid("association") with { Subject = "question" }
         })
-            Assert.AreEqual(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/api/contact", request)).StatusCode);
+            Assert.AreEqual(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/contact", request)).StatusCode);
         Assert.AreEqual(0, logs.Entries.Count);
     }
 
@@ -130,7 +138,7 @@ public sealed class ContactRequestTests
     [DataRow("other")]
     public async Task AcceptsAllFoundationSubjects(string subject) =>
         Assert.AreEqual(HttpStatusCode.NoContent,
-            (await client.PostAsJsonAsync("/api/contact", Valid() with { Subject = subject })).StatusCode);
+            (await client.PostAsJsonAsync("/contact", Valid() with { Subject = subject })).StatusCode);
 
     [TestMethod]
     [DataRow("{", "application/json", HttpStatusCode.BadRequest)]
@@ -139,7 +147,7 @@ public sealed class ContactRequestTests
     [DataRow("hello", "text/plain", HttpStatusCode.UnsupportedMediaType)]
     public async Task RejectsMalformedBodies(string body, string type, HttpStatusCode status)
     {
-        var response = await client.PostAsync("/api/contact", new StringContent(body, Encoding.UTF8, type));
+        var response = await client.PostAsync("/contact", new StringContent(body, Encoding.UTF8, type));
         Assert.AreEqual(status, response.StatusCode);
         Assert.AreEqual(0, logs.Entries.Count);
     }
@@ -149,7 +157,7 @@ public sealed class ContactRequestTests
     {
         foreach (var origin in new[] { "http://localhost:4173", "https://untrusted.example" })
         {
-            using var request = new HttpRequestMessage(HttpMethod.Options, "/api/contact");
+            using var request = new HttpRequestMessage(HttpMethod.Options, "/contact");
             request.Headers.Add("Origin", origin);
             request.Headers.Add("Access-Control-Request-Method", "POST");
             request.Headers.Add("Access-Control-Request-Headers", "content-type");

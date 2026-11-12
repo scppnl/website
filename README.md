@@ -197,8 +197,10 @@ with component solution `Scpp.Shared.Contact.slnx` and these projects:
 
 All three projects are also in `Scpp.slnx` and belong to the `contact-api` Nx
 component, so changes to the models library also build and test the API.
-`GET /` returns HTTP 200 with plain text `Contact API`. `POST /api/contact` validates
-and logs requests from both sites. See the [contact API guide](src/shared/contact-api/README.md)
+`GET /` returns HTTP 200 with plain text `Contact API`. `POST /contact` validates
+and logs requests from both sites. The planned production endpoint is
+`https://api.scpp.nl/contact`; production submissions remain disabled until hosting
+is configured. See the [contact API guide](src/shared/contact-api/README.md)
 for its contract, local setup and frontend configuration.
 
 ```sh

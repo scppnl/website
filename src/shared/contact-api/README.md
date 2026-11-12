@@ -23,17 +23,17 @@ build with `npm run build -- --configuration development`, then run
 Do not use the `preview` script for this: it rebuilds the production configuration.
 
 ```sh
-curl -i http://localhost:5081/api/contact \
+curl -i http://localhost:5081/contact \
   -H 'Content-Type: application/json' \
   -d '{"source":"association","name":"Jan","email":"jan@example.nl","childName":"Piet","message":"Kunnen we kennismaken?"}'
-curl -i http://localhost:5081/api/contact \
+curl -i http://localhost:5081/contact \
   -H 'Content-Type: application/json' \
   -d '{"source":"foundation","name":"Jan","email":"jan@example.nl","phone":"","subject":"viewing","message":"Kunnen we het clubhuis bekijken?"}'
 ```
 
 ## Contract
 
-`GET /` returns the existing plain-text identity. `POST /api/contact` accepts JSON:
+`GET /` returns the existing plain-text identity. `POST /contact` accepts JSON:
 
 | Field | Validation |
 | --- | --- |
@@ -58,7 +58,8 @@ types return `415`. Rejected request bodies are not logged.
 API hosting and deployment are deferred. Both frontends use an injectable
 `CONTACT_API_BASE_URL`, whose default is their Angular environment's
 `contactApiBaseUrl`. In each app, set `src/environments/environment.ts` to the hosted
-HTTPS API origin (without `/api/contact`) and rebuild. The development replacement
+HTTPS API origin `https://api.scpp.nl` (without `/contact`) and rebuild. Both
+frontends then submit to `https://api.scpp.nl/contact`. The development replacement
 is `environment.development.ts`. Production defaults to an empty URL; the forms
 show an unavailable notice and disable submission until configured. No requests
 are sent during prerendering or hydration.
