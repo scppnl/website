@@ -17,7 +17,7 @@ DOTNET_ENVIRONMENT=Development dotnet run --project src/shared/contact-api/src/S
 
 The API now requires Turnstile settings at startup, including in Development.
 Create a separate development widget (see below), then configure its secret through
-your local secret manager or environment as `Turnstile__SecretKey`. Set
+your local secret manager or environment as `CONTACT_TURNSTILE_SECRET_KEY`. Set
 `Turnstile__AllowedHostnames__0=localhost` and optionally index `1` to `127.0.0.1`.
 Do not put real secrets in committed appsettings or shell command arguments.
 
@@ -130,11 +130,22 @@ configuration too. Do not allow localhost on the production widget/backend.
 ### 2. Configure GitHub Actions
 
 In **Repository → Settings → Secrets and variables → Actions → Secrets → New
-repository secret**, set **`CONTACT_TURNSTILE_SITE_KEY`** to the widget's **site key**.
-This contact-widget secret is mapped to the frontend build environment variable
-`TURNSTILE_SITE_KEY` by the build/check job on `main`, not only by the deploy job. The site key is public in the compiled browser assets by design.
-Add this secret before merging the integration; PR checks use dummy keys, but a
-subsequent `main` frontend build will require the real key.
+repository secret**, configure both contact-widget values:
+
+| GitHub repository secret | Cloudflare value | Destination |
+| --- | --- | --- |
+| `CONTACT_TURNSTILE_SITE_KEY` | Site key | Frontend build; public in browser assets |
+| `CONTACT_TURNSTILE_SECRET_KEY` | Secret key | Contact API runtime only; never frontend builds |
+
+The build/check job on `main` maps `CONTACT_TURNSTILE_SITE_KEY` to the frontend
+build environment variable `TURNSTILE_SITE_KEY`. Add the site-key secret before
+merging; PR checks use dummy keys, but production frontend builds require a real key.
+
+The current workflow does not deploy the API or consume
+`CONTACT_TURNSTILE_SECRET_KEY`. Store it in GitHub for the future API deployment
+job and configure it separately on the API host as described below. That future
+job must map it only into the API's secret store/runtime, never frontend jobs or
+container build arguments. Use separate secret pairs for future forms/widgets.
 
 Keep the existing `production` environment configuration:
 
@@ -153,8 +164,10 @@ inputs include the site key and release-validation flag to avoid stale cached bu
 
 ### 3. Configure the future API runtime
 
-Store the widget's **secret key** in the API host's secret manager and inject it
-as `Turnstile__SecretKey`. Set these non-secret environment values:
+Store the same **secret key** from GitHub's `CONTACT_TURNSTILE_SECRET_KEY` in the
+API host's secret manager and inject it as the runtime environment variable
+`CONTACT_TURNSTILE_SECRET_KEY`. The API reads this contact-specific name directly.
+Set these non-secret environment values:
 
 ```text
 Turnstile__AllowedHostnames__0=scpp-association.de-wildert-penp.workers.dev

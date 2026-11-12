@@ -31,7 +31,7 @@ public sealed class ContactRequestTests
     public async Task Start()
     {
         app = ContactApi.Build(["--urls", "http://127.0.0.1:0", "--Cors:AllowedOrigins:0", "http://localhost:4173",
-            "--Turnstile:SecretKey", "test-secret", "--Turnstile:AllowedHostnames:0", "scpp.nl"],
+            "--CONTACT_TURNSTILE_SECRET_KEY", "test-secret", "--Turnstile:AllowedHostnames:0", "scpp.nl"],
             builder => {
                 builder.Services.AddSingleton<ILogEventSink>(logs);
                 builder.Services.AddHttpClient<TurnstileVerifier>().ConfigurePrimaryHttpMessageHandler(() => siteverify);

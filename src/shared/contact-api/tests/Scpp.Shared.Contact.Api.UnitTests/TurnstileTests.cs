@@ -67,7 +67,7 @@ public sealed class TurnstileTests
         })
         {
             Assert.Throws<InvalidOperationException>(() => ContactApi.Build([
-                "--environment", "Production", "--Turnstile:SecretKey", secret,
+                "--environment", "Production", "--CONTACT_TURNSTILE_SECRET_KEY", secret,
                 "--Turnstile:AllowedHostnames:0", host]));
         }
     }
