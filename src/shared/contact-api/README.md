@@ -10,7 +10,7 @@ email addresses and message text. A successful response confirms receipt only.
 From the repository root, with the SDK selected by `global.json`:
 
 ```sh
-DOTNET_ENVIRONMENT=Development dotnet run --project src/shared/contact-api/src/Scpp.Shared.ContactApi -- --urls http://localhost:5081
+DOTNET_ENVIRONMENT=Development dotnet run --project src/shared/contact-api/src/Scpp.Shared.Contact.Api -- --urls http://localhost:5081
 ```
 
 Development CORS permits `http://localhost` on ports 4173, 4200, 8787 and 8788.
@@ -78,7 +78,7 @@ access policy, not authentication of the client-provided `source` field.
 ```sh
 npm run nx -- run contact-api:test
 npm run nx -- run-many -t test -p frontpage-association frontpage-foundation
-dotnet publish src/shared/contact-api/src/Scpp.Shared.ContactApi -c Release -r linux-x64 --self-contained -o artifacts/publish/contact-api
+dotnet publish src/shared/contact-api/src/Scpp.Shared.Contact.Api -c Release -r linux-x64 --self-contained -o artifacts/publish/contact-api
 ```
 
 Publishing requires the platform's native compiler and zlib development libraries.

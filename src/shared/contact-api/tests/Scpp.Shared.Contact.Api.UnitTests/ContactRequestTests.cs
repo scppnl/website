@@ -1,3 +1,4 @@
+using Scpp.Shared.Contact.Models;
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http.Json;
@@ -10,7 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Scpp.Shared.ContactApi.UnitTests;
+namespace Scpp.Shared.Contact.Api.UnitTests;
 
 [TestClass]
 public sealed class ContactRequestTests

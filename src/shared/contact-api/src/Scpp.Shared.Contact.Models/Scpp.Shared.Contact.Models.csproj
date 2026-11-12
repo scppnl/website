@@ -1,11 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <PublishAot>true</PublishAot>
   </PropertyGroup>
-  <ItemGroup>
-    <InternalsVisibleTo Include="Scpp.Shared.ContactApi.UnitTests" />
-  </ItemGroup>
 </Project>

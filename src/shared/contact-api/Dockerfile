@@ -6,4 +6,4 @@ COPY artifacts/publish/contact-api/ ./
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 USER $APP_UID
-ENTRYPOINT ["./Scpp.Shared.ContactApi"]
+ENTRYPOINT ["./Scpp.Shared.Contact.Api"]

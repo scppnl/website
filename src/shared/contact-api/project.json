@@ -19,7 +19,7 @@
       "executor": "nx:run-commands",
       "cache": false,
       "options": {
-        "command": "node eng/dotnet.mjs restore src/shared/contact-api/Scpp.Shared.ContactApi.slnx"
+        "command": "node eng/dotnet.mjs restore src/shared/contact-api/Scpp.Shared.Contact.slnx"
       }
     },
     "build": {
@@ -27,14 +27,14 @@
       "cache": false,
       "dependsOn": ["restore"],
       "options": {
-        "command": "node eng/dotnet.mjs build src/shared/contact-api/Scpp.Shared.ContactApi.slnx"
+        "command": "node eng/dotnet.mjs build src/shared/contact-api/Scpp.Shared.Contact.slnx"
       }
     },
     "publish": {
       "executor": "nx:run-commands",
       "cache": false,
       "options": {
-        "command": "dotnet publish src/shared/contact-api/src/Scpp.Shared.ContactApi/Scpp.Shared.ContactApi.csproj --configuration Release --runtime linux-x64 --self-contained true -p:PublishAot=true --output artifacts/publish/contact-api"
+        "command": "dotnet publish src/shared/contact-api/src/Scpp.Shared.Contact.Api/Scpp.Shared.Contact.Api.csproj --configuration Release --runtime linux-x64 --self-contained true -p:PublishAot=true --output artifacts/publish/contact-api"
       }
     },
     "docker": {
@@ -50,7 +50,7 @@
       "cache": false,
       "dependsOn": ["build"],
       "options": {
-        "command": "node eng/dotnet.mjs test src/shared/contact-api/Scpp.Shared.ContactApi.slnx"
+        "command": "node eng/dotnet.mjs test src/shared/contact-api/Scpp.Shared.Contact.slnx"
       }
     }
   }

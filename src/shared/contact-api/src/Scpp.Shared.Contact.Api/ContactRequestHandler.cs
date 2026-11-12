@@ -1,6 +1,7 @@
+using Scpp.Shared.Contact.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
 
-namespace Scpp.Shared.ContactApi;
+namespace Scpp.Shared.Contact.Api;
 
 internal sealed class ContactRequestHandler
 {

@@ -1,6 +1,6 @@
-namespace Scpp.Shared.ContactApi;
+namespace Scpp.Shared.Contact.Models;
 
-internal sealed record ContactRequest(
+public sealed record ContactRequest(
     string? Source = null,
     string? Name = null,
     string? Email = null,
