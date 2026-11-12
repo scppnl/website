@@ -1,3 +1,4 @@
+import { TURNSTILE_SITE_KEY } from './turnstile-loader';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
@@ -16,6 +17,7 @@ describe('ContactMessageService', () => {
   beforeEach(() =>
     TestBed.configureTestingModule({
       providers: [
+        { provide: TURNSTILE_SITE_KEY, useValue: 'test-site-key' },
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: CONTACT_API_BASE_URL, useValue: 'http://localhost:5081/' },
@@ -27,7 +29,7 @@ describe('ContactMessageService', () => {
   it('posts the complete payload and fixed source, awaiting the response', async () => {
     let done = false;
     const pending = TestBed.inject(ContactMessageService)
-      .submit(message)
+      .submit(message, 'test-token')
       .then(() => {
         done = true;
       });
@@ -35,7 +37,11 @@ describe('ContactMessageService', () => {
       'http://localhost:5081/api/contact',
     );
     expect(request.request.method).toBe('POST');
-    expect(request.request.body).toEqual({ ...message, source: 'foundation' });
+    expect(request.request.body).toEqual({
+      ...message,
+      turnstileToken: 'test-token',
+      source: 'foundation',
+    });
     expect(done).toBe(false);
     request.flush(null, { status: 204, statusText: 'No Content' });
     await pending;
@@ -44,7 +50,7 @@ describe('ContactMessageService', () => {
 
   it('rejects HTTP and network failures', async () => {
     for (const network of [false, true]) {
-      const pending = TestBed.inject(ContactMessageService).submit(message);
+      const pending = TestBed.inject(ContactMessageService).submit(message, 'test-token');
       const assertion = expect(pending).rejects.toBeTruthy();
       const request = TestBed.inject(HttpTestingController).expectOne(
         'http://localhost:5081/api/contact',
@@ -63,7 +69,14 @@ describe('ContactMessageService', () => {
     TestBed.overrideProvider(CONTACT_API_BASE_URL, { useValue: '' });
     const service = TestBed.inject(ContactMessageService);
     expect(service.available).toBe(false);
-    await expect(service.submit(message)).rejects.toThrow('not configured');
+    await expect(service.submit(message, 'test-token')).rejects.toThrow('not configured');
+    TestBed.inject(HttpTestingController).expectNone(() => true);
+  });
+  it('does not post when the site key is unconfigured', async () => {
+    TestBed.overrideProvider(TURNSTILE_SITE_KEY, { useValue: '' });
+    const service = TestBed.inject(ContactMessageService);
+    expect(service.available).toBe(false);
+    await expect(service.submit(message, 'test-token')).rejects.toThrow('not configured');
     TestBed.inject(HttpTestingController).expectNone(() => true);
   });
 });

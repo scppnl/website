@@ -14,7 +14,17 @@
       "options": {
         "cwd": "src/apps/frontpage-association",
         "command": "npm run build"
-      }
+      },
+      "inputs": [
+        "default",
+        "^default",
+        {
+          "env": "TURNSTILE_SITE_KEY"
+        },
+        {
+          "env": "REQUIRE_TURNSTILE_SITE_KEY"
+        }
+      ]
     },
     "test": {
       "executor": "nx:run-commands",

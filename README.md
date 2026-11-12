@@ -105,6 +105,12 @@ These existing Workers do not use Cloudflare Builds or custom domains.
 
 ### One-time credential setup
 
+Configure GitHub repository secrets `CONTACT_TURNSTILE_SITE_KEY` (frontend builds)
+and `CONTACT_TURNSTILE_SECRET_KEY` (API runtime). The site key is required before
+production frontend builds; the verification secret is injected only on the API host.
+Follow the [Turnstile setup guide](src/shared/contact-api/README.md#turnstile-github-and-cloudflare-deployment-setup)
+for the widget, API runtime secret, hostname allowlists, and frontend URL configuration.
+
 A repository administrator must configure the GitHub **production** environment
 before merging the workflow. In **Settings → Environments → production**, allow
 only the selected **branch** `main` and do not require a reviewer. Add environment
@@ -184,6 +190,9 @@ update. Add its lockfile path to the workflow's npm cache paths if it is outside
 `Scpp.slnx` is the root .NET solution. The component solution is
 `src/foundation/booking-api/Scpp.Foundation.Booking.Api.slnx`; both contain the API
 under the component's `src/` directory and its MSTest unit tests under `tests/`.
+The booking API references `Scpp.Foundation.Booking.Contracts`, a separate .NET
+class library in the same component containing its public request DTOs. Both
+solutions include it, and the booking component's Nx inputs cover its sources.
 `global.json` selects .NET 10 starting at 10.0.404, allows stable feature-band
 updates within .NET 10 (`latestFeature`), and disallows prereleases.
 
@@ -194,10 +203,10 @@ with component solution `Scpp.Shared.Contact.slnx` and these projects:
 - `src/Scpp.Shared.Contact.Models`: shared contact request models in a class library
   without dependencies on ASP.NET Core.
 - `src/Scpp.Shared.Contact.Domain`: immutable normalized submission models.
-- `src/Scpp.Shared.Contact.Application`: validation, submission orchestration and
-  destination interfaces, referencing Models and Domain.
-- `src/Scpp.Shared.Contact.Infrastructure`: the logging submission destination,
-  referencing Application and Domain.
+- `src/Scpp.Shared.Contact.Application`: validation, verification and submission
+  orchestration, result models and service interfaces, referencing Models and Domain.
+- `src/Scpp.Shared.Contact.Infrastructure`: Turnstile verification and the logging
+  submission destination, referencing Application and Domain.
 - `tests/Scpp.Shared.Contact.Api.UnitTests`: MSTest tests for application behavior,
   HTTP endpoints and logging.
 
@@ -218,10 +227,47 @@ The booking API uses the slim minimal API host with Native AOT enabled. `GET /` 
 HTTP 200 with plain text `Booking API`. To run it locally:
 
 ```sh
-dotnet run --project src/foundation/booking-api/src/Scpp.Foundation.Booking.Api -- --urls http://localhost:5080
+ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/foundation/booking-api/src/Scpp.Foundation.Booking.Api -- --urls http://localhost:5080
 curl http://localhost:5080/
 ```
 
+### Booking requests
+
+`POST /api/bookings` accepts the foundation website's booking JSON. Accepted
+requests are logged once at Information level with the complete payload, including
+contact details and remarks, and return HTTP 204 with no body. This iteration does
+not store a booking, check availability, send email, or arrange follow-up. The
+form retains its existing success presentation; a successful POST currently means
+only that the API validated and logged the request.
+
+```sh
+curl -i http://localhost:5080/api/bookings \
+  -H 'Content-Type: application/json' \
+  --data '{"name":"Test Renter","organisation":"","email":"renter@example.org","phone":"","building":"beide","groupType":"family","date":"2099-06-04","dayparts":["ochtend","middag"],"guests":30,"remarks":""}'
+```
+
+The API validates required name/email, email format, building (`groot`, `klein`,
+`beide`, `terrein`), group type (`family`, `school`, `business`, `other`), date
+(today or later in Europe/Amsterdam), distinct nonempty dayparts (`ochtend`,
+`middag`, `avond`), and an integer guest count from 1 to 45. Organisation, phone,
+and remarks are optional. Invalid requests return HTTP 400 without logging a
+booking payload. Rule validation returns a problem response with camel-case field
+keys under `errors`; malformed JSON and incompatible JSON types also return 400.
+JSON serialization uses source-generated metadata for Native AOT.
+
+For local form submission, run the API in Development as above and run `npm start`
+in `src/apps/frontpage-foundation`. The development frontend calls
+`http://localhost:5080/api/bookings`; the API's Development CORS configuration
+allows `http://localhost:4200`.
+
+For production, set `bookingApiBaseUrl` in the frontend's
+`src/environments/environment.ts` to the API origin before building. Its default
+is empty: submission fails through the existing form error state without sending
+a request. Configure the API's explicit allowed frontend origins, for example
+`Cors__AllowedOrigins__0=https://foundation.example.org`. No origins are allowed
+by default outside Development; wildcard origins and credentials are not enabled.
+Use HTTPS API and frontend origins in production. API hosting, routing, and
+deployment are separate work; the static website deployment does not host this API.
 Both APIs route Microsoft `ILogger<T>` events through Serilog to readable console
 output. The default minimum level is Information, with Microsoft.AspNetCore and
 System at Warning. Each event includes its timestamp, level, logger category,
@@ -232,9 +278,9 @@ Serilog records one completion event per HTTP request with method, path, status,
 and duration; unhandled exceptions and HTTP 5xx responses use Error. Application
 code should inject `ILogger<T>` and use structured message templates, such as
 `logger.LogInformation("Completed operation {OperationId}", operationId)`.
-Do not add logs of raw request bodies, credentials, or additional contact/booking
-payload fields. The contact API retains its established normalized submission
-log contract. Sinks and
+Keep raw HTTP bodies and credentials out of request completion logs. The booking
+submission log described above is the temporary booking contract; the contact API
+retains its established normalized submission log contract. Sinks and
 levels are configured explicitly in each API's `LoggingSetup` to preserve Native
 AOT compatibility; the host owns logger disposal and flushing. This logging setup
 is required when creating an API, as described in `AGENTS.md`.

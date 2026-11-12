@@ -12,7 +12,7 @@ public sealed class ContactRequestValidatorTests
         new(source, " Jan Jansen ", " jan@example.nl ", " Hello\nworld ",
             source == "association" ? " Piet " : null,
             source == "foundation" ? " 0164 123456 " : null,
-            source == "foundation" ? "question" : null);
+            source == "foundation" ? "question" : null, "test-token");
 
     [TestMethod]
     [DataRow("association")]

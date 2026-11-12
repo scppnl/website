@@ -60,10 +60,13 @@
             <span class="error">{{ errorMessage('message') }}</span> }
         </label>
     </fieldset>
+    @if (available) {
+    <app-turnstile (tokenChange)="turnstileToken.set($event)" />
+    }
     <button
         class="button dark"
         type="submit"
-        [disabled]="!available || status() === 'submitting'"
+        [disabled]="!available || !turnstileToken() || status() === 'submitting'"
     >
         {{ status() === 'submitting' ? 'Bezig met versturen…' : 'Bericht
         versturen' }} <span aria-hidden="true">↗</span>

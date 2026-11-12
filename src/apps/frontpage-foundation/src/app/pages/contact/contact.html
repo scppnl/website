@@ -105,11 +105,14 @@
         </div>
       </fieldset>
 
+      @if (available) {
+        <app-turnstile (tokenChange)="turnstileToken.set($event)" />
+      }
       <div class="contact-form__footer">
         <button
           type="submit"
           class="btn btn--accent"
-          [disabled]="!available || status() === 'submitting'"
+          [disabled]="!available || !turnstileToken() || status() === 'submitting'"
         >
           {{ status() === 'submitting' ? 'Bezig met versturen…' : 'Bericht versturen' }}
         </button>

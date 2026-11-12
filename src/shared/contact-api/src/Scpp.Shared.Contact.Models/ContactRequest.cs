@@ -7,4 +7,5 @@ public sealed record ContactRequest(
     string? Message = null,
     string? ChildName = null,
     string? Phone = null,
-    string? Subject = null);
+    string? Subject = null,
+    string? TurnstileToken = null);

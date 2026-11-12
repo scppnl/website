@@ -8,6 +8,11 @@ committing; do not inherit an email address from the environment's global config
 Before pushing, inspect both author and committer with `git show --format=fuller`.
 After pushing, verify that GitHub attributes both identities to `michelmegens`.
 
+# .NET projects
+
+Put every type in its own file, including classes, records, structs, interfaces,
+enums, and delegates.
+
 # API setup
 
 When setting up an API, configure Serilog through Microsoft.Extensions.Logging

@@ -1,3 +1,5 @@
+import { TurnstileLoader } from "./turnstile-loader";
+import { turnstileProviders } from "./turnstile-testing";
 import { TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import {
@@ -15,6 +17,7 @@ describe("association contact submission", () => {
         TestBed.configureTestingModule({
             imports: [ContactForm],
             providers: [
+                ...turnstileProviders(),
                 provideRouter([]),
                 provideHttpClient(),
                 provideHttpClientTesting(),
@@ -181,4 +184,45 @@ describe("association contact submission", () => {
         ).toBe(true);
         http.expectNone(url);
     });
+    it.each([403, 503])(
+        "requires a fresh token after verification failure %s",
+        async (status) => {
+            const { fixture, element, fill, submit, http } = await setup();
+            const api = await TestBed.inject(TurnstileLoader).load();
+            vi.mocked(api.reset).mockImplementation(() => {});
+            const options = vi.mocked(api.render).mock.calls[0][1];
+            fill();
+            options["expired-callback"]();
+            submit();
+            http.expectNone(url);
+            options.callback("fresh-token");
+            submit();
+            const request = http.expectOne(url);
+            expect(request.request.body.turnstileToken).toBe("fresh-token");
+            request.flush({}, { status, statusText: "Verification failed" });
+            await fixture.whenStable();
+            expect(
+                (
+                    element.querySelector(
+                        '[formControlName="name"]',
+                    ) as HTMLInputElement
+                ).value,
+            ).toBe("Jan");
+            expect(
+                (
+                    element.querySelector(
+                        'button[type="submit"]',
+                    ) as HTMLButtonElement
+                ).disabled,
+            ).toBe(true);
+            submit();
+            http.expectNone(url);
+            options.callback("next-token");
+            submit();
+            const retry = http.expectOne(url);
+            expect(retry.request.body.turnstileToken).toBe("next-token");
+            retry.flush(null, { status: 204, statusText: "No Content" });
+            await fixture.whenStable();
+        },
+    );
 });

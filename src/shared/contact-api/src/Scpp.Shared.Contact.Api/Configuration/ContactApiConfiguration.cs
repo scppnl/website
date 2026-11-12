@@ -2,6 +2,7 @@ using Scpp.Shared.Contact.Api.Serialization;
 using Scpp.Shared.Contact.Application.Interfaces;
 using Scpp.Shared.Contact.Application.Services;
 using Scpp.Shared.Contact.Infrastructure.Logging;
+using Scpp.Shared.Contact.Infrastructure.Verification;
 
 namespace Scpp.Shared.Contact.Api.Configuration;
 
@@ -11,6 +12,8 @@ internal static class ContactApiConfiguration
     {
         builder.Services.AddScoped<IContactSubmissionService, ContactSubmissionService>();
         builder.Services.AddScoped<IContactSubmissionSink, LoggingContactSubmissionSink>();
+        builder.Services.AddHttpClient<IContactVerificationService, TurnstileVerifier>(
+            client => client.Timeout = TimeSpan.FromSeconds(10));
         builder.Services.ConfigureHttpJsonOptions(options =>
             options.SerializerOptions.TypeInfoResolverChain.Insert(0, ContactJsonContext.Default));
         builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>

@@ -118,11 +118,4 @@ public sealed class LoggingTests
         builder.Services.AddSingleton<ILogEventSink>(sink);
         return builder;
     }
-
-    private sealed class CollectingSink : ILogEventSink
-    {
-        internal ConcurrentQueue<LogEvent> Events { get; } = new();
-
-        public void Emit(LogEvent logEvent) => Events.Enqueue(logEvent);
-    }
 }
