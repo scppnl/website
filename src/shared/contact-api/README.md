@@ -29,17 +29,17 @@ build with `npm run build -- --configuration development`, then run
 Do not use the `preview` script for this: it rebuilds the production configuration.
 
 ```sh
-curl -i http://localhost:5081/api/contact \
+curl -i http://localhost:5081/contact \
   -H 'Content-Type: application/json' \
   -d '{"source":"association","name":"Jan","email":"jan@example.nl","childName":"Piet","message":"Kunnen we kennismaken?","turnstileToken":"<fresh-token>"}'
-curl -i http://localhost:5081/api/contact \
+curl -i http://localhost:5081/contact \
   -H 'Content-Type: application/json' \
   -d '{"source":"foundation","name":"Jan","email":"jan@example.nl","phone":"","subject":"viewing","message":"Kunnen we het clubhuis bekijken?","turnstileToken":"<fresh-token>"}'
 ```
 
 ## Contract
 
-`GET /` returns the existing plain-text identity. `POST /api/contact` accepts JSON:
+`GET /` returns the existing plain-text identity. `POST /contact` accepts JSON:
 
 | Field | Validation |
 | --- | --- |
@@ -72,7 +72,8 @@ in the contact handler logs. Cancellation propagates to the verification request
 API hosting and deployment are deferred. Both frontends use an injectable
 `CONTACT_API_BASE_URL`, whose default is their Angular environment's
 `contactApiBaseUrl`. In each app, set `src/environments/environment.ts` to the hosted
-HTTPS API origin (without `/api/contact`) and rebuild. The development replacement
+HTTPS API origin `https://api.scpp.nl` (without `/contact`) and rebuild. Both
+frontends then submit to `https://api.scpp.nl/contact`. The development replacement
 is `environment.development.ts`. The public Turnstile site key is supplied at build time as `TURNSTILE_SITE_KEY`.
 A Worker runtime variable cannot configure these static Angular assets.
 Production defaults to an empty API URL; the forms
@@ -188,7 +189,7 @@ omits optional `remoteip` until the host's proxy trust model is configured.
 ### 4. Enable the frontends and verify
 
 Set `contactApiBaseUrl` in **each** app's `src/environments/environment.ts` to the
-hosted HTTPS API origin (without `/api/contact`). Deploy the protected API first,
+hosted HTTPS API origin (without `/contact`). Deploy the protected API first,
 then commit the frontend URL configuration and let CI rebuild/deploy both sites.
 Until both URL and site key exist, forms remain disabled with an unavailable notice.
 

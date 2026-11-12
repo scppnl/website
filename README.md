@@ -206,8 +206,10 @@ with component solution `Scpp.Shared.Contact.slnx` and these projects:
 
 All three projects are also in `Scpp.slnx` and belong to the `contact-api` Nx
 component, so changes to the models library also build and test the API.
-`GET /` returns HTTP 200 with plain text `Contact API`. `POST /api/contact` validates
-and logs requests from both sites. See the [contact API guide](src/shared/contact-api/README.md)
+`GET /` returns HTTP 200 with plain text `Contact API`. `POST /contact` validates
+and logs requests from both sites. The planned production endpoint is
+`https://api.scpp.nl/contact`; production submissions remain disabled until hosting
+is configured. See the [contact API guide](src/shared/contact-api/README.md)
 for its contract, local setup and frontend configuration.
 
 ```sh
@@ -226,15 +228,15 @@ curl http://localhost:5080/
 
 ### Booking requests
 
-`POST /api/bookings` accepts the foundation website's booking JSON. Accepted
-requests are logged once at Information level with the complete payload, including
+`POST /bookings` accepts the foundation website's booking JSON. The planned
+production endpoint is `https://api.scpp.nl/bookings`. Accepted requests are logged once at Information level with the complete payload, including
 contact details and remarks, and return HTTP 204 with no body. This iteration does
 not store a booking, check availability, send email, or arrange follow-up. The
 form retains its existing success presentation; a successful POST currently means
 only that the API validated and logged the request.
 
 ```sh
-curl -i http://localhost:5080/api/bookings \
+curl -i http://localhost:5080/bookings \
   -H 'Content-Type: application/json' \
   --data '{"name":"Test Renter","organisation":"","email":"renter@example.org","phone":"","building":"beide","groupType":"family","date":"2099-06-04","dayparts":["ochtend","middag"],"guests":30,"remarks":""}'
 ```
@@ -250,7 +252,7 @@ JSON serialization uses source-generated metadata for Native AOT.
 
 For local form submission, run the API in Development as above and run `npm start`
 in `src/apps/frontpage-foundation`. The development frontend calls
-`http://localhost:5080/api/bookings`; the API's Development CORS configuration
+`http://localhost:5080/bookings`; the API's Development CORS configuration
 allows `http://localhost:4200`.
 
 For production, set `bookingApiBaseUrl` in the frontend's

@@ -40,7 +40,7 @@ describe('BookingRequestService', () => {
     const result = service.submit(request).then(() => {
       resolved = true;
     });
-    const pending = http.expectOne('https://booking.example.org/api/bookings');
+    const pending = http.expectOne('https://booking.example.org/bookings');
     expect(pending.request.method).toBe('POST');
     expect(pending.request.body).toEqual(request);
     expect(resolved).toBe(false);
@@ -54,7 +54,7 @@ describe('BookingRequestService', () => {
     http = TestBed.inject(HttpTestingController);
     const result = expect(service.submit(request)).rejects.toMatchObject({ status });
     http
-      .expectOne('https://booking.example.org/api/bookings')
+      .expectOne('https://booking.example.org/bookings')
       .flush({ errors: {} }, { status, statusText: 'Error' });
     await result;
   });
@@ -63,7 +63,7 @@ describe('BookingRequestService', () => {
     service = TestBed.inject(BookingRequestService);
     http = TestBed.inject(HttpTestingController);
     const result = expect(service.submit(request)).rejects.toMatchObject({ status: 0 });
-    http.expectOne('https://booking.example.org/api/bookings').error(new ProgressEvent('error'));
+    http.expectOne('https://booking.example.org/bookings').error(new ProgressEvent('error'));
     await result;
   });
 

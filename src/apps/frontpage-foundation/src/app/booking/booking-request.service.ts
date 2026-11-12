@@ -19,6 +19,6 @@ export class BookingRequestService {
     if (!baseUrl) {
       throw new Error('The booking API base URL is not configured.');
     }
-    await firstValueFrom(this.http.post<void>(`${baseUrl}/api/bookings`, request));
+    await firstValueFrom(this.http.post<void>(`${baseUrl}/bookings`, request));
   }
 }
