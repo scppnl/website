@@ -1,10 +1,12 @@
-using System.Net;
 using System.Net.Http.Json;
-using System.Text;
+using System.Net;
 using System.Text.Json;
+using System.Text;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Scpp.Foundation.Booking.Api.Serialization;
+using Scpp.Foundation.Booking.Api.Verification;
 using Scpp.Foundation.Booking.Contracts;
 
 namespace Scpp.Foundation.Booking.Api.UnitTests;
@@ -15,12 +17,18 @@ public sealed class BookingApiTests
     private const string AllowedOrigin = "https://booking.example.org";
     private WebApplication app = null!;
     private HttpClient client = null!;
+    private readonly SiteverifyStub verification = new();
 
     [TestInitialize]
     public async Task Start()
     {
         app = BookingApi.Build(["--urls", "http://127.0.0.1:0", "--environment", "Testing"],
-            builder => builder.Configuration["Cors:AllowedOrigins:0"] = AllowedOrigin);
+            builder => {
+                ConfigureTurnstile(builder);
+                builder.Configuration["Cors:AllowedOrigins:0"] = AllowedOrigin;
+                builder.Services.AddHttpClient<TurnstileVerifier>()
+                    .ConfigurePrimaryHttpMessageHandler(() => verification);
+            });
         await app.StartAsync();
         client = new HttpClient { BaseAddress = new Uri(app.Urls.Single()) };
     }
@@ -53,7 +61,8 @@ public sealed class BookingApiTests
             GroupType = "family",
             Date = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)),
             Dayparts = ["ochtend"],
-            Guests = 10
+            Guests = 10,
+            TurnstileToken = "fresh-token"
         };
         using var response = await client.PostAsJsonAsync("/bookings", request,
             BookingJsonContext.Default.BookingRequestDto);
@@ -73,8 +82,36 @@ public sealed class BookingApiTests
         using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Assert.AreEqual(400, body.RootElement.GetProperty("status").GetInt32());
         CollectionAssert.AreEquivalent(
-            new[] { "name", "email", "building", "groupType", "date", "dayparts", "guests" },
+            new[] { "name", "email", "building", "groupType", "date", "dayparts", "guests", "turnstileToken" },
             body.RootElement.GetProperty("errors").EnumerateObject().Select(field => field.Name).ToArray());
+        Assert.AreEqual(0, verification.Calls);
+    }
+
+    [TestMethod]
+    [DataRow("{\"success\":false,\"error-codes\":[\"timeout-or-duplicate\"]}", HttpStatusCode.Forbidden)]
+    [DataRow("{\"success\":true,\"hostname\":\"blokhutdewildert.nl\",\"action\":\"contact\"}", HttpStatusCode.Forbidden)]
+    [DataRow("{\"success\":true,\"hostname\":\"untrusted.example.org\",\"action\":\"booking\"}", HttpStatusCode.Forbidden)]
+    [DataRow("invalid-json", HttpStatusCode.ServiceUnavailable)]
+    public async Task VerificationFailuresReturnSerializedProblems(string providerResponse, HttpStatusCode status)
+    {
+        verification.Response = providerResponse;
+        using var response = await client.PostAsync("/bookings", new StringContent(
+            "{\"name\":\"Renter\",\"email\":\"renter@example.org\",\"building\":\"groot\",\"groupType\":\"family\",\"date\":\"2099-06-04\",\"dayparts\":[\"ochtend\"],\"guests\":10,\"turnstileToken\":\"token\"}",
+            Encoding.UTF8, "application/json"));
+        Assert.AreEqual(status, response.StatusCode);
+        Assert.AreEqual("application/problem+json", response.Content.Headers.ContentType!.MediaType);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.AreEqual((int)status, body.RootElement.GetProperty("status").GetInt32());
+        Assert.AreEqual(1, verification.Calls);
+    }
+
+    [TestMethod]
+    public async Task FormerApiPrefixedRouteRemainsAbsent()
+    {
+        using var response = await client.PostAsJsonAsync("/api/bookings", new BookingRequestDto(),
+            BookingJsonContext.Default.BookingRequestDto);
+        Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.AreEqual(0, verification.Calls);
     }
 
     [TestMethod]
@@ -115,8 +152,17 @@ public sealed class BookingApiTests
     {
         var exception = Assert.ThrowsExactly<InvalidOperationException>(() =>
             BookingApi.Build(["--environment", "Testing"],
-                builder => builder.Configuration["Cors:AllowedOrigins:0"] = "*"));
+                builder => {
+                    ConfigureTurnstile(builder);
+                    builder.Configuration["Cors:AllowedOrigins:0"] = "*";
+                }));
 
         Assert.AreEqual("Cors:AllowedOrigins must contain explicit origins, not '*'.", exception.Message);
+    }
+
+    private static void ConfigureTurnstile(WebApplicationBuilder builder)
+    {
+        builder.Configuration["BOOKING_TURNSTILE_SECRET_KEY"] = "test-secret";
+        builder.Configuration["Turnstile:AllowedHostnames:0"] = "blokhutdewildert.nl";
     }
 }

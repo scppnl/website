@@ -71,7 +71,7 @@ production submissions stay disabled until an API URL is configured. See the
 
 The booking form posts to the .NET booking API and retains its existing validation,
 success, and error presentation. Run the API in Development on port 5080 (see the
-[booking API guide](../../../README.md#booking-requests)) alongside `npm start`.
+[booking API guide](../../foundation/booking-api/README.md)) alongside `npm start`.
 The development build uses `http://localhost:5080`; the API allows the development
 frontend origin `http://localhost:4200`.
 
@@ -99,3 +99,14 @@ secret belongs only in the
 See the [contact API deployment/setup guide](../../shared/contact-api/README.md#turnstile-github-and-cloudflare-deployment-setup)
 for Cloudflare widget creation, GitHub settings, the four production hostnames,
 API runtime configuration, local development, and the deployment checklist.
+
+Booking submissions use a separate widget with action `booking`. Set its public
+key as `BOOKING_TURNSTILE_SITE_KEY` in the frontend process; CI reads the GitHub
+repository secret with the same name. The matching `BOOKING_TURNSTILE_SECRET_KEY`
+belongs only in the booking API runtime. Production foundation builds require
+both contact and booking site keys. An absent booking URL or site key disables
+submission while leaving the calculator usable. Verification resets after every
+request and form values are preserved after failures.
+
+See the [booking API setup guide](../../foundation/booking-api/README.md) for widget
+creation, GitHub secrets, API configuration, development keys, and rollout order.

@@ -1,7 +1,9 @@
+using Scpp.Foundation.Booking.Api.Configuration;
 using Scpp.Foundation.Booking.Api.Endpoints;
 using Scpp.Foundation.Booking.Api.Logging;
 using Scpp.Foundation.Booking.Api.Serialization;
 using Scpp.Foundation.Booking.Api.Validation;
+using Scpp.Foundation.Booking.Api.Verification;
 
 namespace Scpp.Foundation.Booking.Api;
 
@@ -15,7 +17,9 @@ internal static class BookingApi
             options.SerializerOptions.TypeInfoResolverChain.Insert(0, BookingJsonContext.Default));
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddSingleton<BookingRequestValidator>();
+        builder.Services.AddHttpClient<TurnstileVerifier>(client => client.Timeout = TimeSpan.FromSeconds(10));
         configure?.Invoke(builder);
+        builder.Services.AddSingleton(TurnstileSettings.Load(builder.Configuration, builder.Environment));
 
         var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins")
             .GetChildren().Select(origin => origin.Value).OfType<string>().ToArray();

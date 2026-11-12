@@ -111,6 +111,12 @@ production frontend builds; the verification secret is injected only on the API 
 Follow the [Turnstile setup guide](src/shared/contact-api/README.md#turnstile-github-and-cloudflare-deployment-setup)
 for the widget, API runtime secret, hostname allowlists, and frontend URL configuration.
 
+Foundation bookings additionally require repository secrets
+`BOOKING_TURNSTILE_SITE_KEY` (frontend build) and `BOOKING_TURNSTILE_SECRET_KEY`
+(booking API runtime). No new Actions variables are required. See the
+[booking Turnstile guide](src/foundation/booking-api/README.md) for widget creation
+and the API host settings; CI does not deploy the APIs or inject their secrets.
+
 A repository administrator must configure the GitHub **production** environment
 before merging the workflow. In **Settings → Environments → production**, allow
 only the selected **branch** `main` and do not require a reviewer. Add environment
@@ -225,7 +231,9 @@ npm run nx -- run contact-api:test
 ```
 
 The booking API uses the slim minimal API host with Native AOT enabled. `GET /` returns
-HTTP 200 with plain text `Booking API`. To run it locally:
+HTTP 200 with plain text `Booking API`. First inject `BOOKING_TURNSTILE_SECRET_KEY`
+and `Turnstile__AllowedHostnames__0=localhost` from your development configuration
+(see the [booking API guide](src/foundation/booking-api/README.md)), then run:
 
 ```sh
 ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/foundation/booking-api/src/Scpp.Foundation.Booking.Api -- --urls http://localhost:5080
@@ -235,16 +243,18 @@ curl http://localhost:5080/
 ### Booking requests
 
 `POST /bookings` accepts the foundation website's booking JSON. The planned
-production endpoint is `https://api.scpp.nl/bookings`. Accepted requests are logged once at Information level with the complete payload, including
+production endpoint is `https://api.scpp.nl/bookings`. Accepted requests are logged
+once at Information level with the booking fields, including
 contact details and remarks, and return HTTP 204 with no body. This iteration does
 not store a booking, check availability, send email, or arrange follow-up. The
 form retains its existing success presentation; a successful POST currently means
-only that the API validated and logged the request.
+only that the API validated and logged the request. A fresh `turnstileToken` is
+required; tokens and secrets are excluded from receipt logs.
 
 ```sh
 curl -i http://localhost:5080/bookings \
   -H 'Content-Type: application/json' \
-  --data '{"name":"Test Renter","organisation":"","email":"renter@example.org","phone":"","building":"beide","groupType":"family","date":"2099-06-04","dayparts":["ochtend","middag"],"guests":30,"remarks":""}'
+  --data '{"name":"Test Renter","organisation":"","email":"renter@example.org","phone":"","building":"beide","groupType":"family","date":"2099-06-04","dayparts":["ochtend","middag"],"guests":30,"remarks":"","turnstileToken":"<fresh-token>"}'
 ```
 
 The API validates required name/email, email format, building (`groot`, `klein`,
@@ -255,16 +265,22 @@ and remarks are optional. Invalid requests return HTTP 400 without logging a
 booking payload. Rule validation returns a problem response with camel-case field
 keys under `errors`; malformed JSON and incompatible JSON types also return 400.
 JSON serialization uses source-generated metadata for Native AOT.
+After field validation, Siteverify must confirm success, action `booking`, and an
+exact allowed frontend hostname. Failed verification returns `403`; provider
+errors return `503`. Neither logs a booking receipt.
 
 For local form submission, run the API in Development as above and run `npm start`
 in `src/apps/frontpage-foundation`. The development frontend calls
 `http://localhost:5080/bookings`; the API's Development CORS configuration
 allows `http://localhost:4200`.
+Set `BOOKING_TURNSTILE_SITE_KEY` for the frontend and use matching development
+widget credentials on the API as described in the booking API guide.
 
 For production, set `bookingApiBaseUrl` in the frontend's
 `src/environments/environment.ts` to the API origin before building. Its default
-is empty: submission fails through the existing form error state without sending
-a request. Configure the API's explicit allowed frontend origins, for example
+is empty: submission is disabled with an unavailable notice; the price calculator
+remains usable. A booking site key is also required. Configure the API's explicit
+allowed frontend origins, for example
 `Cors__AllowedOrigins__0=https://foundation.example.org`. No origins are allowed
 by default outside Development; wildcard origins and credentials are not enabled.
 Use HTTPS API and frontend origins in production. API hosting, routing, and
@@ -321,7 +337,7 @@ SDK, Docker, `clang` and `zlib1g-dev` installed. Run from the repository root:
 
 ```sh
 npm run nx -- run booking-api:docker
-docker run --rm -p 8080:8080 booking-api:ci
+docker run --rm -p 8080:8080 --env BOOKING_TURNSTILE_SECRET_KEY --env Turnstile__AllowedHostnames__0 booking-api:ci
 ```
 
 Then `curl http://localhost:8080/` returns `Booking API`. The uncached `docker`
@@ -375,7 +391,7 @@ the login action, which logs out at job completion.
 
 CI uses each API project's evaluated Release `Version` as its exact image tag:
 `scppnl/booking-api:<Version>` and `scppnl/contact-api:<Version>`. The versions
-are independent, currently `0.0.1`. There is no `latest`, `v` prefix, or commit tag.
+are independent. There is no `latest`, `v` prefix, or commit tag.
 Versions must be valid Docker tags; for example, `1.2.3-rc.1` is supported but
 SemVer build metadata containing `+` is not. Local builds still use `<api>:ci`.
 
