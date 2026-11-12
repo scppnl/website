@@ -51,9 +51,9 @@
             <app-icon name="map-pin" [size]="18" />
             {{ foundation.address.street }}, {{ foundation.address.city }}
           </span>
-          <a [href]="'mailto:' + foundation.email">
-            <app-icon name="mail" [size]="18" />
-            {{ foundation.email }}
+          <a routerLink="/contact" (click)="closeMenu()">
+            <app-icon name="chevron-right" [size]="18" />
+            Neem contact op
           </a>
         </address>
       </div>

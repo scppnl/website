@@ -250,5 +250,24 @@ describe('Booking', () => {
     });
     expect(submit.mock.calls[0][0]).not.toHaveProperty('startTime');
     expect(element.querySelector('.alert--success')).toBeTruthy();
+    expect(element.querySelector('.alert--success a[href="/contact"]')).toBeTruthy();
+    expect(element.querySelector('a[href^="mailto:"]')).toBeNull();
+  });
+
+  it('links to the contact page instead of showing an e-mail address', async () => {
+    const { element } = await setup();
+
+    expect(element.querySelector('.summary__notice a[href="/contact"]')).toBeTruthy();
+    expect(element.querySelector('a[href^="mailto:"]')).toBeNull();
+  });
+
+  it('links to the contact page when sending fails', async () => {
+    submit.mockRejectedValueOnce(new Error('offline'));
+    const { element, fillValidForm, submitForm } = await setup();
+    fillValidForm();
+    await submitForm();
+
+    expect(element.querySelector('.alert--error a[href="/contact"]')).toBeTruthy();
+    expect(element.querySelector('a[href^="mailto:"]')).toBeNull();
   });
 });

@@ -43,7 +43,6 @@ import {
   dayparts,
   deposit,
   formatEuro,
-  foundation,
   ratesPage,
   rentalOptions,
 } from '../../content/site-content';
@@ -81,7 +80,6 @@ export class Booking {
   private readonly sheet = viewChild<ElementRef<HTMLDialogElement>>('sheet');
 
   protected readonly content = bookingPage;
-  protected readonly foundation = foundation;
   protected readonly options = rentalOptions;
   protected readonly dayparts = dayparts;
   protected readonly deposit = deposit;

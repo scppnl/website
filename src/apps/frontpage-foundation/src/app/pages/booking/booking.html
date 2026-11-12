@@ -6,16 +6,14 @@
       @if (status() === 'success') {
         <div class="alert alert--success" role="status">
           <strong>Bedankt voor uw aanvraag!</strong> Wij nemen zo snel mogelijk contact met u op.
-          Heeft u haast? Mail ons dan op
-          <a [href]="'mailto:' + foundation.email">{{ foundation.email }}</a
-          >.
+          Heeft u haast? Neem dan
+          <a routerLink="/contact">contact met ons op</a>.
         </div>
       }
       @if (status() === 'error') {
         <div class="alert alert--error" role="alert">
-          Het versturen is niet gelukt. Probeer het later opnieuw of mail ons op
-          <a [href]="'mailto:' + foundation.email">{{ foundation.email }}</a
-          >.
+          Het versturen is niet gelukt. Probeer het later opnieuw of
+          <a routerLink="/contact">neem contact met ons op</a>.
         </div>
       }
 
@@ -243,7 +241,7 @@
         <app-icon name="info" />
         <p>
           {{ content.notice }} {{ content.questionsTitle }}
-          <a [href]="'mailto:' + foundation.email">{{ foundation.email }}</a>
+          <a routerLink="/contact">Neem contact met ons op</a>.
         </p>
       </div>
     </aside>
