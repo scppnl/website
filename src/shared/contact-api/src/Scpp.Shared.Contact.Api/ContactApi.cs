@@ -16,7 +16,7 @@ internal static class ContactApi
         app.UseApiRequestLogging();
         app.UseCors();
         app.MapGet("/", DummyEndpoint.Get);
-        app.MapPost("/api/contact", ContactEndpoint.Post);
+        app.MapPost("/contact", ContactEndpoint.Post);
         return app;
     }
 }

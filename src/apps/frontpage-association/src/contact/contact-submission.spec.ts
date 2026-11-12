@@ -10,7 +10,7 @@ import { provideRouter } from "@angular/router";
 import { ContactForm } from "./contact-form";
 import { CONTACT_API_BASE_URL } from "./contact-api-config";
 
-const url = "http://localhost:5081/api/contact";
+const url = "http://localhost:5081/contact";
 
 describe("association contact submission", () => {
     beforeEach(() =>

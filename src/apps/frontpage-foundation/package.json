@@ -1,6 +1,6 @@
 {
   "name": "frontpage-foundation",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "scripts": {
     "ng": "ng",
     "start": "node ../../../eng/frontend.mjs serve",

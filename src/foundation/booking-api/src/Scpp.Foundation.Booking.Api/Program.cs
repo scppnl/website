@@ -19,6 +19,6 @@ var app = builder.Build();
 app.UseApiRequestLogging();
 app.UseCors();
 app.MapGet("/", DummyEndpoint.Get);
-app.MapPost("/api/bookings", BookingEndpoint.Post);
+app.MapPost("/bookings", BookingEndpoint.Post);
 
 app.Run();

@@ -55,7 +55,7 @@ public sealed class ContactRequestTests
     [DataRow("foundation")]
     public async Task AcceptsBothFormsAndLogsEveryNormalizedFieldOnce(string source)
     {
-        var response = await client.PostAsJsonAsync("/api/contact", Valid(source));
+        var response = await client.PostAsJsonAsync("/contact", Valid(source));
         Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
         Assert.AreEqual("", await response.Content.ReadAsStringAsync());
         var logEvent = logs.Entries.Single();
@@ -77,12 +77,21 @@ public sealed class ContactRequestTests
     }
 
     [TestMethod]
+    public async Task RemovedApiPrefixedRouteDoesNotProcessSubmissions()
+    {
+        var response = await client.PostAsJsonAsync("/api/contact", Valid());
+        Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.AreEqual(0, siteverify.Calls);
+        Assert.AreEqual(0, logs.Entries.Count);
+    }
+
+    [TestMethod]
     [DataRow(null)]
     [DataRow("")]
     [DataRow(" \t\n ")]
     public async Task RejectsMissingAndWhitespaceRequiredFields(string? value)
     {
-        var response = await client.PostAsJsonAsync("/api/contact", Valid() with { Name = value, Email = value, Message = value });
+        var response = await client.PostAsJsonAsync("/contact", Valid() with { Name = value, Email = value, Message = value });
         Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.AreEqual("application/problem+json", response.Content.Headers.ContentType!.MediaType);
         using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -99,7 +108,7 @@ public sealed class ContactRequestTests
             Valid() with { Source = null }, Valid() with { Subject = "bad" },
             Valid() with { Subject = null }, Valid("association") with { Subject = "question" }
         })
-            Assert.AreEqual(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/api/contact", request)).StatusCode);
+            Assert.AreEqual(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/contact", request)).StatusCode);
         Assert.AreEqual(0, logs.Entries.Count);
     }
 
@@ -109,7 +118,7 @@ public sealed class ContactRequestTests
     [DataRow("other")]
     public async Task AcceptsAllFoundationSubjects(string subject) =>
         Assert.AreEqual(HttpStatusCode.NoContent,
-            (await client.PostAsJsonAsync("/api/contact", Valid() with { Subject = subject })).StatusCode);
+            (await client.PostAsJsonAsync("/contact", Valid() with { Subject = subject })).StatusCode);
 
     [TestMethod]
     [DataRow("{", "application/json", HttpStatusCode.BadRequest)]
@@ -118,7 +127,7 @@ public sealed class ContactRequestTests
     [DataRow("hello", "text/plain", HttpStatusCode.UnsupportedMediaType)]
     public async Task RejectsMalformedBodies(string body, string type, HttpStatusCode status)
     {
-        var response = await client.PostAsync("/api/contact", new StringContent(body, Encoding.UTF8, type));
+        var response = await client.PostAsync("/contact", new StringContent(body, Encoding.UTF8, type));
         Assert.AreEqual(status, response.StatusCode);
         Assert.AreEqual(0, logs.Entries.Count);
     }
@@ -128,7 +137,7 @@ public sealed class ContactRequestTests
     {
         foreach (var origin in new[] { "http://localhost:4173", "https://untrusted.example" })
         {
-            using var request = new HttpRequestMessage(HttpMethod.Options, "/api/contact");
+            using var request = new HttpRequestMessage(HttpMethod.Options, "/contact");
             request.Headers.Add("Origin", origin);
             request.Headers.Add("Access-Control-Request-Method", "POST");
             request.Headers.Add("Access-Control-Request-Headers", "content-type");
@@ -144,7 +153,7 @@ public sealed class ContactRequestTests
     {
         foreach (var token in new[] { null, "", "  ", new string('x', 2049) })
         {
-            var response = await client.PostAsJsonAsync("/api/contact", Valid() with { TurnstileToken = token });
+            var response = await client.PostAsJsonAsync("/contact", Valid() with { TurnstileToken = token });
             Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
             StringAssert.Contains(await response.Content.ReadAsStringAsync(), "turnstileToken");
         }
@@ -155,7 +164,7 @@ public sealed class ContactRequestTests
     [TestMethod]
     public async Task SendsOnlySecretAndTokenToCanonicalSiteverify()
     {
-        Assert.AreEqual(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/api/contact", Valid())).StatusCode);
+        Assert.AreEqual(HttpStatusCode.NoContent, (await client.PostAsJsonAsync("/contact", Valid())).StatusCode);
         Assert.AreEqual("https://challenges.cloudflare.com/turnstile/v0/siteverify", siteverify.Url);
         Assert.AreEqual("secret=test-secret&response=test-token", siteverify.Body);
         Assert.IsFalse(logs.Entries.Single().Properties.ContainsKey("TurnstileToken"));
@@ -165,7 +174,7 @@ public sealed class ContactRequestTests
     public async Task AcceptsMaximumTokenLength()
     {
         Assert.AreEqual(HttpStatusCode.NoContent,
-            (await client.PostAsJsonAsync("/api/contact", Valid() with { TurnstileToken = new string('x', 2048) })).StatusCode);
+            (await client.PostAsJsonAsync("/contact", Valid() with { TurnstileToken = new string('x', 2048) })).StatusCode);
         Assert.AreEqual(1, siteverify.Calls);
     }
 
@@ -177,7 +186,7 @@ public sealed class ContactRequestTests
     public async Task RejectsFailedExpiredDuplicateAndMismatchedVerification(string body)
     {
         siteverify.Response = body;
-        var response = await client.PostAsJsonAsync("/api/contact", Valid());
+        var response = await client.PostAsJsonAsync("/contact", Valid());
         Assert.AreEqual(HttpStatusCode.Forbidden, response.StatusCode);
         Assert.AreEqual("application/problem+json", response.Content.Headers.ContentType!.MediaType);
         Assert.AreEqual(0, logs.Entries.Count);
@@ -192,7 +201,7 @@ public sealed class ContactRequestTests
     {
         siteverify.Response = body;
         siteverify.Status = (HttpStatusCode)status;
-        Assert.AreEqual(HttpStatusCode.ServiceUnavailable, (await client.PostAsJsonAsync("/api/contact", Valid())).StatusCode);
+        Assert.AreEqual(HttpStatusCode.ServiceUnavailable, (await client.PostAsJsonAsync("/contact", Valid())).StatusCode);
         Assert.AreEqual(0, logs.Entries.Count);
     }
 
@@ -200,7 +209,7 @@ public sealed class ContactRequestTests
     public async Task ValidationErrorsDoNotRedeemTokens()
     {
         Assert.AreEqual(HttpStatusCode.BadRequest,
-            (await client.PostAsJsonAsync("/api/contact", Valid() with { Name = null })).StatusCode);
+            (await client.PostAsJsonAsync("/contact", Valid() with { Name = null })).StatusCode);
         Assert.AreEqual(0, siteverify.Calls);
     }
 }
