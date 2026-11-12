@@ -416,6 +416,12 @@ check Docker Hub when recovering. The summary preserves verified partial results
 These guards apply to this workflow; Docker Hub immutability settings are unchanged.
 Publishing an image does not deploy or restart an API server.
 
+### API hosting infrastructure
+
+The Google Cloud Run hosting of both APIs (services, runtime accounts, Turnstile secret
+containers, the Docker Hub image cache and the keyless GitHub login) is described as
+Terraform in [`infra/`](infra/README.md). It is applied from a workstation, not by CI.
+
 `eng/dotnet.mjs` accepts explicitly supplied, existing project or solution paths,
 resolved from the repository root; absolute paths and multiple paths also work.
 Restore must run first. Build uses Release and `--no-restore`; test uses Release,
