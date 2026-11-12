@@ -191,17 +191,18 @@ The shared contact API follows the same layout in `src/shared/contact-api/`,
 with component solution `Scpp.Shared.Contact.slnx` and these projects:
 
 - `src/Scpp.Shared.Contact.Api`: the slim minimal API host with Native AOT enabled.
-- `src/Scpp.Shared.Contact.Models`: a class library for shared contact models,
-  referenced by the API without depending on ASP.NET Core. It is initially empty
-  because the placeholder endpoint has no request or response models.
+- `src/Scpp.Shared.Contact.Models`: shared contact request models in a class library
+  referenced by the API without depending on ASP.NET Core.
 - `tests/Scpp.Shared.Contact.Api.UnitTests`: MSTest tests for the API.
 
 All three projects are also in `Scpp.slnx` and belong to the `contact-api` Nx
 component, so changes to the models library also build and test the API.
-`GET /` returns HTTP 200 with plain text `Contact API`.
+`GET /` returns HTTP 200 with plain text `Contact API`. `POST /api/contact` validates
+and logs requests from both sites. See the [contact API guide](src/shared/contact-api/README.md)
+for its contract, local setup and frontend configuration.
 
 ```sh
-dotnet run --project src/shared/contact-api/src/Scpp.Shared.Contact.Api -- --urls http://localhost:5081
+DOTNET_ENVIRONMENT=Development dotnet run --project src/shared/contact-api/src/Scpp.Shared.Contact.Api -- --urls http://localhost:5081
 curl http://localhost:5081/
 npm run nx -- run contact-api:test
 ```
@@ -223,8 +224,7 @@ same commit as the check job. Images stay on the ephemeral runner; registry
 hosting and publishing are deferred. A Docker failure fails the workflow and
 keeps those changes in the next main run's affected selection. Manual runs build
 all registered images; Markdown-only and frontend-only changes build none.
-The booking API has a `docker` target; native publishing and container builds
-for the contact API are deferred.
+Both APIs have `publish` and `docker` targets and participate in these image builds.
 API sources, tests, project configuration, and component solutions affect only
 their own API; the root solution affects both APIs.
 Frontend-only changes select only the corresponding frontend. Shared SDK,
@@ -239,7 +239,7 @@ npm run dotnet -- build Scpp.slnx
 npm run dotnet -- test Scpp.slnx
 ```
 
-### Build and run the API image
+### Build and run the API images
 
 Use Ubuntu 24.04 amd64, matching CI and the runtime image, with the selected .NET
 SDK, Docker, `clang` and `zlib1g-dev` installed. Run from the repository root:
@@ -260,9 +260,25 @@ npm run nx -- run booking-api:publish
 docker build --platform linux/amd64 -f src/foundation/booking-api/Dockerfile -t booking-api:ci .
 ```
 
-The Dockerfile only packages the published files. It uses the .NET 10 Ubuntu
-Noble chiseled runtime-dependencies image with globalization support, runs the
-native executable as the image's non-root user, and listens on port 8080. The
+For the contact API, use the same prerequisites and run from the repository root:
+
+```sh
+npm run nx -- run contact-api:docker
+docker run --rm -p 8081:8080 contact-api:ci
+```
+
+Then `curl http://localhost:8081/` returns HTTP 200 with plain text `Contact API`.
+The host publishes the native executable into `artifacts/publish/contact-api/`
+before Docker packages it. To publish and build separately:
+
+```sh
+npm run nx -- run contact-api:publish
+docker build --platform linux/amd64 -f src/shared/contact-api/Dockerfile -t contact-api:ci .
+```
+
+Each Dockerfile only packages its API's published files. Both use the .NET 10 Ubuntu
+Noble chiseled runtime-dependencies image with globalization support, run the
+native executable as the image's non-root user, and listen on port 8080. The
 root `.dockerignore` permits publish artifacts while excluding debug symbols
 and local secrets; changing it affects API builds.
 

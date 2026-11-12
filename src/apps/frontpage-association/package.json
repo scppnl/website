@@ -9,7 +9,8 @@
     "check:ssr": "npm run check:hosting",
     "preview": "npm run build && npm run check:hosting && wrangler dev",
     "deploy": "npm run build && npm run check:hosting && wrangler deploy",
-    "check:hosting": "node ../../../eng/static-hosting.mjs check"
+    "check:hosting": "node ../../../eng/static-hosting.mjs check",
+    "test": "ng test"
   },
   "dependencies": {
     "@angular/common": "22.2.0",
@@ -20,14 +21,17 @@
     "@angular/router": "22.2.0",
     "@angular/ssr": "22.2.0",
     "rxjs": "~7.8.2",
-    "tslib": "^2.8.1"
+    "tslib": "^2.8.1",
+    "@angular/forms": "22.2.0"
   },
   "devDependencies": {
     "@angular/build": "22.2.0",
     "@angular/cli": "22.2.0",
     "@angular/compiler-cli": "22.2.0",
     "typescript": "~6.0.2",
-    "wrangler": "4.160.0"
+    "wrangler": "4.160.0",
+    "jsdom": "^30.0.0",
+    "vitest": "^5.0.0"
   },
   "packageManager": "npm@11.19.1",
   "engines": {
