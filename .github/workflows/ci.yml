@@ -88,6 +88,8 @@ jobs:
     if: needs.check.outputs.containers != '' && needs.check.outputs.containers != '[]'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    outputs:
+      published: ${{ steps.publish.outputs.published }}
     env:
       CI: 'true'
       NX_DAEMON: 'false'
@@ -129,10 +131,78 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_KEY }}
       - name: Publish versioned API images
         if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        id: publish
         run: node eng/publish-containers.mjs
         env:
           CONTAINERS: ${{ needs.check.outputs.containers }}
           DOCKER_HUB_USER: ${{ vars.DOCKER_HUB_USER }}
+
+  deploy-api:
+    name: Deploy ${{ matrix.service }}
+    needs: [check, docker]
+    # A failed batch can still contain verified images. Keep publication failed,
+    # but deploy those successes; never deploy a pushed but unverified image.
+    if: >-
+      !cancelled() && needs.check.result == 'success' &&
+      (needs.docker.result == 'success' || needs.docker.result == 'failure') &&
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      needs.docker.outputs.published != '' && needs.docker.outputs.published != '[]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.docker.outputs.published || '[]') }}
+    environment:
+      name: production
+      url: ${{ steps.target.outputs.url }}
+    env:
+      SERVICE: ${{ matrix.service }}
+      DIGEST: ${{ matrix.digest }}
+    steps:
+      - name: Check out the tested commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Validate production API target
+        id: target
+        run: node eng/cloud-run.mjs target
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v3
+      - name: Deploy verified image to existing service
+        id: publish
+        run: node eng/cloud-run.mjs deploy
+      - name: Check deployed API
+        id: smoke
+        run: node eng/cloud-run.mjs smoke
+      - name: Summarize API deployment
+        if: always()
+        env:
+          API_SERVICE: ${{ steps.target.outputs.service }}
+          API_URL: ${{ steps.target.outputs.url }}
+          IMAGE_DIGEST: ${{ steps.target.outputs.digest }}
+          REVISION: ${{ steps.publish.outputs.revision }}
+          PUBLISH: ${{ steps.publish.outcome }}
+          SMOKE: ${{ steps.smoke.outcome }}
+          OUTCOME: ${{ job.status }}
+        run: |
+          printf 'Service: %s\n\nURL: %s\n\nRevision: `%s`\n\nImage digest: `%s`\n\nCommit: `%s`\n\nOutcome: %s; deploy: %s; smoke checks: %s\n' \
+            "${API_SERVICE:-unavailable}" "$API_URL" "${REVISION:-unavailable}" "$IMAGE_DIGEST" "$GITHUB_SHA" \
+            "$OUTCOME" "$PUBLISH" "$SMOKE" >> "$GITHUB_STEP_SUMMARY"
 
   deploy:
     name: Publish

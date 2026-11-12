@@ -107,11 +107,14 @@ in the contact handler logs. Cancellation propagates to the verification request
 
 ## Production configuration
 
-API hosting and deployment are deferred. Both frontends use an injectable
+The production API runs on Cloud Run at
+`https://contact-api-979979719406.europe-west4.run.app`; `GET /` returns HTTP 200
+with `Contact API`, and the submission endpoint is `POST /contact`.
+Both frontends use an injectable
 `CONTACT_API_BASE_URL`, whose default is their Angular environment's
-`contactApiBaseUrl`. In each app, set `src/environments/environment.ts` to the hosted
-HTTPS API origin `https://api.scpp.nl` (without `/contact`) and rebuild. Both
-frontends then submit to `https://api.scpp.nl/contact`. The development replacement
+`contactApiBaseUrl`. Configuring a frontend to use this service is a separate
+change: set its API base URL to the HTTPS origin above (without `/contact`) and
+rebuild. Submissions then reach that origin's `/contact` endpoint. The development replacement
 is `environment.development.ts`. The public Turnstile site key is supplied at build time as `TURNSTILE_SITE_KEY`.
 A Worker runtime variable cannot configure these static Angular assets.
 Production defaults to an empty API URL; the forms
@@ -154,8 +157,16 @@ manual CI runs on `main` publish both APIs. The contact image is
 require a version bump. Repository variable `DOCKER_HUB_USER` must be `scppnl`,
 and repository secret `DOCKER_HUB_KEY` must permit pushes. See the root
 [Docker Hub publication instructions](../../../README.md#publish-api-images-to-docker-hub)
-for setup and retry behavior. API hosting/deployment is still separate: neither
-image publication nor a frontend deployment deploys this API.
+for setup and retry behavior. CI deploys the verified digest to the existing
+`contact-api` Cloud Run service through the Artifact Registry `dockerhub` mirror,
+then smoke-checks `GET /`. Only main pushes and manual main runs deploy; no API
+selection skips deployment. Verified partial publication successes still deploy
+while the workflow remains failed; any selected tag already pushed needs a
+`.csproj` version bump before repeating publication.
+
+See [Cloud Run deployments](../../../README.md#cloud-run-api-deployments) for the
+service/revision/digest/commit outcome summary, independent failures, deployment
+retries and rollback to a retained revision. Frontend URL settings are separate.
 
 ### 1. Create the production Cloudflare widget
 
@@ -177,27 +188,30 @@ configuration too. Do not allow localhost on the production widget/backend.
 ### 2. Configure GitHub Actions
 
 In **Repository → Settings → Secrets and variables → Actions → Secrets → New
-repository secret**, configure both contact-widget values:
+repository secret**, keep the contact widget site key:
 
 | GitHub repository secret | Cloudflare value | Destination |
 | --- | --- | --- |
 | `CONTACT_TURNSTILE_SITE_KEY` | Site key | Frontend build; public in browser assets |
-| `CONTACT_TURNSTILE_SECRET_KEY` | Secret key | Contact API runtime only; never frontend builds |
 
 The build/check job on `main` maps `CONTACT_TURNSTILE_SITE_KEY` to the frontend
 build environment variable `TURNSTILE_SITE_KEY`. Add the site-key secret before
 merging; PR checks use dummy keys, but production frontend builds require a real key.
 
-The current workflow does not deploy the API or consume
-`CONTACT_TURNSTILE_SECRET_KEY`. Store it in GitHub for the future API deployment
-job and configure it separately on the API host as described below. That future
-job must map it only into the API's secret store/runtime, never frontend jobs or
-container build arguments. Use separate secret pairs for future forms/widgets.
+The contact verification secret is already stored as
+`contact-turnstile-secret-key:latest` in Google Secret Manager and attached to
+Cloud Run as `CONTACT_TURNSTILE_SECRET_KEY`. No GitHub repository secret with
+that name is needed. CI never reads the runtime secret.
 
 Keep the existing `production` environment configuration:
 
 - Variable `CLOUDFLARE_ACCOUNT_ID` for the existing account.
 - Secret `CLOUDFLARE_API_TOKEN` with deployment access to the two existing Workers.
+- Variable `GCP_WORKLOAD_IDENTITY_PROVIDER` set to `projects/979979719406/locations/global/workloadIdentityPools/github/providers/scppnl-website`.
+- Variable `GCP_SERVICE_ACCOUNT` set to `github-deployer@websites-514515.iam.gserviceaccount.com`.
+
+The API job uses keyless Workload Identity Federation in this main-only
+production environment. No Google credential secret is required.
 
 No Turnstile-management permission is needed on the deployment API token because
 the widget is created in the dashboard. Never put the widget's **secret key** in
@@ -206,15 +220,18 @@ frontend builds, GitHub artifacts, or the static frontend Workers.
 Production frontend builds fail if the site key is missing or a Cloudflare test
 key. PR/non-main CI builds use a dummy site key and mocks, without production
 secrets. Changing the GitHub secret does not trigger a build: run **Actions → CI →
-Run workflow → main** to rebuild and deploy both frontends. Nx's frontend build
-inputs include the site key and release-validation flag to avoid stale cached builds.
+Run workflow → main** to rebuild and deploy both frontends. This also publishes
+and deploys both APIs, so bump any already-published selected API versions first.
+Nx's frontend build inputs include the site key and release-validation flag to
+avoid stale cached builds.
 
-### 3. Configure the future API runtime
+### 3. Existing Google Cloud runtime configuration
 
-Store the same **secret key** from GitHub's `CONTACT_TURNSTILE_SECRET_KEY` in the
-API host's secret manager and inject it as the runtime environment variable
-`CONTACT_TURNSTILE_SECRET_KEY`. The API reads this contact-specific name directly.
-Set these non-secret environment values:
+The Cloud Run service already attaches the Secret Manager secret as runtime
+variable `CONTACT_TURNSTILE_SECRET_KEY` and stores the hostname and CORS values
+below. Runtime configuration is managed in Google Cloud and carried over to new
+revisions. CI updates only the image and does not set or clear these values,
+secret attachments, service account, scaling or ingress.
 
 ```text
 Turnstile__AllowedHostnames__0=scpp-association.de-wildert-penp.workers.dev

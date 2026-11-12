@@ -105,24 +105,34 @@ These existing Workers do not use Cloudflare Builds or custom domains.
 
 ### One-time credential setup
 
-Configure GitHub repository secrets `CONTACT_TURNSTILE_SITE_KEY` (frontend builds)
-and `CONTACT_TURNSTILE_SECRET_KEY` (API runtime). The site key is required before
-production frontend builds; the verification secret is injected only on the API host.
-Follow the [Turnstile setup guide](src/shared/contact-api/README.md#turnstile-github-and-cloudflare-deployment-setup)
-for the widget, API runtime secret, hostname allowlists, and frontend URL configuration.
+Keep repository secrets `CONTACT_TURNSTILE_SITE_KEY` and
+`BOOKING_TURNSTILE_SITE_KEY` for the frontend builds. These site keys are public
+in browser assets. API verification secret keys are already stored in Google
+Secret Manager and attached to their Cloud Run services; repository secrets
+`CONTACT_TURNSTILE_SECRET_KEY` and `BOOKING_TURNSTILE_SECRET_KEY` are not needed.
+See the [contact guide](src/shared/contact-api/README.md#turnstile-github-and-cloudflare-deployment-setup)
+and [booking guide](src/foundation/booking-api/README.md) for widget and runtime details.
 
-Foundation bookings additionally require repository secrets
-`BOOKING_TURNSTILE_SITE_KEY` (frontend build) and `BOOKING_TURNSTILE_SECRET_KEY`
-(booking API runtime). No new Actions variables are required. See the
-[booking Turnstile guide](src/foundation/booking-api/README.md) for widget creation
-and the API host settings; CI does not deploy the APIs or inject their secrets.
+The existing **production** environment is limited to `main` and contains these
+non-secret variables for keyless Google authentication:
 
-A repository administrator must configure the GitHub **production** environment
-before merging the workflow. In **Settings → Environments → production**, allow
-only the selected **branch** `main` and do not require a reviewer. Add environment
-variable `CLOUDFLARE_ACCOUNT_ID` with the account ID above. In Cloudflare, create
-an account-owned API token with **Editor** access scoped only to `scpp-association`
-and `scpp-foundation`; save it as environment secret `CLOUDFLARE_API_TOKEN`.
+| Environment variable | Value |
+| --- | --- |
+| `GCP_WORKLOAD_IDENTITY_PROVIDER` | `projects/979979719406/locations/global/workloadIdentityPools/github/providers/scppnl-website` |
+| `GCP_SERVICE_ACCOUNT` | `github-deployer@websites-514515.iam.gserviceaccount.com` |
+
+The API job declares this environment and requests `id-token: write` to exchange
+GitHub's identity through Workload Identity Federation. No Google key or new
+GitHub secret is required. The deployer has Cloud Run Developer access only to
+the existing services and Service Account User access to their runtime accounts.
+It cannot create services, change IAM, read secrets or push images.
+
+The existing GitHub **production** environment also contains the Cloudflare
+configuration. Its branch policy allows only the selected **branch** `main`
+without a required reviewer. Environment variable `CLOUDFLARE_ACCOUNT_ID` holds
+the account ID above, and environment secret `CLOUDFLARE_API_TOKEN` holds an
+account-owned token with **Editor** access scoped only to `scpp-association`
+and `scpp-foundation`.
 See [Workers authorization](https://developers.cloudflare.com/workers/authorization/workers/#wrangler).
 No zone or DNS permissions are needed for these existing `workers.dev` targets.
 Never commit the token or paste it into a command argument or chat.
@@ -175,6 +185,62 @@ Rollback does not change Git: follow it with a revert/fix on `main` before the
 next deployment. The first deployment has no earlier version to restore.
 For initial acceptance, verify a PR checks without publishing and the first
 successful `main` push deploys both sites with passing smoke checks.
+
+### Cloud Run API deployments
+
+After each selected image is pushed and its manifest verified, CI exposes its
+service name and digest to an independent API deployment matrix. Only `main`
+pushes and manual runs deploy; PRs and other branches only validate. Manual runs
+select both APIs and need unused versions for both. No API selection means no
+API deployment. Main runs remain serialized.
+
+| Service | Production URL | Expected `GET /` text | Main endpoint |
+| --- | --- | --- | --- |
+| `contact-api` | https://contact-api-979979719406.europe-west4.run.app | `Contact API` | `POST /contact` |
+| `booking-api` | https://booking-api-979979719406.europe-west4.run.app | `Booking API` | `POST /bookings` |
+
+Cloud Run uses the exact verified manifest digest through the Artifact Registry
+Docker Hub mirror:
+`europe-west4-docker.pkg.dev/websites-514515/dockerhub/scppnl/<service>@sha256:<digest>`.
+It never pulls directly from `docker.io`. Deployment updates only the image on
+existing services in project `websites-514515`, region `europe-west4`. Runtime
+accounts, port 8080, min/max instances 0/3, timeout 30s, ingress, public access,
+CORS and Turnstile hostname environment values, and Secret Manager attachments
+are already managed in Google Cloud and carry over to new revisions.
+
+`contact-turnstile-secret-key:latest` supplies `CONTACT_TURNSTILE_SECRET_KEY`;
+`booking-turnstile-secret-key:latest` supplies `BOOKING_TURNSTILE_SECRET_KEY`.
+CI does not read these values or pass them to deployment or image builds.
+Frontend hosting and API base URL settings are separate from this deployment.
+
+Each service's `GET /` must return HTTP 200 and its exact identity text. Smoke
+checks reject redirects and retry six times with five-second delays and a
+15-second request timeout. The run summary records service, URL, revision,
+manifest digest, commit and outcomes. A deploy or smoke failure fails the run;
+one API's successful deployment stays live if the other fails. There is no
+automatic rollback.
+
+Publication can partly fail: verified successes still deploy, while the image
+publication job and overall workflow remain failed. Unverified images never
+deploy, even if their pushes succeeded. See [publication recovery](#publish-api-images-to-docker-hub)
+before rerunning publication. If publication succeeded and only deployment failed,
+rerun just the failed deployment jobs while keeping the successful publication
+job's outputs; do not rerun the successful Docker job. A new push or manual run
+repeats publication and requires unused versions for all selected images.
+Avoid rerunning old commits that could replace newer deployments.
+
+Cloud Run retains earlier revisions. Select a known good revision from prior
+run summaries or the Cloud Run console and move traffic back in the console.
+An operator with CLI access can alternatively use:
+
+```sh
+gcloud run services update-traffic <service> --project=websites-514515 --region=europe-west4 --to-revisions=<revision>=100
+```
+
+Rollback does not change Git; follow it with a revert/fix and a fresh version on
+`main` before the next deployment. The first real automated deployment happens
+on the next merge to `main` with unused API versions (this change bumps both to
+`0.0.4`). Confirm the run summaries, then check `GET /` at both URLs above.
 
 ## Onboarding a project
 
@@ -283,8 +349,9 @@ remains usable. A booking site key is also required. Configure the API's explici
 allowed frontend origins, for example
 `Cors__AllowedOrigins__0=https://foundation.example.org`. No origins are allowed
 by default outside Development; wildcard origins and credentials are not enabled.
-Use HTTPS API and frontend origins in production. API hosting, routing, and
-deployment are separate work; the static website deployment does not host this API.
+Use HTTPS API and frontend origins in production. The API runs on Cloud Run as
+described in [production deployments](#cloud-run-api-deployments); frontend URL
+configuration remains a separate change.
 Both APIs route Microsoft `ILogger<T>` events through Serilog to readable console
 output. The default minimum level is Information, with Microsoft.AspNetCore and
 System at Warning. Each event includes its timestamp, level, logger category,
@@ -406,15 +473,18 @@ Bump the version of each selected API whenever its tag has already been
 published. This applies to manual runs, reruns, API test changes, and shared
 tooling/workflow changes that select both APIs. A manual **CI → Run workflow →
 main** run publishes both APIs and therefore needs unused versions for both.
-The first run may use `0.0.1` only if those tags are available in Docker Hub.
+Both API versions are `0.0.4`; their selected tags must be unused in Docker Hub.
 
 Main runs are serialized, and CI refuses to overwrite existing tags. Publication
 across repositories is not atomic: if one image is pushed before another fails,
 bump the version of any already-published API selected on retry, fix the failure,
 and push or dispatch again. A push can also succeed before verification fails;
 check Docker Hub when recovering. The summary preserves verified partial results.
+Verified partial successes still deploy to Cloud Run, but publication failure keeps
+the overall workflow failed. Images that fail verification are not deployed.
 These guards apply to this workflow; Docker Hub immutability settings are unchanged.
-Publishing an image does not deploy or restart an API server.
+Each verified image is exported as a service/digest job output for the
+[Cloud Run deployment job](#cloud-run-api-deployments).
 
 ### API hosting infrastructure
 
