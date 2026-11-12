@@ -76,7 +76,7 @@ submissions send and store nothing; review that behavior before a public launch.
 
 Contact submissions require a current Turnstile token. Set the public site key
 through the frontend process environment (`TURNSTILE_SITE_KEY`); CI reads it from
-the GitHub repository secret of the same name. Keep the hosted API origin in
+the GitHub repository secret `CONTACT_TURNSTILE_SITE_KEY`. Keep the hosted API origin in
 `src/environments/environment.ts`. The verification secret belongs only on the
 .NET API host.
 

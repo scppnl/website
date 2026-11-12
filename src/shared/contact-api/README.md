@@ -130,9 +130,9 @@ configuration too. Do not allow localhost on the production widget/backend.
 ### 2. Configure GitHub Actions
 
 In **Repository → Settings → Secrets and variables → Actions → Secrets → New
-repository secret**, set **`TURNSTILE_SITE_KEY`** to the widget's **site key**.
-This repository secret is consumed by the build/check job on `main`, not only by
-the deploy job. The site key is public in the compiled browser assets by design.
+repository secret**, set **`CONTACT_TURNSTILE_SITE_KEY`** to the widget's **site key**.
+This contact-widget secret is mapped to the frontend build environment variable
+`TURNSTILE_SITE_KEY` by the build/check job on `main`, not only by the deploy job. The site key is public in the compiled browser assets by design.
 Add this secret before merging the integration; PR checks use dummy keys, but a
 subsequent `main` frontend build will require the real key.
 

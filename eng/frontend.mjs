@@ -6,7 +6,7 @@ export function siteKey(env = process.env) {
   const key = (env.TURNSTILE_SITE_KEY ?? '').trim();
   if (env.REQUIRE_TURNSTILE_SITE_KEY === 'true' &&
       (!key || /^[123]x0+/.test(key))) {
-    throw new Error('Production builds require a real TURNSTILE_SITE_KEY GitHub secret.');
+    throw new Error('Production builds require a real CONTACT_TURNSTILE_SITE_KEY GitHub secret.');
   }
   if (key && !/^[A-Za-z0-9_-]+$/.test(key)) throw new Error('Invalid TURNSTILE_SITE_KEY');
   return key;
