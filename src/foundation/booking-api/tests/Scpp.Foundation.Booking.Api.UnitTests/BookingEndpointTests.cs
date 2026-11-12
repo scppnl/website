@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Scpp.Foundation.Booking.Api.Endpoints;
+using Scpp.Foundation.Booking.Api.Serialization;
+using Scpp.Foundation.Booking.Api.Validation;
 using Scpp.Foundation.Booking.Contracts;
 
 namespace Scpp.Foundation.Booking.Api.UnitTests;

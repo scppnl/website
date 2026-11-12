@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Scpp.Foundation.Booking.Api.Endpoints;
 
 namespace Scpp.Foundation.Booking.Api.UnitTests;
 

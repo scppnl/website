@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Scpp.Foundation.Booking.Contracts;
 
-namespace Scpp.Foundation.Booking.Api;
+namespace Scpp.Foundation.Booking.Api.Validation;
 
 internal sealed class BookingRequestValidator(TimeProvider clock)
 {

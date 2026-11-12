@@ -1,7 +1,7 @@
 using Serilog;
 using Serilog.Events;
 
-namespace Scpp.Foundation.Booking.Api;
+namespace Scpp.Foundation.Booking.Api.Logging;
 
 internal static class LoggingSetup
 {
