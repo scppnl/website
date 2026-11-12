@@ -1,7 +1,7 @@
-using Scpp.Shared.Contact.Application.Models;
+using Scpp.Shared.Contact.Api.Models;
 using Scpp.Shared.Contact.Models;
 
-namespace Scpp.Shared.Contact.Application.Interfaces;
+namespace Scpp.Shared.Contact.Api.Interfaces;
 
 public interface IContactSubmissionService
 {

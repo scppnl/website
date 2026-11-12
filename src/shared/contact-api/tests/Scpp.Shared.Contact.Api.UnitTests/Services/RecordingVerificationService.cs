@@ -1,7 +1,7 @@
-using Scpp.Shared.Contact.Application.Interfaces;
-using Scpp.Shared.Contact.Application.Verification;
+using Scpp.Shared.Contact.Api.Interfaces;
+using Scpp.Shared.Contact.Api.Verification;
 
-namespace Scpp.Shared.Contact.Api.UnitTests.Application;
+namespace Scpp.Shared.Contact.Api.UnitTests.Services;
 
 internal sealed class RecordingVerificationService : IContactVerificationService
 {

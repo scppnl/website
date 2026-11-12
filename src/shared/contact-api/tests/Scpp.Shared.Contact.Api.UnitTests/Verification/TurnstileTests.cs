@@ -1,6 +1,5 @@
 using System.Net;
 using Microsoft.Extensions.Logging.Abstractions;
-using Scpp.Shared.Contact.Application.Verification;
 using Scpp.Shared.Contact.Infrastructure.Verification;
 using Scpp.Shared.Contact.Api.UnitTests.Testing;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -25,7 +24,7 @@ public sealed class TurnstileTests
             };
             using var client = new HttpClient(stub) { Timeout = TimeSpan.FromMilliseconds(25) };
             var verifier = new TurnstileVerifier(client, new("secret", ["scpp.nl"]), NullLogger<TurnstileVerifier>.Instance);
-            Assert.AreEqual(VerificationOutcome.Unavailable, await verifier.VerifyAsync("token", "test-trace", CancellationToken.None));
+            Assert.AreEqual(TurnstileVerificationOutcome.Unavailable, await verifier.VerifyAsync("token", "test-trace", CancellationToken.None));
         }
     }
 

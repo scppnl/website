@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Split the contact API into API, Application, Domain, Infrastructure and shared Models projects, with folders and matching namespaces for each responsibility.
+- Organize the contact API into API, Domain, Infrastructure and shared Models projects, with validation, service interfaces, submission orchestration and result models inside the API project and folders matching each responsibility.
 - Introduced normalized submission and result models, injectable submission and verification services, and a logging destination while preserving the HTTP contract and Turnstile verification behavior.
 - Moved submission logging to `Scpp.Shared.Contact.Infrastructure.Logging.LoggingContactSubmissionSink`; the message template and named properties are unchanged. Verification debug events now use the `Scpp.Shared.Contact.Infrastructure.Verification.TurnstileVerifier` category.
 - Updated solution references, architecture documentation and tests for validation, verification and submission orchestration.

@@ -1,6 +1,6 @@
 using Scpp.Shared.Contact.Domain.Models;
 
-namespace Scpp.Shared.Contact.Application.Validation;
+namespace Scpp.Shared.Contact.Api.Validation;
 
 public sealed class ContactValidationResult
 {

@@ -1,9 +1,9 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Scpp.Shared.Contact.Application.Validation;
+using Scpp.Shared.Contact.Api.Validation;
 using Scpp.Shared.Contact.Domain.Models;
 using Scpp.Shared.Contact.Models;
 
-namespace Scpp.Shared.Contact.Api.UnitTests.Application;
+namespace Scpp.Shared.Contact.Api.UnitTests.Validation;
 
 [TestClass]
 public sealed class ContactRequestValidatorTests

@@ -1,10 +1,10 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Scpp.Shared.Contact.Application.Verification;
-using Scpp.Shared.Contact.Application.Services;
+using Scpp.Shared.Contact.Api.Verification;
+using Scpp.Shared.Contact.Api.Services;
 using Scpp.Shared.Contact.Domain.Models;
 using Scpp.Shared.Contact.Models;
 
-namespace Scpp.Shared.Contact.Api.UnitTests.Application;
+namespace Scpp.Shared.Contact.Api.UnitTests.Services;
 
 [TestClass]
 public sealed class ContactSubmissionServiceTests

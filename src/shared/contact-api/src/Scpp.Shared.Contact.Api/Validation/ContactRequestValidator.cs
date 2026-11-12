@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 using Scpp.Shared.Contact.Domain.Models;
 using Scpp.Shared.Contact.Models;
 
-namespace Scpp.Shared.Contact.Application.Validation;
+namespace Scpp.Shared.Contact.Api.Validation;
 
 public static class ContactRequestValidator
 {

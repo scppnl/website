@@ -199,20 +199,19 @@ updates within .NET 10 (`latestFeature`), and disallows prereleases.
 The shared contact API follows the same layout in `src/shared/contact-api/`,
 with component solution `Scpp.Shared.Contact.slnx` and these projects:
 
-- `src/Scpp.Shared.Contact.Api`: the slim minimal API host with Native AOT enabled.
+- `src/Scpp.Shared.Contact.Api`: the slim minimal API host with Native AOT enabled,
+  validation, submission orchestration, result models and service interfaces.
 - `src/Scpp.Shared.Contact.Models`: shared contact request models in a class library
   without dependencies on ASP.NET Core.
 - `src/Scpp.Shared.Contact.Domain`: immutable normalized submission models.
-- `src/Scpp.Shared.Contact.Application`: validation, verification and submission
-  orchestration, result models and service interfaces, referencing Models and Domain.
 - `src/Scpp.Shared.Contact.Infrastructure`: Turnstile verification and the logging
-  submission destination, referencing Application and Domain.
-- `tests/Scpp.Shared.Contact.Api.UnitTests`: MSTest tests for application behavior,
+  submission destination, referencing Domain.
+- `tests/Scpp.Shared.Contact.Api.UnitTests`: MSTest tests for service behavior,
   HTTP endpoints and logging.
 
-All six projects are also in `Scpp.slnx` and belong to the `contact-api` Nx
+All five projects are also in `Scpp.slnx` and belong to the `contact-api` Nx
 component, so changes to any layer also build and test the API. The API host
-references Application, Infrastructure and Models and wires their dependencies.
+references Domain, Infrastructure and Models and wires their dependencies.
 `GET /` returns HTTP 200 with plain text `Contact API`. `POST /contact` validates
 and logs requests from both sites. The planned production endpoint is
 `https://api.scpp.nl/contact`; production submissions remain disabled until hosting

@@ -13,27 +13,28 @@ The component uses separate .NET projects with these responsibilities:
 
 | Project | Responsibility | Project dependencies |
 | --- | --- | --- |
-| `Scpp.Shared.Contact.Api` | HTTP endpoints, JSON serialization, CORS, dependency registration and host logging setup | Application, Infrastructure, Models |
+| `Scpp.Shared.Contact.Api` | HTTP endpoints, validation, submission orchestration, result models, service interfaces, JSON serialization and host configuration | Domain, Infrastructure, Models |
 | `Scpp.Shared.Contact.Models` | Public `ContactRequest` JSON contract | None |
 | `Scpp.Shared.Contact.Domain` | Immutable normalized `ContactSubmission` model | None |
-| `Scpp.Shared.Contact.Application` | Normalization, validation, verification and submission orchestration, service interfaces and result models | Domain, Models |
-| `Scpp.Shared.Contact.Infrastructure` | Turnstile Siteverify client and structured logging submission destination | Application, Domain |
+| `Scpp.Shared.Contact.Infrastructure` | Turnstile Siteverify client and structured logging submission destination | Domain |
 
 Within the API, `Endpoints`, `Serialization` and `Configuration` separate HTTP
-handling from host configuration. Application code is grouped into `Interfaces`,
-`Services`, `Models`, `Validation` and `Verification`; Domain owns `Models`, and
+handling from host configuration. The API also owns `Interfaces`, `Services`,
+`Models`, `Validation` and `Verification`; Domain owns submission `Models`, and
 Infrastructure owns `Logging`, `Verification` and its provider JSON `Serialization`.
 All projects live under `src/` and belong to both the component and repository solutions.
 
 `ContactApi.Build` is the composition root. It registers scoped
 `IContactSubmissionService` and `IContactSubmissionSink` implementations.
 The endpoint passes the request, trace identifier and request cancellation token
-to the application service. Validation produces either field errors or a normalized
-domain submission. The application service verifies valid requests through
+to the submission service. Validation produces either field errors or a normalized
+domain submission. The submission service verifies valid requests through
 `IContactVerificationService`; only accepted submissions reach the sink. The endpoint
 maps validation errors to `400`, rejected verification to `403`, unavailable
 verification to `503`, and returns `204` after the sink completes.
 Unexpected sink failures propagate to the existing server error handling.
+The API's service adapters connect its interfaces to concrete Infrastructure
+implementations. Infrastructure references Domain only and never references the API.
 
 Submission events use the logger category
 `Scpp.Shared.Contact.Infrastructure.Logging.LoggingContactSubmissionSink`.
@@ -141,7 +142,7 @@ Publishing requires the platform's native compiler and zlib development librarie
 HTTP tests start a local Kestrel server to verify actual binding, status codes,
 Problem Details serialization, logging and CORS. Frontend tests cover request
 mapping, validation, pending state, successful reset, failure/retry and an absent
-API URL. Application tests verify validation and submission orchestration without
+API URL. Service tests verify validation and submission orchestration without
 starting a web host. Later delivery behavior belongs behind `IContactSubmissionSink`,
 after validation; the current implementation only logs submissions.
 

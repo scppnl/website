@@ -1,6 +1,6 @@
 using Scpp.Shared.Contact.Domain.Models;
 
-namespace Scpp.Shared.Contact.Application.Interfaces;
+namespace Scpp.Shared.Contact.Api.Interfaces;
 
 public interface IContactSubmissionSink
 {

@@ -17,7 +17,7 @@
     <InternalsVisibleTo Include="Scpp.Shared.Contact.Api.UnitTests" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../Scpp.Shared.Contact.Application/Scpp.Shared.Contact.Application.csproj" />
+    <ProjectReference Include="../Scpp.Shared.Contact.Domain/Scpp.Shared.Contact.Domain.csproj" />
     <ProjectReference Include="../Scpp.Shared.Contact.Infrastructure/Scpp.Shared.Contact.Infrastructure.csproj" />
     <ProjectReference Include="../Scpp.Shared.Contact.Models/Scpp.Shared.Contact.Models.csproj" />
   </ItemGroup>

@@ -8,7 +8,6 @@
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.0" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../Scpp.Shared.Contact.Application/Scpp.Shared.Contact.Application.csproj" />
     <ProjectReference Include="../Scpp.Shared.Contact.Domain/Scpp.Shared.Contact.Domain.csproj" />
   </ItemGroup>
 </Project>

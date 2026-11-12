@@ -1,10 +1,10 @@
-using Scpp.Shared.Contact.Application.Interfaces;
-using Scpp.Shared.Contact.Application.Models;
-using Scpp.Shared.Contact.Application.Validation;
-using Scpp.Shared.Contact.Application.Verification;
+using Scpp.Shared.Contact.Api.Interfaces;
+using Scpp.Shared.Contact.Api.Models;
+using Scpp.Shared.Contact.Api.Validation;
+using Scpp.Shared.Contact.Api.Verification;
 using Scpp.Shared.Contact.Models;
 
-namespace Scpp.Shared.Contact.Application.Services;
+namespace Scpp.Shared.Contact.Api.Services;
 
 public sealed class ContactSubmissionService(IContactSubmissionSink sink, IContactVerificationService verifier)
     : IContactSubmissionService

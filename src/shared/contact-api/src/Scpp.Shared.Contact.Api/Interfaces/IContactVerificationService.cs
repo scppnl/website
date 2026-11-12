@@ -1,6 +1,6 @@
-using Scpp.Shared.Contact.Application.Verification;
+using Scpp.Shared.Contact.Api.Verification;
 
-namespace Scpp.Shared.Contact.Application.Interfaces;
+namespace Scpp.Shared.Contact.Api.Interfaces;
 
 public interface IContactVerificationService
 {

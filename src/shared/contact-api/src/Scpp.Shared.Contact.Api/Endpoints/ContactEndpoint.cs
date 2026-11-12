@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Http.HttpResults;
-using Scpp.Shared.Contact.Application.Interfaces;
-using Scpp.Shared.Contact.Application.Verification;
+using Scpp.Shared.Contact.Api.Interfaces;
+using Scpp.Shared.Contact.Api.Verification;
 using Scpp.Shared.Contact.Models;
 
 namespace Scpp.Shared.Contact.Api.Endpoints;

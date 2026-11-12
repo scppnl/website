@@ -1,5 +1,4 @@
 using Scpp.Shared.Contact.Models;
-using Scpp.Shared.Contact.Application.Interfaces;
 using Scpp.Shared.Contact.Infrastructure.Verification;
 using Scpp.Shared.Contact.Api.UnitTests.Testing;
 using System.Net;
@@ -36,7 +35,7 @@ public sealed class ContactRequestTests
             "--CONTACT_TURNSTILE_SECRET_KEY", "test-secret", "--Turnstile:AllowedHostnames:0", "scpp.nl"],
             builder => {
                 builder.Services.AddSingleton<ILogEventSink>(logs);
-                builder.Services.AddHttpClient<IContactVerificationService, TurnstileVerifier>().ConfigurePrimaryHttpMessageHandler(() => siteverify);
+                builder.Services.AddHttpClient<TurnstileVerifier>().ConfigurePrimaryHttpMessageHandler(() => siteverify);
             });
         await app.StartAsync();
         var addresses = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!;

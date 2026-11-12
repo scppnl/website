@@ -1,4 +1,4 @@
-namespace Scpp.Shared.Contact.Application.Verification;
+namespace Scpp.Shared.Contact.Api.Verification;
 
 public enum VerificationOutcome
 {

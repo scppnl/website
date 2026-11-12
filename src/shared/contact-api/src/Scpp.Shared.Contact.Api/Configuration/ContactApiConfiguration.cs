@@ -1,6 +1,7 @@
 using Scpp.Shared.Contact.Api.Serialization;
-using Scpp.Shared.Contact.Application.Interfaces;
-using Scpp.Shared.Contact.Application.Services;
+using Scpp.Shared.Contact.Api.Interfaces;
+using Scpp.Shared.Contact.Api.Services;
+using Scpp.Shared.Contact.Api.Verification;
 using Scpp.Shared.Contact.Infrastructure.Logging;
 using Scpp.Shared.Contact.Infrastructure.Verification;
 
@@ -11,8 +12,10 @@ internal static class ContactApiConfiguration
     internal static void AddContactApi(this WebApplicationBuilder builder)
     {
         builder.Services.AddScoped<IContactSubmissionService, ContactSubmissionService>();
-        builder.Services.AddScoped<IContactSubmissionSink, LoggingContactSubmissionSink>();
-        builder.Services.AddHttpClient<IContactVerificationService, TurnstileVerifier>(
+        builder.Services.AddScoped<IContactSubmissionSink, ContactSubmissionSink>();
+        builder.Services.AddScoped<LoggingContactSubmissionSink>();
+        builder.Services.AddScoped<IContactVerificationService, ContactVerificationService>();
+        builder.Services.AddHttpClient<TurnstileVerifier>(
             client => client.Timeout = TimeSpan.FromSeconds(10));
         builder.Services.ConfigureHttpJsonOptions(options =>
             options.SerializerOptions.TypeInfoResolverChain.Insert(0, ContactJsonContext.Default));

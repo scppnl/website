@@ -26,7 +26,7 @@ for (const [files, expected] of [
   [[`${contactRoot}/src/Scpp.Shared.Contact.Api/Program.cs`], ['contact-api']],
   [[`${contactRoot}/src/Scpp.Shared.Contact.Api/Scpp.Shared.Contact.Api.csproj`], ['contact-api']],
   [[`${contactRoot}/src/Scpp.Shared.Contact.Models/Scpp.Shared.Contact.Models.csproj`], ['contact-api']],
-  [[`${contactRoot}/src/Scpp.Shared.Contact.Application/Scpp.Shared.Contact.Application.csproj`], ['contact-api']],
+  [[`${contactRoot}/src/Scpp.Shared.Contact.Api/Services/ContactSubmissionService.cs`], ['contact-api']],
   [[`${contactRoot}/src/Scpp.Shared.Contact.Domain/Scpp.Shared.Contact.Domain.csproj`], ['contact-api']],
   [[`${contactRoot}/src/Scpp.Shared.Contact.Infrastructure/Scpp.Shared.Contact.Infrastructure.csproj`], ['contact-api']],
   [[`${contactRoot}/tests/Scpp.Shared.Contact.Api.UnitTests/Endpoints/DummyEndpointTests.cs`], ['contact-api']],
