@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
-  # Never cancel a production run midway through publishing its two Workers.
+  # Never cancel a main run midway through publishing Workers or API images.
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -82,7 +82,7 @@ jobs:
           overwrite: true
 
   docker:
-    name: Build affected API images
+    name: Build and publish affected API images
     needs: check
     if: needs.check.outputs.containers != '' && needs.check.outputs.containers != '[]'
     runs-on: ubuntu-24.04
@@ -120,6 +120,18 @@ jobs:
         run: node eng/containers.mjs
         env:
           CONTAINERS: ${{ needs.check.outputs.containers }}
+      - name: Log in to Docker Hub
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKER_HUB_USER }}
+          password: ${{ secrets.DOCKER_HUB_KEY }}
+      - name: Publish versioned API images
+        if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+        run: node eng/publish-containers.mjs
+        env:
+          CONTAINERS: ${{ needs.check.outputs.containers }}
+          DOCKER_HUB_USER: ${{ vars.DOCKER_HUB_USER }}
 
   deploy:
     name: Publish
