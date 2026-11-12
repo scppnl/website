@@ -1,0 +1,18 @@
+# Terraform working files and state. State lives in the GCS bucket, never in git.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Local variable files can hold anything; none are needed for this setup.
+*.tfvars
+*.auto.tfvars
+
+# Keep the provider lock file: it pins provider versions and checksums.
+!.terraform.lock.hcl

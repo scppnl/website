@@ -1,0 +1,8 @@
+# Applies to infra/ only. The repository root .editorconfig is a Nx input for
+# every project, so Terraform settings live here to keep CI selection unchanged.
+[*.{tf,tfvars,hcl}]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
