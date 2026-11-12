@@ -191,10 +191,12 @@ The shared contact API follows the same layout in `src/shared/contact-api/`,
 with component solution `Scpp.Shared.ContactApi.slnx`, API sources under `src/`,
 and MSTest unit tests under `tests/`. Both projects are also in `Scpp.slnx`.
 It uses the slim minimal API host with Native AOT enabled; `GET /` returns
-HTTP 200 with plain text `Contact API`.
+HTTP 200 with plain text `Contact API`. `POST /api/contact` validates and logs
+requests from both sites. See the [contact API guide](src/shared/contact-api/README.md)
+for its contract, local setup and frontend configuration.
 
 ```sh
-dotnet run --project src/shared/contact-api/src/Scpp.Shared.ContactApi -- --urls http://localhost:5081
+DOTNET_ENVIRONMENT=Development dotnet run --project src/shared/contact-api/src/Scpp.Shared.ContactApi -- --urls http://localhost:5081
 curl http://localhost:5081/
 npm run nx -- run contact-api:test
 ```
