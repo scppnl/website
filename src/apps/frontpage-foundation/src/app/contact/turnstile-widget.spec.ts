@@ -53,6 +53,15 @@ describe('Turnstile widget lifecycle', () => {
     expect(tokens.at(-1)).toBe(null);
   });
 
+  it('supports the separate booking site key and action', async () => {
+    const fixture = TestBed.createComponent(TurnstileWidget);
+    fixture.componentRef.setInput('sitekey', 'booking-key');
+    fixture.componentRef.setInput('action', 'booking');
+    await fixture.whenStable();
+    expect(options.sitekey).toBe('booking-key');
+    expect(options.action).toBe('booking');
+  });
+
   it('allows retry after blocked scripts and removes the widget on navigation', async () => {
     load.mockRejectedValueOnce(new Error('blocked'));
     const { fixture, element } = await setup();

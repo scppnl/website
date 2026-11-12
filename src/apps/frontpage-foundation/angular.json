@@ -36,7 +36,8 @@
             "server": "src/main.server.ts",
             "outputMode": "static",
             "define": {
-              "__TURNSTILE_SITE_KEY__": "\"\""
+              "__TURNSTILE_SITE_KEY__": "\"\"",
+              "__BOOKING_TURNSTILE_SITE_KEY__": "\"\""
             }
           },
           "configurations": {

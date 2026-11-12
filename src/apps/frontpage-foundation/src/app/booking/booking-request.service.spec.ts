@@ -2,6 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { BookingRequest } from './booking-request';
+import { BOOKING_TURNSTILE_SITE_KEY } from './booking-turnstile';
 import { BOOKING_API_BASE_URL, BookingRequestService } from './booking-request.service';
 
 const request: BookingRequest = {
@@ -26,6 +27,7 @@ describe('BookingRequestService', () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        { provide: BOOKING_TURNSTILE_SITE_KEY, useValue: 'booking-key' },
         { provide: BOOKING_API_BASE_URL, useValue: 'https://booking.example.org/' },
       ],
     });
@@ -37,22 +39,22 @@ describe('BookingRequestService', () => {
     service = TestBed.inject(BookingRequestService);
     http = TestBed.inject(HttpTestingController);
     let resolved = false;
-    const result = service.submit(request).then(() => {
+    const result = service.submit(request, 'fresh-token').then(() => {
       resolved = true;
     });
     const pending = http.expectOne('https://booking.example.org/bookings');
     expect(pending.request.method).toBe('POST');
-    expect(pending.request.body).toEqual(request);
+    expect(pending.request.body).toEqual({ ...request, turnstileToken: 'fresh-token' });
     expect(resolved).toBe(false);
     pending.flush(null, { status: 204, statusText: 'No Content' });
     await result;
     expect(resolved).toBe(true);
   });
 
-  it.each([400, 500])('rejects HTTP %i responses', async (status) => {
+  it.each([400, 403, 503, 500])('rejects HTTP %i responses', async (status) => {
     service = TestBed.inject(BookingRequestService);
     http = TestBed.inject(HttpTestingController);
-    const result = expect(service.submit(request)).rejects.toMatchObject({ status });
+    const result = expect(service.submit(request, 'fresh-token')).rejects.toMatchObject({ status });
     http
       .expectOne('https://booking.example.org/bookings')
       .flush({ errors: {} }, { status, statusText: 'Error' });
@@ -62,7 +64,7 @@ describe('BookingRequestService', () => {
   it('rejects network failures', async () => {
     service = TestBed.inject(BookingRequestService);
     http = TestBed.inject(HttpTestingController);
-    const result = expect(service.submit(request)).rejects.toMatchObject({ status: 0 });
+    const result = expect(service.submit(request, 'fresh-token')).rejects.toMatchObject({ status: 0 });
     http.expectOne('https://booking.example.org/bookings').error(new ProgressEvent('error'));
     await result;
   });
@@ -71,7 +73,16 @@ describe('BookingRequestService', () => {
     TestBed.overrideProvider(BOOKING_API_BASE_URL, { useValue: '  ' });
     service = TestBed.inject(BookingRequestService);
     http = TestBed.inject(HttpTestingController);
-    await expect(service.submit(request)).rejects.toThrow('not configured');
+    await expect(service.submit(request, 'fresh-token')).rejects.toThrow('not configured');
+    http.expectNone(() => true);
+  });
+
+  it('rejects a missing booking key without sending a request', async () => {
+    TestBed.overrideProvider(BOOKING_TURNSTILE_SITE_KEY, { useValue: '' });
+    service = TestBed.inject(BookingRequestService);
+    http = TestBed.inject(HttpTestingController);
+    expect(service.available).toBe(false);
+    await expect(service.submit(request, 'fresh-token')).rejects.toThrow('not configured');
     http.expectNone(() => true);
   });
 });

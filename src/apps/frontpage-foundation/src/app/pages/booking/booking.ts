@@ -27,6 +27,8 @@ import {
   GroupType,
 } from '../../booking/booking-request';
 import { BookingRequestService } from '../../booking/booking-request.service';
+import { BOOKING_TURNSTILE_SITE_KEY } from '../../booking/booking-turnstile';
+import { TurnstileWidget } from '../../contact/turnstile-widget';
 import {
   bundleUpgrade,
   countLabel,
@@ -63,6 +65,7 @@ function atLeastOneDaypart(group: AbstractControl): ValidationErrors | null {
 @Component({
   selector: 'app-booking',
   imports: [
+    TurnstileWidget,
     ReactiveFormsModule,
     RouterLink,
     PageHeader,
@@ -77,6 +80,10 @@ function atLeastOneDaypart(group: AbstractControl): ValidationErrors | null {
 export class Booking {
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly bookingService = inject(BookingRequestService);
+  protected readonly available = this.bookingService.available;
+  protected readonly bookingSitekey = inject(BOOKING_TURNSTILE_SITE_KEY);
+  protected readonly turnstileToken = signal<string | null>(null);
+  private readonly widget = viewChild(TurnstileWidget);
   private readonly sheet = viewChild<ElementRef<HTMLDialogElement>>('sheet');
 
   protected readonly content = bookingPage;
@@ -237,20 +244,29 @@ export class Booking {
   }
 
   protected async submit(): Promise<void> {
+    if (!this.available || this.status() === 'submitting') return;
     if (this.form.invalid) {
       this.submitted.set(true);
       this.form.markAllAsTouched();
       return;
     }
 
+    const token = this.turnstileToken();
+    if (!token) return;
+    const request = this.toRequest();
     this.status.set('submitting');
+    this.form.disable();
     try {
-      await this.bookingService.submit(this.toRequest());
+      await this.bookingService.submit(request, token);
       this.status.set('success');
       this.submitted.set(false);
       this.form.reset();
     } catch {
       this.status.set('error');
+    } finally {
+      this.turnstileToken.set(null);
+      this.widget()?.reset();
+      this.form.enable();
     }
   }
 

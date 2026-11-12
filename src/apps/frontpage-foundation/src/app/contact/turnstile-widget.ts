@@ -3,6 +3,7 @@ import {
   Component,
   ElementRef,
   inject,
+  input,
   OnDestroy,
   output,
   signal,
@@ -16,7 +17,7 @@ import { TURNSTILE_SITE_KEY, TurnstileApi, TurnstileLoader } from './turnstile-l
   template: `
     <div #container></div>
     @if (failed()) {
-      <p role="alert">De beveiligingscontrole is niet gelukt. Uw bericht is bewaard.</p>
+      <p role="alert">De beveiligingscontrole is niet gelukt. Uw gegevens zijn bewaard.</p>
       <button type="button" (click)="retry()">Beveiligingscontrole opnieuw proberen</button>
     } @else if (!verified()) {
       <p role="status">Beveiligingscontrole wordt uitgevoerd…</p>
@@ -24,12 +25,13 @@ import { TURNSTILE_SITE_KEY, TurnstileApi, TurnstileLoader } from './turnstile-l
   `,
 })
 export class TurnstileWidget implements OnDestroy {
+  readonly sitekey = input(inject(TURNSTILE_SITE_KEY));
+  readonly action = input('contact');
   readonly tokenChange = output<string | null>();
   protected readonly failed = signal(false);
   protected readonly verified = signal(false);
   private readonly container = viewChild.required<ElementRef<HTMLElement>>('container');
   private readonly loader = inject(TurnstileLoader);
-  private readonly sitekey = inject(TURNSTILE_SITE_KEY);
   private api?: TurnstileApi;
   private widgetId?: string;
   private destroyed = false;
@@ -53,8 +55,8 @@ export class TurnstileWidget implements OnDestroy {
       if (this.destroyed) return;
       this.api = api;
       this.widgetId = api.render(this.container().nativeElement, {
-        sitekey: this.sitekey,
-        action: 'contact',
+        sitekey: this.sitekey(),
+        action: this.action(),
         appearance: 'interaction-only',
         callback: (token) => {
           if (this.destroyed) return;

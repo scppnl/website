@@ -2,6 +2,7 @@ namespace Scpp.Foundation.Booking.Contracts;
 
 public sealed class BookingRequestDto
 {
+    public string? TurnstileToken { get; init; }
     public string? Name { get; init; }
     public string? Organisation { get; init; } = "";
     public string? Email { get; init; }

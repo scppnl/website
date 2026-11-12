@@ -13,6 +13,8 @@ internal sealed class BookingRequestValidator(TimeProvider clock)
     internal Dictionary<string, string[]> Validate(BookingRequestDto request)
     {
         var errors = new Dictionary<string, string[]>();
+        if (string.IsNullOrWhiteSpace(request.TurnstileToken) || request.TurnstileToken.Length > 2048)
+            errors["turnstileToken"] = ["A current security verification token is required (at most 2,048 characters)."];
         if (string.IsNullOrWhiteSpace(request.Name))
             errors["name"] = ["Name is required."];
         if (string.IsNullOrWhiteSpace(request.Email) || !new EmailAddressAttribute().IsValid(request.Email))

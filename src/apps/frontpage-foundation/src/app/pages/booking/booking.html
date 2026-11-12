@@ -196,6 +196,12 @@
         </div>
       </fieldset>
 
+      @if (!available) {
+        <p class="alert" role="status">
+          Het aanvraagformulier is tijdelijk niet beschikbaar. Probeer het later opnieuw.
+          U kunt wel alvast uw huurprijs berekenen.
+        </p>
+      }
       <div class="submit">
         <div class="field field--check">
           <input id="acceptRules" type="checkbox" formControlName="acceptRules" />
@@ -207,8 +213,19 @@
             <p class="error">U moet akkoord gaan met de huisregels.</p>
           }
         </div>
+        @if (available) {
+          <app-turnstile
+            [sitekey]="bookingSitekey"
+            action="booking"
+            (tokenChange)="turnstileToken.set($event)"
+          />
+        }
         <div class="submit__row">
-          <button type="submit" class="btn btn--accent" [disabled]="status() === 'submitting'">
+          <button
+            type="submit"
+            class="btn btn--accent"
+            [disabled]="!available || !turnstileToken() || status() === 'submitting'"
+          >
             {{ status() === 'submitting' ? 'Bezig met versturen…' : 'Aanvraag versturen' }}
           </button>
           <span class="hint"

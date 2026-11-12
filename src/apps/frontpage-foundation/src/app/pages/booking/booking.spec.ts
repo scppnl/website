@@ -2,6 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { vi } from 'vitest';
 import { BookingRequestService } from '../../booking/booking-request.service';
+import { BOOKING_TURNSTILE_SITE_KEY } from '../../booking/booking-turnstile';
+import { TurnstileLoader, WidgetOptions } from '../../contact/turnstile-loader';
 import { Booking } from './booking';
 
 /** Far enough ahead that the "not in the past" rule never trips these tests. */
@@ -9,18 +11,34 @@ const RENTAL_DATE = '2099-06-04';
 
 describe('Booking', () => {
   const submit = vi.fn().mockResolvedValue(undefined);
+  let options: WidgetOptions;
+  const api = {
+    render: vi.fn((_element: HTMLElement, value: WidgetOptions) => {
+      options = value;
+      return 'booking-widget';
+    }),
+    reset: vi.fn(),
+    remove: vi.fn(),
+  };
 
   beforeEach(async () => {
-    submit.mockClear();
+    vi.clearAllMocks();
+    submit.mockResolvedValue(undefined);
     await TestBed.configureTestingModule({
       imports: [Booking],
-      providers: [provideRouter([]), { provide: BookingRequestService, useValue: { submit } }],
+      providers: [
+        provideRouter([]),
+        { provide: BookingRequestService, useValue: { submit, available: true } },
+        { provide: BOOKING_TURNSTILE_SITE_KEY, useValue: 'booking-key' },
+        { provide: TurnstileLoader, useValue: { load: async () => api } },
+      ],
     }).compileComponents();
   });
 
   async function setup() {
     const fixture = TestBed.createComponent(Booking);
     await fixture.whenStable();
+    options.callback('fresh-token');
     const element = fixture.nativeElement as HTMLElement;
     const setValue = (id: string, value: string) => {
       const input = element.querySelector(`#${id}`) as HTMLInputElement | HTMLSelectElement;
@@ -249,6 +267,9 @@ describe('Booking', () => {
       guests: 20,
     });
     expect(submit.mock.calls[0][0]).not.toHaveProperty('startTime');
+    expect(submit.mock.calls[0][1]).toBe('fresh-token');
+    expect(api.reset).toHaveBeenCalledWith('booking-widget');
+    expect((element.querySelector('button[type="submit"]') as HTMLButtonElement).disabled).toBe(true);
     expect(element.querySelector('.alert--success')).toBeTruthy();
     expect(element.querySelector('.alert--success a[href="/contact"]')).toBeTruthy();
     expect(element.querySelector('a[href^="mailto:"]')).toBeNull();
@@ -268,6 +289,55 @@ describe('Booking', () => {
     await submitForm();
 
     expect(element.querySelector('.alert--error a[href="/contact"]')).toBeTruthy();
+    expect((element.querySelector('#name') as HTMLInputElement).value).toBe('Jan Jansen');
+    expect(api.reset).toHaveBeenCalledWith('booking-widget');
     expect(element.querySelector('a[href^="mailto:"]')).toBeNull();
+  });
+
+  it('requires a fresh token after expiration or a failed request', async () => {
+    const { fixture, element, fillValidForm, submitForm } = await setup();
+    fillValidForm();
+    options['expired-callback']();
+    await submitForm();
+    expect(submit).not.toHaveBeenCalled();
+    options.callback('first-token');
+    submit.mockRejectedValueOnce(new Error('rejected'));
+    await submitForm();
+    await submitForm();
+    expect(submit).toHaveBeenCalledTimes(1);
+    options.callback('second-token');
+    await fixture.whenStable();
+    await submitForm();
+    expect(submit).toHaveBeenLastCalledWith(expect.anything(), 'second-token');
+    expect(element.querySelector('.alert--success')).toBeTruthy();
+  });
+
+  it('prevents duplicate submits while waiting for the API', async () => {
+    let finish!: () => void;
+    submit.mockReturnValueOnce(new Promise<void>(resolve => { finish = resolve; }));
+    const { fixture, element, fillValidForm } = await setup();
+    fillValidForm();
+    const form = element.querySelector('form')!;
+    form.dispatchEvent(new Event('submit'));
+    form.dispatchEvent(new Event('submit'));
+    expect(submit).toHaveBeenCalledOnce();
+    finish();
+    await fixture.whenStable();
+  });
+
+  it('keeps the calculator usable when submissions are unavailable', async () => {
+    TestBed.overrideProvider(BookingRequestService, { useValue: { submit, available: false } });
+    const fixture = TestBed.createComponent(Booking);
+    await fixture.whenStable();
+    const element = fixture.nativeElement as HTMLElement;
+    expect(element.textContent).toContain('tijdelijk niet beschikbaar');
+    expect(element.querySelector('app-turnstile')).toBeNull();
+    expect((element.querySelector('button[type="submit"]') as HTMLButtonElement).disabled).toBe(true);
+    (element.querySelector('input[name="building"][value="groot"]') as HTMLInputElement).click();
+    (element.querySelector('.daypart-card input') as HTMLInputElement).click();
+    await fixture.whenStable();
+    expect(element.querySelector('.summary__calc .price-total__amount')?.textContent).toContain('75,00');
+    element.querySelector('form')!.dispatchEvent(new Event('submit'));
+    expect(submit).not.toHaveBeenCalled();
   });
 });
