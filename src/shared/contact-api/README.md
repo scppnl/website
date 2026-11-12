@@ -2,7 +2,9 @@
 
 The .NET 10 minimal API accepts contact requests from both frontends. It currently
 validates and logs the complete normalized request through structured console
-logging. It does not send email or persist requests. Logs contain submitted names,
+logging, using Serilog through Microsoft `ILogger<T>` with readable console output.
+An additional request completion event records method, path, status, and duration.
+It does not send email or persist requests. Logs contain submitted names,
 email addresses and message text. A successful response confirms receipt only.
 
 ## Local development

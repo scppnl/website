@@ -8,8 +8,9 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Serilog.Core;
+using Serilog.Events;
 
 namespace Scpp.Shared.Contact.Api.UnitTests;
 
@@ -29,7 +30,7 @@ public sealed class ContactRequestTests
     public async Task Start()
     {
         app = ContactApi.Build(["--urls", "http://127.0.0.1:0", "--Cors:AllowedOrigins:0", "http://localhost:4173"],
-            builder => builder.Logging.ClearProviders().AddProvider(logs));
+            builder => builder.Services.AddSingleton<ILogEventSink>(logs));
         await app.StartAsync();
         var addresses = app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>()!;
         client = new HttpClient { BaseAddress = new Uri(addresses.Addresses.Single()) };
@@ -159,20 +160,17 @@ public sealed class ContactRequestTests
         }
     }
 
-    private sealed class RequestLogs : ILoggerProvider
+    private sealed class RequestLogs : ILogEventSink
     {
         internal ConcurrentBag<Dictionary<string, object?>> Entries { get; } = [];
-        public ILogger CreateLogger(string categoryName) => new RequestLogger(this, categoryName);
-        public void Dispose() { }
-        private sealed class RequestLogger(RequestLogs owner, string category) : ILogger
+
+        public void Emit(LogEvent logEvent)
         {
-            public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
-            public bool IsEnabled(LogLevel level) => true;
-            public void Log<TState>(LogLevel level, EventId id, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
-            {
-                if (category == typeof(ContactRequestHandler).FullName && level == LogLevel.Information)
-                    owner.Entries.Add(((IEnumerable<KeyValuePair<string, object?>>)state!).ToDictionary());
-            }
+            if (logEvent.Level == LogEventLevel.Information &&
+                logEvent.Properties.TryGetValue("SourceContext", out var category) &&
+                ((ScalarValue)category).Value?.ToString() == typeof(ContactRequestHandler).FullName)
+                Entries.Add(logEvent.Properties.ToDictionary(property => property.Key,
+                    property => ((ScalarValue)property.Value).Value));
         }
     }
 }
