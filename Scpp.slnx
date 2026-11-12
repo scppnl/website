@@ -5,7 +5,8 @@
     <Project Path="src/foundation/booking-api/tests/Scpp.Foundation.Booking.Api.UnitTests/Scpp.Foundation.Booking.Api.UnitTests.csproj" />
   </Folder>
   <Folder Name="/src/shared/contact-api/">
-    <Project Path="src/shared/contact-api/src/Scpp.Shared.ContactApi/Scpp.Shared.ContactApi.csproj" />
-    <Project Path="src/shared/contact-api/tests/Scpp.Shared.ContactApi.UnitTests/Scpp.Shared.ContactApi.UnitTests.csproj" />
+    <Project Path="src/shared/contact-api/src/Scpp.Shared.Contact.Api/Scpp.Shared.Contact.Api.csproj" />
+    <Project Path="src/shared/contact-api/src/Scpp.Shared.Contact.Models/Scpp.Shared.Contact.Models.csproj" />
+    <Project Path="src/shared/contact-api/tests/Scpp.Shared.Contact.Api.UnitTests/Scpp.Shared.Contact.Api.UnitTests.csproj" />
   </Folder>
 </Solution>

@@ -12,6 +12,6 @@
     <PackageReference Include="MSTest.TestFramework" Version="4.5.2" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../../src/Scpp.Shared.ContactApi/Scpp.Shared.ContactApi.csproj" />
+    <ProjectReference Include="../../src/Scpp.Shared.Contact.Api/Scpp.Shared.Contact.Api.csproj" />
   </ItemGroup>
 </Project>

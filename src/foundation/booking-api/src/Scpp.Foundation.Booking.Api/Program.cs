@@ -1,6 +1,7 @@
 using Scpp.Foundation.Booking.Api;
 
 var builder = WebApplication.CreateSlimBuilder(args);
+builder.AddApiLogging();
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.TypeInfoResolverChain.Insert(0, BookingJsonContext.Default));
 builder.Services.AddSingleton(TimeProvider.System);
@@ -15,6 +16,7 @@ builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
 
 var app = builder.Build();
 
+app.UseApiRequestLogging();
 app.UseCors();
 app.MapGet("/", DummyEndpoint.Get);
 app.MapPost("/api/bookings", BookingEndpoint.Post);

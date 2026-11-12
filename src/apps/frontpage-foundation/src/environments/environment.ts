@@ -1,4 +1,5 @@
-/** Set the API origin before building for production, e.g. https://booking.example.org. */
+// Set the hosted API origins before enabling production submissions.
 export const environment = {
+  contactApiBaseUrl: '',
   bookingApiBaseUrl: '',
 };

@@ -22,7 +22,7 @@ writeFileSync(join(directory, 'node_modules/nx/bin/nx.js'), `
 const args = process.argv.slice(2);
 if (args[0] === 'show' && args[1] === 'projects') console.log(process.env.TEST_PROJECTS || '["app"]');
 else if (args[0] === 'show') console.log(JSON.stringify({root: 'app', metadata: {ci: {npm: process.env.FAIL_INSTALL === 'true'}},
-  targets: ['booking-api', 'another-api'].includes(args[2]) ? {docker: {}} : {}}));
+  targets: ['booking-api', 'contact-api', 'another-api'].includes(args[2]) ? {docker: {}} : {}}));
 else process.exit(Number(process.env.TEST_NX_EXIT ?? 29));
 `);
 
@@ -46,6 +46,8 @@ test('successful CI exports checked websites and projects with a Docker target',
     {projects: ['frontpage-foundation'], sites: ['frontpage-foundation'], containers: []},
     {projects: ['future-api'], sites: [], containers: []},
     {projects: ['booking-api'], sites: [], containers: ['booking-api']},
+    {projects: ['contact-api'], sites: [], containers: ['contact-api']},
+    {projects: ['booking-api', 'contact-api'], sites: [], containers: ['booking-api', 'contact-api']},
     {projects: ['another-api', 'booking-api', 'frontpage-association'],
       sites: ['frontpage-association'], containers: ['another-api', 'booking-api']},
   ];
@@ -62,12 +64,15 @@ test('successful CI exports checked websites and projects with a Docker target',
 });
 
 test('container runner skips an empty selection and propagates Docker target failures', () => {
-  for (const [selection, status] of [['[]', 0], ['["booking-api"]', 1], ['null', 1], ['["--all"]', 1]]) {
+  for (const [selection, status] of [
+    ['[]', 0], ['["booking-api"]', 1], ['["contact-api"]', 1], ['null', 1], ['["--all"]', 1],
+  ]) {
     const result = spawnSync(process.execPath, ['eng/containers.mjs'], {
       cwd: directory, encoding: 'utf8', env: { ...childEnv, CONTAINERS: selection, TEST_NX_EXIT: '31' },
     });
     assert.equal(result.status, status, result.stderr);
     if (selection.includes('booking-api')) assert.match(result.stderr, /--target=docker.*--projects=booking-api.*failed \(31\)/);
+    if (selection.includes('contact-api')) assert.match(result.stderr, /--target=docker.*--projects=contact-api.*failed \(31\)/);
   }
 });
 

@@ -71,7 +71,9 @@ https://scpp-foundation.de-wildert-penp.workers.dev/. The association has no ren
 ## Forms
 
 
-The association contact form uses native required-field/email validation. Submission is prevented and displays an explicit not-sent message. No information is transmitted or persisted. Replace this behavior only when a submission service is intentionally added.
+The contact form validates inputs and posts to the shared contact API. The API currently logs accepted requests and returns a receipt confirmation. Development builds use `http://localhost:5081`; production submissions stay disabled until an API URL is configured. See the [contact API guide](../../shared/contact-api/README.md) for local startup, validation, configuration and logging behavior.
+
+Run `npm test -- --watch=false` for contact form and HTTP service tests. The Nx test target also runs the static-hosting checks.
 
 ## Content provenance
 
@@ -84,3 +86,16 @@ Content was retrieved from the exact user-provided Wayback pages:
 Age groups, three free introductory visits, founding year, address, emergency telephone, and social links are taken from those archived pages. No meeting times are invented. Older approximate membership counts were deliberately omitted. Reconfirm historical contact details before a public launch.
 
 The original logo and photos are retrieved from archived scpp.nl assets for this organization's redesign. Original paths: `/wp-content/uploads/2023/05/SCPP-logo-1.png`, `/wp-content/uploads/2023/10/Brug.png`, `/wp-content/uploads/2023/10/Blokhut.png`. The downloads page labels its documents as archived versions; their external availability depends on Wayback. Facebook is linked, not embedded, and no unverified recent posts are reproduced.
+
+## Turnstile protection
+
+Contact submissions require a current Turnstile token. Set the public site key
+through the frontend process environment (`TURNSTILE_SITE_KEY`); CI reads it from
+the GitHub repository secret `CONTACT_TURNSTILE_SITE_KEY`. Keep the hosted API origin in
+`src/environments/environment.ts`. The `CONTACT_TURNSTILE_SECRET_KEY` verification
+secret belongs only in the
+.NET API runtime; it must never be supplied to the frontend build.
+
+See the [contact API deployment/setup guide](../../shared/contact-api/README.md#turnstile-github-and-cloudflare-deployment-setup)
+for Cloudflare widget creation, GitHub settings, the four production hostnames,
+API runtime configuration, local development, and the deployment checklist.

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace Scpp.Shared.ContactApi.UnitTests;
+namespace Scpp.Shared.Contact.Api.UnitTests;
 
 [TestClass]
 public sealed class DummyEndpointTests

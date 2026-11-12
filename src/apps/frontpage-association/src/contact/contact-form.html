@@ -1,0 +1,82 @@
+<form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    @if (!available) {
+    <p class="form-feedback" role="status">
+        Het contactformulier is tijdelijk niet beschikbaar. Probeer het later
+        opnieuw.
+    </p>
+    }
+    <fieldset [disabled]="!available || status() === 'submitting'">
+        <div class="form-grid">
+            <label
+                >Naam <span>*</span
+                ><input
+                    formControlName="name"
+                    name="name"
+                    autocomplete="name"
+                    required
+                    placeholder="Je voor- en achternaam"
+                    [attr.aria-invalid]="showError('name')"
+                />
+                @if (showError('name')) {
+                <span class="error">{{ errorMessage('name') }}</span> }
+            </label>
+            <label
+                >E-mailadres <span>*</span
+                ><input
+                    formControlName="email"
+                    name="email"
+                    autocomplete="email"
+                    type="email"
+                    required
+                    placeholder="naam@voorbeeld.nl"
+                    [attr.aria-invalid]="showError('email')"
+                />
+                @if (showError('email')) {
+                <span class="error">{{ errorMessage('email') }}</span> }
+            </label>
+        </div>
+        <label
+            >Naam jeugdlid <small>(optioneel)</small
+            ><input
+                formControlName="childName"
+                name="childName"
+                placeholder="Voor wie kom je kennismaken?"
+                [attr.aria-invalid]="showError('childName')"
+            />
+            @if (showError('childName')) {
+            <span class="error">{{ errorMessage('childName') }}</span> }
+        </label>
+        <label
+            >Bericht <span>*</span
+            ><textarea
+                formControlName="message"
+                name="message"
+                rows="5"
+                required
+                placeholder="Stel je vraag of vertel welke speltak je wilt ontdekken."
+                [attr.aria-invalid]="showError('message')"
+            ></textarea>
+            @if (showError('message')) {
+            <span class="error">{{ errorMessage('message') }}</span> }
+        </label>
+    </fieldset>
+    @if (available) {
+    <app-turnstile (tokenChange)="turnstileToken.set($event)" />
+    }
+    <button
+        class="button dark"
+        type="submit"
+        [disabled]="!available || !turnstileToken() || status() === 'submitting'"
+    >
+        {{ status() === 'submitting' ? 'Bezig met versturen…' : 'Bericht
+        versturen' }} <span aria-hidden="true">↗</span>
+    </button>
+    @if (status() === 'success') {
+    <p class="form-feedback" role="status">Bedankt! Je bericht is ontvangen.</p>
+    } @if (status() === 'error') {
+    <p class="form-feedback" role="alert">
+        Het versturen is niet gelukt. Controleer je gegevens of probeer het
+        later opnieuw.
+    </p>
+    }
+</form>

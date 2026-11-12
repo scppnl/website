@@ -1,5 +1,13 @@
-import { Component, inject, signal } from '@angular/core';
-import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { TurnstileWidget } from '../../contact/turnstile-widget';
+import { HttpErrorResponse } from '@angular/common/http';
+import {
+  contactError,
+  requiredText,
+  trimmedEmail,
+  trimmedMaxLength,
+} from '../../contact/contact-validation';
+import { Component, inject, signal, viewChild } from '@angular/core';
+import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ContactMessage, ContactSubject } from '../../contact/contact-message';
 import { ContactMessageService } from '../../contact/contact-message.service';
@@ -12,7 +20,7 @@ type SubmitStatus = 'idle' | 'submitting' | 'success' | 'error';
 
 @Component({
   selector: 'app-contact',
-  imports: [ReactiveFormsModule, PageHeader, RouterLink, Icon, Photo],
+  imports: [TurnstileWidget, ReactiveFormsModule, PageHeader, RouterLink, Icon, Photo],
   styleUrl: './contact.scss',
   templateUrl: './contact.html',
 })
@@ -20,16 +28,24 @@ export class Contact {
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly contactService = inject(ContactMessageService);
 
+  protected readonly turnstileToken = signal<string | null>(null);
+  private readonly widget = viewChild(TurnstileWidget);
+  protected readonly available = this.contactService.available;
+
   protected readonly content = contactPage;
   protected readonly links = contactPage.links;
   protected readonly status = signal<SubmitStatus>('idle');
 
   protected readonly form = this.fb.group({
-    name: ['', Validators.required],
-    email: ['', [Validators.required, Validators.email]],
-    phone: [''],
-    subject: ['question' as ContactSubject],
-    message: ['', Validators.required],
+    name: ['', [requiredText, trimmedMaxLength(200)]],
+    email: ['', [requiredText, trimmedEmail, trimmedMaxLength(254)]],
+    phone: ['', trimmedMaxLength(50)],
+    subject: [
+      'question' as ContactSubject,
+      (control: AbstractControl) =>
+        ['question', 'viewing', 'other'].includes(control.value) ? null : { subject: true },
+    ],
+    message: ['', [requiredText, trimmedMaxLength(10000)]],
   });
 
   protected showError(controlName: string): boolean {
@@ -37,19 +53,40 @@ export class Contact {
     return !!control && control.invalid && control.touched;
   }
 
+  protected errorMessage(controlName: string): string {
+    return contactError(this.form.get(controlName));
+  }
+
   protected async submit(): Promise<void> {
+    if (!this.available || this.status() === 'submitting') return;
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
     }
 
+    const token = this.turnstileToken();
+    if (!token) return;
+    const message = this.toMessage();
     this.status.set('submitting');
+    this.form.disable();
     try {
-      await this.contactService.submit(this.toMessage());
+      await this.contactService.submit(message, token);
       this.status.set('success');
       this.form.reset();
-    } catch {
+    } catch (error) {
+      this.form.enable();
+      if (error instanceof HttpErrorResponse && error.status === 400) {
+        for (const key of Object.keys(error.error?.errors ?? {})) {
+          const control = this.form.get(key);
+          control?.setErrors({ server: true });
+          control?.markAsTouched();
+        }
+      }
       this.status.set('error');
+    } finally {
+      this.turnstileToken.set(null);
+      this.widget()?.reset();
+      if (this.form.disabled) this.form.enable();
     }
   }
 

@@ -3,9 +3,9 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build && node ../../../eng/static-hosting.mjs prepare",
-    "watch": "ng build --watch --configuration development",
+    "start": "node ../../../eng/frontend.mjs serve",
+    "build": "node ../../../eng/frontend.mjs build",
+    "watch": "node ../../../eng/frontend.mjs build --watch --configuration development",
     "test": "ng test",
     "preview": "npm run build && npm run check:hosting && wrangler dev",
     "deploy": "npm run build && npm run check:hosting && wrangler deploy",

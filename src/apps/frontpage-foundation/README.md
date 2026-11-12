@@ -63,6 +63,12 @@ and [limits](https://developers.cloudflare.com/workers/platform/limits/#static-a
 
 ## Forms
 
+The contact form validates inputs and posts through `ContactMessageService` to the
+shared contact API. Accepted requests are currently logged, and the UI confirms
+receipt after the API succeeds. Development builds use `http://localhost:5081`;
+production submissions stay disabled until an API URL is configured. See the
+[contact API guide](../../shared/contact-api/README.md) for startup and configuration.
+
 The booking form posts to the .NET booking API and retains its existing validation,
 success, and error presentation. Run the API in Development on port 5080 (see the
 [booking API guide](../../../README.md#booking-requests)) alongside `npm start`.
@@ -77,6 +83,19 @@ compiled into the static assets; changing it requires a rebuild.
 
 The API currently only validates and logs accepted requests, including contact
 details and remarks. HTTP 204 triggers the existing success state; no booking is
-stored, email sent, or follow-up arranged. `ContactMessageService` remains a stub.
+stored, email sent, or follow-up arranged.
 Review these temporary behaviors before a public launch. Static hosting does not
 add a form backend, and this change does not deploy the booking API.
+
+## Turnstile protection
+
+Contact submissions require a current Turnstile token. Set the public site key
+through the frontend process environment (`TURNSTILE_SITE_KEY`); CI reads it from
+the GitHub repository secret `CONTACT_TURNSTILE_SITE_KEY`. Keep the hosted API origin in
+`src/environments/environment.ts`. The `CONTACT_TURNSTILE_SECRET_KEY` verification
+secret belongs only in the
+.NET API runtime; it must never be supplied to the frontend build.
+
+See the [contact API deployment/setup guide](../../shared/contact-api/README.md#turnstile-github-and-cloudflare-deployment-setup)
+for Cloudflare widget creation, GitHub settings, the four production hostnames,
+API runtime configuration, local development, and the deployment checklist.

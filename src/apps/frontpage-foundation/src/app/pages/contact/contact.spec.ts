@@ -1,3 +1,4 @@
+import { turnstileProviders } from '../../contact/turnstile-testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { vi } from 'vitest';
@@ -8,10 +9,15 @@ describe('Contact', () => {
   const submit = vi.fn().mockResolvedValue(undefined);
 
   beforeEach(async () => {
-    submit.mockClear();
+    submit.mockReset();
+    submit.mockResolvedValue(undefined);
     await TestBed.configureTestingModule({
       imports: [Contact],
-      providers: [provideRouter([]), { provide: ContactMessageService, useValue: { submit } }],
+      providers: [
+        ...turnstileProviders(),
+        provideRouter([]),
+        { provide: ContactMessageService, useValue: { submit, available: true } },
+      ],
     }).compileComponents();
   });
 
@@ -25,7 +31,9 @@ describe('Contact', () => {
       input.dispatchEvent(new Event('input'));
     };
     const choose = (value: string) => {
-      (element.querySelector(`input[name="subject"][value="${value}"]`) as HTMLInputElement).click();
+      (
+        element.querySelector(`input[name="subject"][value="${value}"]`) as HTMLInputElement
+      ).click();
     };
     const submitForm = async () => {
       (element.querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit'));
@@ -79,13 +87,16 @@ describe('Contact', () => {
     setValue('message', 'Wat kost het clubhuis?');
     await submitForm();
 
-    expect(submit).toHaveBeenCalledExactlyOnceWith({
-      name: 'Jan Jansen',
-      email: 'jan@example.nl',
-      phone: '',
-      subject: 'question',
-      message: 'Wat kost het clubhuis?',
-    });
+    expect(submit).toHaveBeenCalledExactlyOnceWith(
+      {
+        name: 'Jan Jansen',
+        email: 'jan@example.nl',
+        phone: '',
+        subject: 'question',
+        message: 'Wat kost het clubhuis?',
+      },
+      'test-token',
+    );
   });
 
   it('submits a valid message and shows the success message', async () => {
@@ -96,13 +107,16 @@ describe('Contact', () => {
     setValue('message', 'Kunnen we het clubhuis komen bekijken?');
     await submitForm();
 
-    expect(submit).toHaveBeenCalledExactlyOnceWith({
-      name: 'Jan Jansen',
-      email: 'jan@example.nl',
-      phone: '',
-      subject: 'viewing',
-      message: 'Kunnen we het clubhuis komen bekijken?',
-    });
+    expect(submit).toHaveBeenCalledExactlyOnceWith(
+      {
+        name: 'Jan Jansen',
+        email: 'jan@example.nl',
+        phone: '',
+        subject: 'viewing',
+        message: 'Kunnen we het clubhuis komen bekijken?',
+      },
+      'test-token',
+    );
     expect(element.querySelector('.alert--success')).toBeTruthy();
   });
 
