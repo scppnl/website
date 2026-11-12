@@ -188,13 +188,20 @@ under the component's `src/` directory and its MSTest unit tests under `tests/`.
 updates within .NET 10 (`latestFeature`), and disallows prereleases.
 
 The shared contact API follows the same layout in `src/shared/contact-api/`,
-with component solution `Scpp.Shared.ContactApi.slnx`, API sources under `src/`,
-and MSTest unit tests under `tests/`. Both projects are also in `Scpp.slnx`.
-It uses the slim minimal API host with Native AOT enabled; `GET /` returns
-HTTP 200 with plain text `Contact API`.
+with component solution `Scpp.Shared.Contact.slnx` and these projects:
+
+- `src/Scpp.Shared.Contact.Api`: the slim minimal API host with Native AOT enabled.
+- `src/Scpp.Shared.Contact.Models`: a class library for shared contact models,
+  referenced by the API without depending on ASP.NET Core. It is initially empty
+  because the placeholder endpoint has no request or response models.
+- `tests/Scpp.Shared.Contact.Api.UnitTests`: MSTest tests for the API.
+
+All three projects are also in `Scpp.slnx` and belong to the `contact-api` Nx
+component, so changes to the models library also build and test the API.
+`GET /` returns HTTP 200 with plain text `Contact API`.
 
 ```sh
-dotnet run --project src/shared/contact-api/src/Scpp.Shared.ContactApi -- --urls http://localhost:5081
+dotnet run --project src/shared/contact-api/src/Scpp.Shared.Contact.Api -- --urls http://localhost:5081
 curl http://localhost:5081/
 npm run nx -- run contact-api:test
 ```
