@@ -1,12 +1,17 @@
 # Git commit identity
 
-Use `Michel Megens <mtm.megens@gmail.com>` for both
-the author and committer of every commit in this repository, including review
-artifacts. Set this identity in repository-local Git configuration before
-committing; do not inherit an email address from the environment's global config.
+Use the configured default Git identity, `Michel Megens <michelsown@gmail.com>`,
+for both the author and committer of every commit in this repository, including
+review artifacts. Inherit the configured default email; do not override it in
+repository-local Git configuration.
 
 Before pushing, inspect both author and committer with `git show --format=fuller`.
 After pushing, verify that GitHub attributes both identities to `michelmegens`.
+
+# .NET projects
+
+Put every type in its own file, including classes, records, structs, interfaces,
+enums, and delegates.
 
 # API setup
 
