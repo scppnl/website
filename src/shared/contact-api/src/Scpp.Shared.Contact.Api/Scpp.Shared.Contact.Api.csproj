@@ -11,6 +11,9 @@
     <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
   </ItemGroup>
   <ItemGroup>
-    <InternalsVisibleTo Include="Scpp.Shared.ContactApi.UnitTests" />
+    <InternalsVisibleTo Include="Scpp.Shared.Contact.Api.UnitTests" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Scpp.Shared.Contact.Models/Scpp.Shared.Contact.Models.csproj" />
   </ItemGroup>
 </Project>

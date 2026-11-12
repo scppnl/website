@@ -8,10 +8,14 @@ describe('Contact', () => {
   const submit = vi.fn().mockResolvedValue(undefined);
 
   beforeEach(async () => {
-    submit.mockClear();
+    submit.mockReset();
+    submit.mockResolvedValue(undefined);
     await TestBed.configureTestingModule({
       imports: [Contact],
-      providers: [provideRouter([]), { provide: ContactMessageService, useValue: { submit } }],
+      providers: [
+        provideRouter([]),
+        { provide: ContactMessageService, useValue: { submit, available: true } },
+      ],
     }).compileComponents();
   });
 
@@ -25,7 +29,9 @@ describe('Contact', () => {
       input.dispatchEvent(new Event('input'));
     };
     const choose = (value: string) => {
-      (element.querySelector(`input[name="subject"][value="${value}"]`) as HTMLInputElement).click();
+      (
+        element.querySelector(`input[name="subject"][value="${value}"]`) as HTMLInputElement
+      ).click();
     };
     const submitForm = async () => {
       (element.querySelector('form') as HTMLFormElement).dispatchEvent(new Event('submit'));

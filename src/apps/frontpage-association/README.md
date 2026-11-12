@@ -71,7 +71,9 @@ https://scpp-foundation.de-wildert-penp.workers.dev/. The association has no ren
 ## Forms
 
 
-The association contact form uses native required-field/email validation. Submission is prevented and displays an explicit not-sent message. No information is transmitted or persisted. Replace this behavior only when a submission service is intentionally added.
+The contact form validates inputs and posts to the shared contact API. The API currently logs accepted requests and returns a receipt confirmation. Development builds use `http://localhost:5081`; production submissions stay disabled until an API URL is configured. See the [contact API guide](../../shared/contact-api/README.md) for local startup, validation, configuration and logging behavior.
+
+Run `npm test -- --watch=false` for contact form and HTTP service tests. The Nx test target also runs the static-hosting checks.
 
 ## Content provenance
 

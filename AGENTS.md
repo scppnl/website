@@ -20,8 +20,9 @@ Use Information by default and Warning for Microsoft.AspNetCore and System.
 Add Serilog request completion logging before endpoint execution so each request
 records its method, path, status, and duration. Use the host's DI-managed logger
 for request logging and preserve the static logger to keep hosts isolated.
-Never log request bodies,
-credentials, or contact/booking payloads.
+Do not add logs of raw request bodies, credentials, or additional contact/booking
+payload fields. Preserve the contact API's established normalized submission log
+contract.
 
 Follow the existing APIs' explicit code-based sink configuration to preserve
 Native AOT compatibility. Let the host dispose and flush the logger. Verify the

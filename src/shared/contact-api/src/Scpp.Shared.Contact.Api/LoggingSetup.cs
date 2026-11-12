@@ -1,7 +1,7 @@
 using Serilog;
 using Serilog.Events;
 
-namespace Scpp.Shared.ContactApi;
+namespace Scpp.Shared.Contact.Api;
 
 internal static class LoggingSetup
 {

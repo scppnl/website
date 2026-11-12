@@ -8,7 +8,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Serilog.Core;
 using Serilog.Events;
 
-namespace Scpp.Shared.ContactApi.UnitTests;
+namespace Scpp.Shared.Contact.Api.UnitTests;
 
 [TestClass]
 public sealed class LoggingTests
@@ -34,7 +34,7 @@ public sealed class LoggingTests
         Assert.AreEqual(3, ((ScalarValue)logEvent.Properties["Attempt"]).Value);
         Assert.AreEqual("test-operation", ((ScalarValue)logEvent.Properties["OperationId"]).Value);
         Assert.AreEqual(typeof(LoggingTests).FullName, ((ScalarValue)logEvent.Properties["SourceContext"]).Value);
-        Assert.AreEqual("Scpp.Shared.ContactApi", ((ScalarValue)logEvent.Properties["Application"]).Value);
+        Assert.AreEqual("Scpp.Shared.Contact.Api", ((ScalarValue)logEvent.Properties["Application"]).Value);
         Assert.AreEqual("Testing", ((ScalarValue)logEvent.Properties["Environment"]).Value);
         Assert.AreSame(exception, logEvent.Exception);
         Assert.IsEmpty(app.Services.GetServices<ILoggerProvider>());
@@ -100,7 +100,7 @@ public sealed class LoggingTests
         {
             Assert.AreEqual("GET", ((ScalarValue)logEvent.Properties["RequestMethod"]).Value);
             Assert.IsGreaterThanOrEqualTo(0d, (double)((ScalarValue)logEvent.Properties["Elapsed"]).Value!);
-            Assert.AreEqual("Scpp.Shared.ContactApi", ((ScalarValue)logEvent.Properties["Application"]).Value);
+            Assert.AreEqual("Scpp.Shared.Contact.Api", ((ScalarValue)logEvent.Properties["Application"]).Value);
             Assert.AreEqual("Testing", ((ScalarValue)logEvent.Properties["Environment"]).Value);
         }
         Assert.IsInstanceOfType<InvalidOperationException>(requests[^1].Exception);
