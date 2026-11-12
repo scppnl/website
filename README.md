@@ -228,8 +228,8 @@ curl http://localhost:5080/
 
 ### Booking requests
 
-`POST /bookings` accepts the foundation website's booking JSON. Accepted
-requests are logged once at Information level with the complete payload, including
+`POST /bookings` accepts the foundation website's booking JSON. The planned
+production endpoint is `https://api.scpp.nl/bookings`. Accepted requests are logged once at Information level with the complete payload, including
 contact details and remarks, and return HTTP 204 with no body. This iteration does
 not store a booking, check availability, send email, or arrange follow-up. The
 form retains its existing success presentation; a successful POST currently means
