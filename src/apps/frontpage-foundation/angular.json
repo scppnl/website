@@ -30,9 +30,14 @@
                 "input": "public"
               }
             ],
-            "styles": ["src/styles.scss"],
+            "styles": [
+              "src/styles.scss"
+            ],
             "server": "src/main.server.ts",
-            "outputMode": "static"
+            "outputMode": "static",
+            "define": {
+              "__TURNSTILE_SITE_KEY__": "\"\""
+            }
           },
           "configurations": {
             "production": {

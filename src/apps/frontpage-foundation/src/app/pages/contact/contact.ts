@@ -1,3 +1,4 @@
+import { TurnstileWidget } from '../../contact/turnstile-widget';
 import { HttpErrorResponse } from '@angular/common/http';
 import {
   contactError,
@@ -5,7 +6,7 @@ import {
   trimmedEmail,
   trimmedMaxLength,
 } from '../../contact/contact-validation';
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, viewChild } from '@angular/core';
 import { AbstractControl, NonNullableFormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ContactMessage, ContactSubject } from '../../contact/contact-message';
@@ -19,7 +20,7 @@ type SubmitStatus = 'idle' | 'submitting' | 'success' | 'error';
 
 @Component({
   selector: 'app-contact',
-  imports: [ReactiveFormsModule, PageHeader, RouterLink, Icon, Photo],
+  imports: [TurnstileWidget, ReactiveFormsModule, PageHeader, RouterLink, Icon, Photo],
   styleUrl: './contact.scss',
   templateUrl: './contact.html',
 })
@@ -27,6 +28,8 @@ export class Contact {
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly contactService = inject(ContactMessageService);
 
+  protected readonly turnstileToken = signal<string | null>(null);
+  private readonly widget = viewChild(TurnstileWidget);
   protected readonly available = this.contactService.available;
 
   protected readonly content = contactPage;
@@ -61,11 +64,13 @@ export class Contact {
       return;
     }
 
+    const token = this.turnstileToken();
+    if (!token) return;
     const message = this.toMessage();
     this.status.set('submitting');
     this.form.disable();
     try {
-      await this.contactService.submit(message);
+      await this.contactService.submit(message, token);
       this.status.set('success');
       this.form.reset();
     } catch (error) {
@@ -79,6 +84,8 @@ export class Contact {
       }
       this.status.set('error');
     } finally {
+      this.turnstileToken.set(null);
+      this.widget()?.reset();
       if (this.form.disabled) this.form.enable();
     }
   }

@@ -105,6 +105,10 @@ These existing Workers do not use Cloudflare Builds or custom domains.
 
 ### One-time credential setup
 
+Contact forms also require the `TURNSTILE_SITE_KEY` GitHub repository secret before
+production builds. Follow the [Turnstile setup guide](src/shared/contact-api/README.md#turnstile-github-and-cloudflare-deployment-setup)
+for the widget, API runtime secret, hostname allowlists, and frontend URL configuration.
+
 A repository administrator must configure the GitHub **production** environment
 before merging the workflow. In **Settings → Environments → production**, allow
 only the selected **branch** `main` and do not require a reviewer. Add environment
