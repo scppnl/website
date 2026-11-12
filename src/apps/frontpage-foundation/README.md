@@ -63,8 +63,11 @@ and [limits](https://developers.cloudflare.com/workers/platform/limits/#static-a
 
 ## Forms
 
-The booking and contact components keep their existing client validation and
-service interfaces. `BookingRequestService` and `ContactMessageService` are still
-stubs: they send and store nothing, while the current UI displays its existing
-success state. Connect the intended APIs and review that behavior before a public
-launch. Static hosting does not add a form backend.
+The contact form validates inputs and posts through `ContactMessageService` to the
+shared contact API. Accepted requests are currently logged, and the UI confirms
+receipt after the API succeeds. Development builds use `http://localhost:5081`;
+production submissions stay disabled until an API URL is configured. See the
+[contact API guide](../../shared/contact-api/README.md) for startup and configuration.
+
+The booking component and `BookingRequestService` remain a separate stub. Booking
+submissions send and store nothing; review that behavior before a public launch.

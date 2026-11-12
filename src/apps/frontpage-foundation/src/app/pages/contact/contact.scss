@@ -49,6 +49,11 @@
   }
 }
 
+.contact-form__fields {
+  display: grid;
+  gap: 1.75rem;
+}
+
 .subject-pills {
   display: flex;
   flex-wrap: wrap;

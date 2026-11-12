@@ -1,18 +1,9 @@
+import { provideHttpClient } from '@angular/common/http';
+import { ContactForm } from './contact/contact-form';
 import { currentDate } from './current-date';
 import { Component, computed, inject, signal } from '@angular/core';
 import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
 import { provideRouter, RouterLink, RouterLinkActive, RouterOutlet, Router, NavigationEnd, withInMemoryScrolling } from '@angular/router';
-
-@Component({selector:'contact-form',standalone:true,template:`
-<form (submit)="submit($event)">
-  <div class="form-grid"><label>Naam <span>*</span><input name="name" autocomplete="name" required placeholder="Je voor- en achternaam"></label><label>E-mailadres <span>*</span><input name="email" autocomplete="email" type="email" required placeholder="naam@voorbeeld.nl"></label></div>
-  <label>Naam jeugdlid <small>(optioneel)</small><input name="childName" placeholder="Voor wie kom je kennismaken?"></label>
-  <label>Bericht <span>*</span><textarea name="message" rows="5" required placeholder="Stel je vraag of vertel welke speltak je wilt ontdekken."></textarea></label>
-  <p class="form-note">Dit formulier is nog niet actief. Je gegevens worden niet verstuurd of opgeslagen.</p>
-  <button class="button dark" type="submit">Controleer je bericht <span aria-hidden="true">↗</span></button>
-  @if (checked()) {<p class="form-feedback" role="status">Je bericht is ingevuld, maar niet verzonden. Neem voor contact voorlopig een kijkje op onze Facebookpagina.</p>}
-</form>`})
-class ContactForm { checked=signal(false); submit(event:Event){event.preventDefault();this.checked.set(true);} }
 
 const groups=[
  {name:'Bevers',age:'4½–7 jaar',color:'#a34632',number:'01',title:'Kleine stappen, grote ontdekkingen.',text:'Spelenderwijs de natuur ontdekken. Samen spelen, knutselen en op avontuur in een veilige omgeving.'},
@@ -52,4 +43,4 @@ const groups=[
 @Component({selector:'app-root',standalone:true,imports:[RouterOutlet,RouterLink,RouterLinkActive],template:`<a class="skip-link" href="#main">Ga naar inhoud</a><header class="site-header"><div class="wrap header-inner"><a class="brand" routerLink="/" aria-label="Scouting Petrus en Paulus – home"><img src="/assets/SCPP-logo-1.png" alt=""><span>Scouting<strong>Petrus & Paulus</strong></span></a><button class="menu-button" (click)="menuOpen.set(!menuOpen())" [attr.aria-expanded]="menuOpen()" aria-controls="main-navigation">{{menuOpen()?'Sluiten ✕':'Menu ☰'}}</button><nav id="main-navigation" [class.open]="menuOpen()" aria-label="Hoofdnavigatie"><a routerLink="/" [routerLinkActiveOptions]="{exact:true}" routerLinkActive="active">Home</a><a routerLink="/" fragment="over-ons">Over ons</a><a routerLink="/speltakken" routerLinkActive="active">Speltakken</a><a routerLink="/verhuur" routerLinkActive="active">Verhuur</a><a routerLink="/contact" routerLinkActive="active">Contact</a><a class="button dark nav-cta" routerLink="/contact">Kom kennismaken <span>↗</span></a></nav></div></header><main id="main" tabindex="-1"><router-outlet /></main><footer><div class="wrap footer-main"><a class="brand" routerLink="/"><img src="/assets/SCPP-logo-1.png" alt=""><span>Scouting<strong>Petrus & Paulus</strong></span></a><div><strong>Hier begint het avontuur</strong><p>Huijbergsebaan 415<br>4624 RG Bergen op Zoom</p></div><div class="footer-links"><a routerLink="/speltakken">Speltakken</a><a routerLink="/verhuur">Verhuur</a><a routerLink="/downloads">Downloads</a><a routerLink="/contact">Contact</a></div><div class="footer-links"><a href="https://www.facebook.com/scppnl/" target="_blank" rel="noopener">Facebook ↗</a><a href="https://www.instagram.com/scpp.nl/" target="_blank" rel="noopener">Instagram ↗</a></div></div><div class="wrap footer-bottom"><span>© {{year()}} Scouting Petrus & Paulus</span><span>Al sinds 1954. Voor het avontuur van morgen.</span></div></footer>`})
 export class App { menuOpen=signal(false);private date=currentDate();year=computed(()=>this.date().year);constructor(){inject(Router).events.subscribe(event=>{if(event instanceof NavigationEnd){this.menuOpen.set(false);}});} }
 @Component({standalone:true,imports:[RouterLink],template:`<section class="wrap section"><h1>Pagina niet gevonden</h1><p>Deze pagina bestaat niet (meer).</p><a class="button dark" routerLink="/">Naar de homepage</a></section>`}) class NotFoundPage {}
-export const appConfig = {providers:[provideClientHydration(withEventReplay()),provideRouter([{path:'',component:HomePage},{path:'speltakken',component:GroupsPage},{path:'verhuur',component:RentalPage},{path:'contact',component:ContactPage},{path:'downloads',component:DocumentsPage},{path:'404',component:NotFoundPage},{path:'**',component:NotFoundPage}],withInMemoryScrolling({scrollPositionRestoration:'enabled',anchorScrolling:'enabled'}))]};
+export const appConfig = {providers:[provideHttpClient(),provideClientHydration(withEventReplay()),provideRouter([{path:'',component:HomePage},{path:'speltakken',component:GroupsPage},{path:'verhuur',component:RentalPage},{path:'contact',component:ContactPage},{path:'downloads',component:DocumentsPage},{path:'404',component:NotFoundPage},{path:'**',component:NotFoundPage}],withInMemoryScrolling({scrollPositionRestoration:'enabled',anchorScrolling:'enabled'}))]};

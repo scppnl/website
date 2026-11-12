@@ -7,7 +7,7 @@
 
       @if (status() === 'success') {
         <div class="alert alert--success" role="status">
-          <strong>Bedankt voor uw bericht!</strong> Wij nemen zo snel mogelijk contact met u op.
+          <strong>Bedankt voor uw bericht!</strong> Uw bericht is ontvangen.
         </div>
       }
       @if (status() === 'error') {
@@ -16,7 +16,13 @@
         </div>
       }
 
-      <fieldset>
+      @if (!available) {
+        <p class="alert" role="status">
+          Het contactformulier is tijdelijk niet beschikbaar. Probeer het later opnieuw.
+        </p>
+      }
+
+      <fieldset [disabled]="!available || status() === 'submitting'">
         <legend>Waar gaat uw bericht over?</legend>
         <div class="subject-pills">
           @for (subject of content.subjects; track subject.value) {
@@ -32,61 +38,79 @@
             </label>
           }
         </div>
+        @if (showError('subject')) {
+          <p class="error">{{ errorMessage('subject') }}</p>
+        }
       </fieldset>
 
-      <div class="contact-fields">
+      <fieldset class="contact-form__fields" [disabled]="!available || status() === 'submitting'">
+        <div class="contact-fields">
+          <div class="field">
+            <label for="name">Naam</label>
+            <input
+              id="name"
+              type="text"
+              formControlName="name"
+              autocomplete="name"
+              aria-required="true"
+              [attr.aria-invalid]="showError('name')"
+            />
+            @if (showError('name')) {
+              <p class="error">{{ errorMessage('name') }}</p>
+            }
+          </div>
+
+          <div class="field">
+            <label for="email">E-mailadres</label>
+            <input
+              id="email"
+              type="email"
+              formControlName="email"
+              autocomplete="email"
+              aria-required="true"
+              [attr.aria-invalid]="showError('email')"
+            />
+            @if (showError('email')) {
+              <p class="error">{{ errorMessage('email') }}</p>
+            }
+          </div>
+
+          <div class="field">
+            <label for="phone">Telefoonnummer <span class="optional">(optioneel)</span></label>
+            <input
+              id="phone"
+              type="tel"
+              formControlName="phone"
+              autocomplete="tel"
+              [attr.aria-invalid]="showError('phone')"
+            />
+            @if (showError('phone')) {
+              <p class="error">{{ errorMessage('phone') }}</p>
+            }
+          </div>
+        </div>
+
         <div class="field">
-          <label for="name">Naam</label>
-          <input
-            id="name"
-            type="text"
-            formControlName="name"
-            autocomplete="name"
+          <label for="message">Bericht</label>
+          <textarea
+            id="message"
+            rows="7"
+            formControlName="message"
             aria-required="true"
-            [attr.aria-invalid]="showError('name')"
-          />
-          @if (showError('name')) {
-            <p class="error">Vul uw naam in.</p>
+            [attr.aria-invalid]="showError('message')"
+          ></textarea>
+          @if (showError('message')) {
+            <p class="error">{{ errorMessage('message') }}</p>
           }
         </div>
-
-        <div class="field">
-          <label for="email">E-mailadres</label>
-          <input
-            id="email"
-            type="email"
-            formControlName="email"
-            autocomplete="email"
-            aria-required="true"
-            [attr.aria-invalid]="showError('email')"
-          />
-          @if (showError('email')) {
-            <p class="error">Vul een geldig e-mailadres in.</p>
-          }
-        </div>
-
-        <div class="field">
-          <label for="phone">Telefoonnummer <span class="optional">(optioneel)</span></label>
-          <input id="phone" type="tel" formControlName="phone" autocomplete="tel" />
-        </div>
-      </div>
-
-      <div class="field">
-        <label for="message">Bericht</label>
-        <textarea
-          id="message"
-          rows="7"
-          formControlName="message"
-          aria-required="true"
-          [attr.aria-invalid]="showError('message')"
-        ></textarea>
-        @if (showError('message')) {
-          <p class="error">Vul uw bericht in.</p>
-        }
-      </div>
+      </fieldset>
 
       <div class="contact-form__footer">
-        <button type="submit" class="btn btn--accent" [disabled]="status() === 'submitting'">
+        <button
+          type="submit"
+          class="btn btn--accent"
+          [disabled]="!available || status() === 'submitting'"
+        >
           {{ status() === 'submitting' ? 'Bezig met versturen…' : 'Bericht versturen' }}
         </button>
         <span class="contact-form__note">{{ content.requiredNote }}</span>
@@ -113,7 +137,12 @@
               <span class="link-card__sub">{{ links.location.text }}</span>
             </span>
           </span>
-          <app-icon class="link-card__chevron" name="chevron-right" [size]="22" [strokeWidth]="2.2" />
+          <app-icon
+            class="link-card__chevron"
+            name="chevron-right"
+            [size]="22"
+            [strokeWidth]="2.2"
+          />
         </span>
       </a>
 
@@ -123,7 +152,12 @@
             <span class="link-card__title">{{ links.booking.title }}</span>
             <span class="link-card__sub">{{ links.booking.text }}</span>
           </span>
-          <app-icon class="link-card__chevron" name="chevron-right" [size]="22" [strokeWidth]="2.2" />
+          <app-icon
+            class="link-card__chevron"
+            name="chevron-right"
+            [size]="22"
+            [strokeWidth]="2.2"
+          />
         </span>
       </a>
     </aside>
