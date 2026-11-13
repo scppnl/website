@@ -1,5 +1,5 @@
 import { Component, input } from '@angular/core';
-import { bookingPage, deposit, formatEuro } from '../../content/site-content';
+import { bookingPage, formatEuro } from '../../content/site-content';
 
 /** What the renter pays when, and until when cancelling is free. */
 @Component({
@@ -26,17 +26,11 @@ import { bookingPage, deposit, formatEuro } from '../../content/site-content';
         <span class="number">3</span>
         <span class="text">
           <strong>{{ content.signed.title }}</strong>
-          <span>{{ content.signed.depositLabel }} {{ formatEuro(deposit, true) }}</span>
           @if (rent() !== null) {
             <span>{{ content.signed.rentLabel }} {{ formatEuro(rent()!, true) }}</span>
+          } @else {
+            <span>{{ content.signed.rentPending }}</span>
           }
-        </span>
-      </li>
-      <li>
-        <span class="number">4</span>
-        <span class="text">
-          <strong>{{ content.returned.title }}</strong>
-          <span>{{ content.returned.text }}</span>
         </span>
       </li>
     </ol>
@@ -55,6 +49,5 @@ export class PaymentTimeline {
   readonly cancelBy = input<string | null>(null);
 
   protected readonly content = bookingPage.payment;
-  protected readonly deposit = deposit;
   protected readonly formatEuro = formatEuro;
 }

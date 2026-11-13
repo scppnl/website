@@ -2,7 +2,6 @@ import {
   building,
   bundleSaving,
   dayparts,
-  deposit,
   formatEuro,
   freeCancellationWeeks,
   lowestRate,
@@ -17,7 +16,6 @@ describe('site content', () => {
   it('formats euros with and without cents', () => {
     expect(formatEuro(75)).toBe('€ 75');
     expect(formatEuro(75, true)).toBe('€ 75,00');
-    expect(formatEuro(deposit, true)).toBe('€ 250,00');
   });
 
   it('derives the cheapest rate and the bundle saving from the rental options', () => {
@@ -35,7 +33,17 @@ describe('site content', () => {
     const fact = home.facts.find((item) => item.icon === 'tag');
     expect(fact?.title.long).toBe(`Vanaf ${formatEuro(lowestRate())}`);
     expect(ratesPage.savingLabel.long).toContain(formatEuro(bundleSaving()));
-    expect(bookingPage.payment.returned.text).toContain(formatEuro(deposit, true));
+  });
+
+  it('does not mention a deposit, except to say there is none', () => {
+    const copy = JSON.stringify({ ratesPage, bookingPage }).replace(/geen borg/gi, '');
+    expect(copy).not.toMatch(/borg|deposit/i);
+  });
+
+  it('explains free cancellation in the rates info box', () => {
+    const box = ratesPage.infoBoxes.find((item) => item.title.long.includes('annuleren'));
+    expect(box?.text.long).toContain(`${freeCancellationWeeks} weken`);
+    expect(box?.text.long).toContain('geen borg');
   });
 
   it('keeps the dagdelen unique, in day order and inside the opening hours', () => {

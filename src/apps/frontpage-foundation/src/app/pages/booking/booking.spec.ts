@@ -147,7 +147,7 @@ describe('Booking', () => {
       expect(text('.summary__calc .price-total__amount')).toBe('€ 75,00');
     });
 
-    it('works out the rent, the deposit and the total while the renter chooses', async () => {
+    it('works out the rent while the renter chooses, without a deposit', async () => {
       const { fixture, text, chooseBuilding, toggleDaypart, setValue } = await setup();
       chooseBuilding('groot');
       setValue('date', RENTAL_DATE);
@@ -160,18 +160,17 @@ describe('Booking', () => {
       expect(summary).toContain('2 dagdelen × € 75,00');
       expect(text('.summary__calc .price-row--muted')).toContain('Gas, water en elektra');
       expect(text('.summary__calc .price-row--muted')).toContain('inbegrepen');
-      expect(text('.summary__calc .price-row--divided .price-row__label')).toContain(
-        'krijgt u terug na oplevering',
-      );
-      expect(text('.summary__calc .price-row--divided .price-row__amount')).toBe('€ 250,00');
-      expect(summary).toContain('U maakt in totaal € 400,00 over');
+      expect(summary).toContain('Dit is het volledige bedrag');
+      expect(summary.replace(/geen borg/gi, '')).not.toMatch(/borg|€ 250/i);
       expect(summary).toContain('08:00 – 17:00');
       expect(summary).toContain('Huur € 150,00');
+      expect(summary).not.toContain('Na oplevering');
+      const timeline = (fixture.nativeElement as HTMLElement).querySelector('app-payment-timeline');
+      expect(timeline?.querySelectorAll('li')).toHaveLength(3);
 
       toggleDaypart(2);
       await fixture.whenStable();
       expect(text('.summary__calc .price-total__amount')).toBe('€ 225,00');
-      expect(text('.summary__calc')).toContain('U maakt in totaal € 475,00 over');
       expect(text('.dayparts__summary')).toContain('3 dagdelen');
     });
 
@@ -195,7 +194,7 @@ describe('Booking', () => {
       await fixture.whenStable();
 
       expect(text('.total-bar__amount')).toBe('€ 90,00');
-      expect(text('.total-bar__note')).toContain('+ € 250 borg (krijgt u terug)');
+      expect(text('.total-bar__note')).toContain('2 dagdelen · alles inbegrepen');
     });
 
     it('offers the whole clubhouse when a single building is chosen', async () => {
@@ -243,7 +242,7 @@ describe('Booking', () => {
       await fixture.whenStable();
       expect(dialog.open).toBe(true);
       expect(open.getAttribute('aria-expanded')).toBe('true');
-      expect(dialog.textContent).toContain('U maakt in totaal € 350,00 over');
+      expect(dialog.textContent).toContain('Dit is het volledige bedrag');
 
       (element.querySelector('.sheet__close') as HTMLButtonElement).click();
       await fixture.whenStable();

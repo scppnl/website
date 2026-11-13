@@ -272,7 +272,7 @@
         <strong class="total-bar__amount">{{ bar ? formatEuro(bar.rent, true) : '€ –' }}</strong>
         <span class="total-bar__note">
           @if (bar) {
-            + {{ formatEuro(bar.deposit) }} {{ content.price.barDepositNote }}
+            {{ countLabel(bar.count) }} · {{ content.price.barIncludedNote }}
           } @else {
             {{ content.price.nothingChosen }}
           }

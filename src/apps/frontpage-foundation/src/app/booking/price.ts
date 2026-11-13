@@ -1,6 +1,5 @@
 import {
   dayparts,
-  deposit,
   freeCancellationWeeks,
   rentalOption,
   type BuildingChoice,
@@ -8,15 +7,12 @@ import {
   type RentalOption,
 } from '../content/site-content';
 
-/** What a rental costs. The deposit is paid on top and comes back after handover. */
+/** What a rental costs. The rent is the full amount: there is no deposit. */
 export interface Quote {
   readonly option: RentalOption;
   /** Number of dagdelen. */
   readonly count: number;
   readonly rent: number;
-  readonly deposit: number;
-  /** Rent plus deposit: what the renter transfers in total. */
-  readonly total: number;
 }
 
 /** `null` until a building and at least one dagdeel are chosen. */
@@ -29,8 +25,7 @@ export function quote(
     return null;
   }
   const option = rentalOption(building);
-  const rent = option.amount * count;
-  return { option, count, rent, deposit, total: rent + deposit };
+  return { option, count, rent: option.amount * count };
 }
 
 /**
