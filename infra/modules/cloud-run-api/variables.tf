@@ -3,6 +3,18 @@ variable "project_id" {
   type        = string
 }
 
+variable "additional_env" {
+  description = "Additional non-secret runtime environment values."
+  type        = map(string)
+  default     = {}
+}
+
+variable "additional_secrets" {
+  description = "Environment variable to existing Secret Manager secret ID. This module grants runtime access and attaches latest; populate each secret before applying."
+  type        = map(string)
+  default     = {}
+}
+
 variable "region" {
   description = "Region of the Cloud Run service and the secret replica."
   type        = string

@@ -78,6 +78,42 @@ run "rejects_wildcard_origins" {
   expect_failures = [var.cors_allowed_origins]
 }
 
+run "booking_email_configuration" {
+  command = plan
+
+  variables {
+    name = "booking-api"
+    additional_env = {
+      BookingEmail__From = "noreply@scpp.nl"
+      BookingEmail__To   = "verhuur@scpp.nl"
+    }
+    additional_secrets = {
+      BOOKING_GMAIL_OAUTH_JSON = "booking-gmail-oauth"
+    }
+  }
+
+  assert {
+    condition = one([
+      for e in google_cloud_run_v2_service.this.template[0].containers[0].env : e.value
+      if e.name == "BookingEmail__To"
+    ]) == "verhuur@scpp.nl"
+    error_message = "Booking notifications must use the configured rental mailbox."
+  }
+
+  assert {
+    condition = one([
+      for e in google_cloud_run_v2_service.this.template[0].containers[0].env : e.value_source[0].secret_key_ref[0].secret
+      if e.name == "BOOKING_GMAIL_OAUTH_JSON"
+    ]) == "booking-gmail-oauth"
+    error_message = "OAuth credentials must be a Secret Manager reference."
+  }
+
+  assert {
+    condition     = google_secret_manager_secret_iam_member.additional_runtime_reads["BOOKING_GMAIL_OAUTH_JSON"].role == "roles/secretmanager.secretAccessor"
+    error_message = "The runtime requires secret accessor access to the email credential secret."
+  }
+}
+
 run "rejects_localhost_hostnames" {
   command = plan
 
