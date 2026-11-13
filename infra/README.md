@@ -16,13 +16,15 @@ after approval in the `infrastructure` environment.
 
 ```
 infra/
-├── ci/                    bounded plan summaries for GitHub Actions
+├── ci/                    change detection, tests and plan summaries for GitHub Actions
 ├── modules/
 │   ├── cloud-run-api/     one API: runtime account, secret + access, Cloud Run service,
 │   │                      public access, deploy-account grants. Has offline tests.
 │   └── github-deployer/   keyless GitHub login: identity pool, provider + condition,
 │                          deploy account
-└── production/            the only root module (owns the state)
+├── billing-guard/         separate root module: the monthly budget and the function that
+│                          switches billing off. Own state; see its README.md
+└── production/            root module for the hosting (owns the state bucket)
     ├── project.tf         enabled APIs, state bucket
     ├── registry.tf        Docker Hub pull-through cache
     ├── github.tf          module "github_deployer"
@@ -35,6 +37,12 @@ A second environment would be a sibling folder of `production/` that reuses the 
 modules. `infra/.gitignore` and `infra/.editorconfig` live here on purpose: the root
 versions of those files are inputs of every Nx project, so changing them would select
 both APIs for a rebuild and republish.
+
+`billing-guard/` is deliberately not part of `production/`. `production/` is
+applied by CI; the budget guard needs rights on the billing account, which the CI
+deploy account must never get, and a separate state means an apply in one root cannot
+touch the other. Apply it from a workstation only. Its state uses prefix `billing-guard`
+in the same bucket.
 
 ## What Terraform owns
 
@@ -59,11 +67,11 @@ be started manually. CI pins Terraform to **1.17.2**.
 
 1. Every matching run checks formatting, validates production with the backend
    disabled, and runs the module's mock-provider tests without cloud credentials.
-2. Same-repository pull requests authenticate as `terraform-plan` and run a read-only
+2. For production-related changes, same-repository pull requests authenticate as `terraform-plan` and run a read-only
    plan against production. Find the plan in the job's run summary; long output is
    truncated there, with the full output in the step log. Fork pull requests still
    run all offline checks and receive a notice that the cloud plan is skipped.
-3. After merge, the apply job waits for the required reviewer in the **`infrastructure`**
+3. After merging production-related changes, the apply job waits for the required reviewer in the **`infrastructure`**
    environment. **Check the PR's plan before approving**, including the commit being
    released. Approval allows the job to create a fresh production plan and apply it;
    there is no second approval between that plan and apply.
@@ -71,6 +79,15 @@ be started manually. CI pins Terraform to **1.17.2**.
    saves a fresh plan. If it reports no changes, the job says so and skips apply.
    Otherwise it summarizes the plan and applies that exact saved plan. A failed plan
    fails the job and never reaches apply.
+
+Cloud jobs run only when the change touches `infra/production/**`, `infra/modules/**`,
+`infra/ci/**`, or `.github/workflows/terraform.yml`. Billing-only and documentation-only
+changes run the existing offline checks and display a skip notice; they do not request
+cloud credentials or infrastructure approval. Mixed changes still plan and apply only
+`infra/production`. PR comparison uses the merge base, and push comparison includes the
+entire pushed commit range, including deletions and renames. If history cannot be
+compared, checks fail rather than guessing. A manual run on `main` explicitly requests
+the production flow even without a file diff; a manual run elsewhere skips cloud jobs.
 
 Applies run only for pushes or manual runs on `main`. They share the
 `terraform-production` concurrency group with cancellation disabled. Apply retains

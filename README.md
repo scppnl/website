@@ -491,7 +491,8 @@ Each verified image is exported as a service/digest job output for the
 The Google Cloud Run hosting of both APIs (services, runtime accounts, Turnstile secret
 containers, the Docker Hub image cache and the keyless GitHub login) is described as
 Terraform in [`infra/`](infra/README.md). Pull requests run offline checks and a read-only
-production plan (forks run offline checks only). After merge, the Terraform workflow
+production plan for hosting changes (forks and billing-only changes run offline checks
+only). After merge, the Terraform workflow
 waits for approval in the `infrastructure` environment, then plans and applies any
 changes. Review the PR's plan before approving; the infrastructure guide also covers
 local recovery.

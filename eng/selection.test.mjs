@@ -37,7 +37,7 @@ for (const [files, expected] of [
   [['Scpp.slnx'], ['booking-api', 'contact-api']],
   [['eng/ci.mjs'], all],
   [['.github/workflows/ci.yml'], all],
-  [['.github/workflows/terraform.yml', 'infra/production/apis.tf', 'infra/production/imports.tf', 'infra/README.md', 'infra/ci/plan-summary.py'], []],
+  [['.github/workflows/terraform.yml', 'infra/production/apis.tf', 'infra/production/imports.tf', 'infra/README.md', 'infra/ci/plan-summary.py', 'infra/billing-guard/budget.tf', 'infra/billing-guard/function/main.py'], []],
   [['global.json'], all],
   [['package-lock.json'], all],
   [['Directory.Build.props'], all],

@@ -3,7 +3,7 @@ import { countLabel, Quote } from '../../booking/price';
 import { bookingPage, formatEuro } from '../../content/site-content';
 import { Icon } from '../../shared/icon/icon';
 
-/** The rows of a price calculation: rent, deposit, the headline amount and a tip to rent both buildings. */
+/** The rows of a price calculation: rent, the headline amount and a tip to rent both buildings. */
 @Component({
   selector: 'app-price-breakdown',
   imports: [Icon],
@@ -22,13 +22,6 @@ import { Icon } from '../../shared/icon/icon';
         <span>{{ content.includedLabel }}</span>
         <span>{{ content.includedValue }}</span>
       </div>
-      <div class="price-row price-row--divided">
-        <span class="price-row__label">
-          <strong>{{ content.depositLabel }}</strong>
-          <span>{{ content.depositNote }}</span>
-        </span>
-        <span class="price-row__amount">{{ formatEuro(q.deposit, true) }}</span>
-      </div>
 
       <div class="price-total">
         <strong>{{ content.rentTitle }}</strong>
@@ -36,10 +29,7 @@ import { Icon } from '../../shared/icon/icon';
       </div>
       <p class="price-note">
         <app-icon name="shield" [size]="18" />
-        <span>
-          U maakt in totaal <strong>{{ formatEuro(q.total, true) }}</strong> over, inclusief
-          {{ formatEuro(q.deposit, true) }} borg die u na oplevering terugkrijgt.
-        </span>
+        <span>{{ content.fullAmountNote }}</span>
       </p>
 
       @if (upgrade(); as extra) {

@@ -43,7 +43,6 @@ import {
   bookingPage,
   building,
   dayparts,
-  deposit,
   formatEuro,
   ratesPage,
   rentalOptions,
@@ -89,7 +88,7 @@ export class Booking {
   protected readonly content = bookingPage;
   protected readonly options = rentalOptions;
   protected readonly dayparts = dayparts;
-  protected readonly deposit = deposit;
+  protected readonly countLabel = countLabel;
   protected readonly savingLabel = ratesPage.savingLabel;
   protected readonly formatEuro = formatEuro;
   protected readonly capacity = building.capacity;

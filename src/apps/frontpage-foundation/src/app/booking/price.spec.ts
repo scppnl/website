@@ -9,19 +9,17 @@ import {
 
 describe('price', () => {
   describe('quote', () => {
-    it('multiplies the rate by the number of dagdelen and adds the deposit', () => {
-      expect(quote('groot', ['ochtend', 'middag'])).toMatchObject({
-        count: 2,
-        rent: 150,
-        deposit: 250,
-        total: 400,
-      });
+    it('multiplies the rate by the number of dagdelen', () => {
+      expect(quote('groot', ['ochtend', 'middag'])).toMatchObject({ count: 2, rent: 150 });
       expect(quote('beide', ['ochtend', 'middag', 'avond'])).toMatchObject({
         count: 3,
         rent: 300,
-        total: 550,
       });
-      expect(quote('terrein', ['avond'])).toMatchObject({ rent: 40, total: 290 });
+      expect(quote('terrein', ['avond'])).toMatchObject({ rent: 40 });
+    });
+
+    it('charges no deposit on top of the rent', () => {
+      expect(Object.keys(quote('groot', ['ochtend'])!).sort()).toEqual(['count', 'option', 'rent']);
     });
 
     it('is not available until a building and a dagdeel are chosen', () => {
