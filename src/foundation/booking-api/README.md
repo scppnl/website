@@ -201,7 +201,7 @@ sending share a 15-second deadline, after Turnstile's ten-second deadline.
    are unnecessary. Keep every credential file outside the checkout; do not put
    values in command arguments, chat, GitHub secrets, images, or Terraform state.
 
-### Secret bootstrap and API deployment
+### Runtime secrets and deployment
 
 The runtime requires `BookingEmail__From`, `BookingEmail__To`, and
 `BOOKING_GMAIL_OAUTH_JSON` at startup in every environment. Startup validates the
@@ -209,17 +209,15 @@ configuration locally; it does not test Google credentials. Development uses a
 separate authorized test mailbox/secret. Automated tests stub Google and need no
 real credentials.
 
-Terraform runs through CI: PRs receive a read-only production plan; after merging,
-the apply job waits for approval in the `infrastructure` environment. Release the
-secret container, runtime configuration, and API implementation in three ordered
-PRs. A single apply cannot attach an empty secret, and application CI must not
-deploy the new API before its required runtime settings exist.
+Terraform manages the `booking-gmail-oauth` container, booking runtime reader
+grant, secret attachment, and sender/recipient settings. CI applies infrastructure
+changes after approval in the `infrastructure` environment. Credential values are
+uploaded separately and stay outside Git, GitHub Actions, and Terraform state.
+Cloud Run requires an enabled secret version when a revision starts.
 
-1. Merge the secret-bootstrap PR and approve its Terraform job. This enables Gmail
-   API and creates the protected `booking-gmail-oauth` container without changing
-   Cloud Run. Inspect the PR plan before approving the apply.
-2. In the same PowerShell window used for authorization, select your Google Cloud
-   administrator account and upload the **generated** credential file:
+To upload authorized credentials to the provisioned container, use the operator's
+Google Cloud account with secret-version upload permission. For the PowerShell
+authorization flow above, upload the generated credential file:
 
 ```powershell
 gcloud auth login
@@ -228,18 +226,10 @@ gcloud secrets versions add booking-gmail-oauth --project=websites-514515 --data
 gcloud secrets versions list booking-gmail-oauth --project=websites-514515 --filter="state=ENABLED" --format="table(name,state,createTime)"
 ```
 
-   If using Playground instead, pass the path to the protected JSON file created
-   there. The operator needs secret-version upload permission; the sender mailbox
-   does not need Cloud IAM roles.
-3. After the secret version exists, merge the runtime-configuration PR and approve
-   its Terraform apply. It grants booking runtime secret access and attaches the
-   secret, sender, and recipient. The module references the existing populated
-   container; no secret value enters CI or Terraform state. The old API image
-   ignores the added settings and stays operational.
-4. After that apply succeeds, merge the API implementation PR to deploy the email
-   code through application CI. Keep `BOOKING_API_BASE_URL` unset until delivery
-   has been verified. GitHub's image deployer retains its current permissions and
-   cannot read the OAuth secret. No local or targeted Terraform apply is needed.
+If using Playground instead, pass the path to its protected credential JSON file.
+The sender mailbox needs no Cloud IAM roles. Application CI deploys API images;
+its image deployer cannot read the OAuth secret. Set `BOOKING_API_BASE_URL` only
+when the deployed API has its required configuration and email delivery is verified.
 
 After a successful upload, remove local temporary files without revoking the grant:
 
@@ -263,8 +253,7 @@ on the deployed site with a final controlled submission.
 
 Changing a repository variable does not start a build. Manual CI on `main` rebuilds
 both websites and publishes both APIs, so first ensure **every selected API image
-version is unused**. Shared `eng/frontend.mjs` and workflow changes select both APIs;
-check the contact API version before releasing this change as well.
+version is unused**. Shared tooling and workflow changes can select both APIs.
 
 ### Failures, rotation and rollback
 
@@ -279,9 +268,8 @@ Existing instances cache access tokens until one minute before expiry.
 
 For persistent failures, clear `BOOKING_API_BASE_URL` and rebuild/deploy the frontend
 to disable submissions. Repair credentials or move API traffic back to a known good
-**email-enabled** revision. Rolling back to the earlier logging-only API would report
-success without sending email and must not be used with an active form. Verify actual
-delivery before restoring the variable and rebuilding the frontend.
+revision whose email delivery has been verified. Verify actual delivery before
+restoring the variable and rebuilding the frontend.
 
 References: [Gmail sending](https://developers.google.com/workspace/gmail/api/guides/sending),
 [Google OAuth](https://developers.google.com/identity/protocols/oauth2), and
