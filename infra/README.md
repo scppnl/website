@@ -67,12 +67,12 @@ be started manually. CI pins Terraform to **1.17.2**.
 
 1. Every matching run checks formatting, validates production with the backend
    disabled, and runs the module's mock-provider tests without cloud credentials.
-2. For production-related changes, same-repository pull requests authenticate as `terraform-plan` and run a read-only
-   plan against production. Find the plan in the job's run summary; long output is
+2. For production-related changes, same-repository pull requests authenticate as
+   `terraform-plan` and run a read-only plan against production. Find the plan in the job's run summary; long output is
    truncated there, with the full output in the step log. Fork pull requests still
    run all offline checks and receive a notice that the cloud plan is skipped.
-3. After merging production-related changes, the apply job waits for the required reviewer in the **`infrastructure`**
-   environment. **Check the PR's plan before approving**, including the commit being
+3. After merging production-related changes, the apply job waits for the required
+   reviewer in the **`infrastructure`** environment. **Check the PR's plan before approving**, including the commit being
    released. Approval allows the job to create a fresh production plan and apply it;
    there is no second approval between that plan and apply.
 4. The approved job authenticates as `terraform-apply`, initializes the backend, and
@@ -81,8 +81,9 @@ be started manually. CI pins Terraform to **1.17.2**.
    fails the job and never reaches apply.
 
 Cloud jobs run only when the change touches `infra/production/**`, `infra/modules/**`,
-`infra/ci/**`, or `.github/workflows/terraform.yml`. Billing-only and documentation-only
-changes run the existing offline checks and display a skip notice; they do not request
+`infra/ci/**`, or `.github/workflows/terraform.yml`. Matching workflow runs with changes
+only outside these paths, including billing-only changes, run the existing offline
+checks and display a skip notice; they do not request
 cloud credentials or infrastructure approval. Mixed changes still plan and apply only
 `infra/production`. PR comparison uses the merge base, and push comparison includes the
 entire pushed commit range, including deletions and renames. If history cannot be
