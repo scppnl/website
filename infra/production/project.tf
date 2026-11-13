@@ -7,6 +7,7 @@ resource "google_project_service" "apis" {
     "iam.googleapis.com",
     "iamcredentials.googleapis.com",
     "sts.googleapis.com",
+    "gmail.googleapis.com",
   ])
 
   project            = local.project_id

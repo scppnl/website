@@ -48,7 +48,7 @@ in the same bucket.
 
 | Terraform manages | Terraform does **not** manage |
 | --- | --- |
-| Enabled Google APIs | The Turnstile secret **values**: they would end up in plain text in the state file. Add them with `gcloud secrets versions add`. |
+| Enabled Google APIs | Secret **values**, including Turnstile keys and Gmail OAuth credentials: add them with `gcloud secrets versions add` so they stay outside Terraform state. |
 | Docker Hub cache repository, and read access to it for the deploy account | The running **image**: CI deploys it. Terraform ignores `image`, so applying never rolls an API back. |
 | Runtime and deploy service accounts | The GitHub environment variables: copy them from the outputs. |
 | Secret containers and who may read them | Frontends, Cloudflare, Docker Hub |
