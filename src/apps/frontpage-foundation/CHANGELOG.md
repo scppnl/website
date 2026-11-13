@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Protect booking submissions with a separate Turnstile widget and fresh-token
   retries; preserve form input on failure and keep pricing usable when unavailable.
 
+### Removed
+
+- Remove the deposit (borg) from the rates page, price calculation, total bar and
+  payment timeline; the rent is the full amount.
+
 ## [0.0.2] - 2026-11-12
 
 ### Changed

@@ -138,9 +138,6 @@ export const rentalOptions = [
 
 export type BuildingChoice = (typeof rentalOptions)[number]['id'];
 
-/** Borg in euros. */
-export const deposit = 250;
-
 /** Free cancellation up to this many weeks before the rental day. */
 export const freeCancellationWeeks = 4;
 
@@ -478,13 +475,10 @@ export const ratesPage = {
     },
     {
       icon: 'shield',
-      title: <Copy>{
-        long: `Borg: ${formatEuro(deposit, true)}`,
-        short: `Borg ${formatEuro(deposit, true)}:`,
-      },
+      title: <Copy>{ long: 'Kosteloos annuleren', short: 'Kosteloos annuleren:' },
       text: <Copy>{
-        long: 'U betaalt de borg na ondertekening van de overeenkomst. Na oplevering storten we hem terug.',
-        short: 'na ondertekening betalen, na oplevering terug.',
+        long: `Tot ${freeCancellationWeeks} weken voor aanvang annuleert u zonder kosten. U betaalt geen borg.`,
+        short: `tot ${freeCancellationWeeks} weken voor aanvang. Geen borg.`,
       },
     },
   ] as const,
@@ -600,10 +594,9 @@ export const bookingPage = {
     nothingChosen: 'Nog niets gekozen',
     includedLabel: 'Gas, water en elektra',
     includedValue: 'inbegrepen',
-    depositLabel: 'Borg',
-    depositNote: 'krijgt u terug na oplevering',
     rentTitle: 'Uw huurprijs',
-    barDepositNote: 'borg (krijgt u terug)',
+    fullAmountNote: 'Dit is het volledige bedrag. Geen borg, geen bijkomende kosten.',
+    barIncludedNote: 'alles inbegrepen',
     openBreakdown: 'Prijsopbouw',
     closeBreakdown: 'Prijsopbouw sluiten',
     emptyBoth: 'Kies een gebouw en minstens één dagdeel. Dan rekenen we direct uit wat u betaalt.',
@@ -619,12 +612,8 @@ export const bookingPage = {
       title: 'Bevestiging',
       text: 'Wij controleren de datum en sturen u de overeenkomst.',
     },
-    // TODO: verify when the rent is due. Assumed: together with the deposit, after signing.
-    signed: { title: 'Na ondertekening', depositLabel: 'Borg', rentLabel: 'Huur' },
-    returned: {
-      title: 'Na oplevering',
-      text: `${formatEuro(deposit, true)} borg terug op uw rekening`,
-    },
+    // TODO: verify when the rent is due. Assumed: after signing.
+    signed: { title: 'Na ondertekening', rentLabel: 'Huur', rentPending: 'U betaalt de huur' },
     cancelPrefix: 'Kosteloos annuleren tot en met',
   },
   notice: 'Het clubhuis is alleen overdag te huur. Overnachten is niet mogelijk.',
