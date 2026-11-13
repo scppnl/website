@@ -1,5 +1,5 @@
-# Create the container before attaching it to Cloud Run. Its first secret version
-# is uploaded by an operator; credentials must never enter Terraform state.
+# Metadata only. Credential versions are uploaded by an operator and never stored
+# in Terraform state.
 resource "google_secret_manager_secret" "booking_gmail_oauth" {
   project   = local.project_id
   secret_id = "booking-gmail-oauth"
