@@ -20,7 +20,9 @@ infra/
 │   │                      public access, deploy-account grants. Has offline tests.
 │   └── github-deployer/   keyless GitHub login: identity pool, provider + condition,
 │                          deploy account
-└── production/            the only root module (owns the state)
+├── billing-guard/         separate root module: the monthly budget and the function that
+│                          switches billing off. Own state; see its README.md
+└── production/            root module for the hosting (owns the state bucket)
     ├── project.tf         enabled APIs, state bucket
     ├── registry.tf        Docker Hub pull-through cache
     ├── github.tf          module "github_deployer"
@@ -34,6 +36,12 @@ A second environment would be a sibling folder of `production/` that reuses the 
 modules. `infra/.gitignore` and `infra/.editorconfig` live here on purpose: the root
 versions of those files are inputs of every Nx project, so changing them would select
 both APIs for a rebuild and republish.
+
+`billing-guard/` is deliberately not part of `production/`. `production/` is meant to be
+applied by CI later; the budget guard needs rights on the billing account, which the CI
+deploy account must never get, and a separate state means an apply in one root cannot
+touch the other. Apply it from a workstation only. Its state uses prefix `billing-guard`
+in the same bucket.
 
 ## What Terraform owns
 
