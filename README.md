@@ -490,7 +490,12 @@ Each verified image is exported as a service/digest job output for the
 
 The Google Cloud Run hosting of both APIs (services, runtime accounts, Turnstile secret
 containers, the Docker Hub image cache and the keyless GitHub login) is described as
-Terraform in [`infra/`](infra/README.md). It is applied from a workstation, not by CI.
+Terraform in [`infra/`](infra/README.md). Pull requests run offline checks and a read-only
+production plan for hosting changes (forks and billing-only changes run offline checks
+only). After merge, the Terraform workflow
+waits for approval in the `infrastructure` environment, then plans and applies any
+changes. Review the PR's plan before approving; the infrastructure guide also covers
+local recovery.
 
 `eng/dotnet.mjs` accepts explicitly supplied, existing project or solution paths,
 resolved from the repository root; absolute paths and multiple paths also work.

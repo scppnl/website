@@ -19,9 +19,11 @@ budget (EUR, monthly, this project)
 | State | Cloud Storage bucket `websites-514515-tfstate`, prefix `billing-guard` |
 | Budget | `monthly_budget_eur`, default **20** (euros, whole numbers) |
 
-This is a separate root module from `infra/production` on purpose: that one is meant to be
+This is a separate root module from `infra/production` on purpose: that one is
 applied by CI, and this one needs rights on the billing account, which CI must never get.
-Apply it from a workstation only.
+Apply it from a workstation only. Billing-only changes run offline CI checks and skip
+the production cloud plan, infrastructure approval and apply. Even for mixed changes
+or manual workflow runs, CI applies only `infra/production`.
 
 ## Limits you should know about
 

@@ -1,0 +1,157 @@
+name: Terraform
+
+on:
+  pull_request:
+    branches: [main]
+    paths: ['infra/**', '.github/workflows/terraform.yml']
+  push:
+    branches: [main]
+    paths: ['infra/**', '.github/workflows/terraform.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  TF_IN_AUTOMATION: '1'
+  TF_INPUT: '0'
+
+jobs:
+  checks:
+    name: Offline Terraform checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      production_changed: ${{ steps.changes.outputs.production_changed }}
+    steps:
+      - name: Explain fork plan restriction
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
+        run: |
+          echo '::notice::Production plan skipped: fork pull requests cannot authenticate to Google Cloud. Offline checks still run.'
+          echo 'Production plan skipped: fork pull requests cannot authenticate to Google Cloud. Offline checks still run.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Check out the PR head or pushed commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Test production change detection
+        run: python3 -m unittest discover -s infra/ci -p 'test_*.py'
+      - name: Detect production changes
+        id: changes
+        run: python3 infra/ci/production_changes.py
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.17.2
+          terraform_wrapper: false
+      - name: Check formatting
+        run: terraform fmt -check -recursive infra
+      - name: Initialize production without the backend
+        run: terraform -chdir=infra/production init -backend=false -input=false -lockfile=readonly
+      - name: Validate production
+        run: terraform -chdir=infra/production validate -no-color
+      - name: Initialize module tests
+        run: terraform -chdir=infra/modules/cloud-run-api init -backend=false -input=false
+      - name: Run mock-provider module tests
+        run: terraform -chdir=infra/modules/cloud-run-api test -no-color
+
+  plan:
+    name: Read-only production plan
+    needs: checks
+    if: needs.checks.outputs.production_changed == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: infra/production
+        shell: bash
+    steps:
+      - name: Check out the checked PR head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.17.2
+          terraform_wrapper: false
+      - name: Authenticate as the read-only planner
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.TF_PLAN_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.TF_PLAN_SERVICE_ACCOUNT }}
+      - name: Initialize production backend
+        run: terraform init -input=false -lockfile=readonly
+      - name: Plan production without writing a state lock
+        id: plan
+        run: |
+          status=0
+          terraform plan -lock=false -input=false -no-color > "$RUNNER_TEMP/terraform-plan.txt" 2>&1 || status=$?
+          cat "$RUNNER_TEMP/terraform-plan.txt"
+          exit "$status"
+      - name: Summarize production plan
+        if: ${{ !cancelled() && (steps.plan.outcome == 'success' || steps.plan.outcome == 'failure') }}
+        run: python3 ../ci/plan-summary.py "$RUNNER_TEMP/terraform-plan.txt"
+
+  apply:
+    name: Approve and apply production
+    needs: checks
+    if: needs.checks.outputs.production_changed == 'true' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: infrastructure
+    concurrency:
+      group: terraform-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: infra/production
+        shell: bash
+    steps:
+      - name: Check out the checked main commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.17.2
+          terraform_wrapper: false
+      - name: Authenticate as the infrastructure applier
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.TF_APPLY_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.TF_APPLY_SERVICE_ACCOUNT }}
+      - name: Initialize production backend
+        run: terraform init -input=false -lockfile=readonly
+      - name: Save production plan
+        id: plan
+        run: |
+          status=0
+          terraform plan -input=false -no-color -out=tfplan -detailed-exitcode > "$RUNNER_TEMP/terraform-plan.txt" 2>&1 || status=$?
+          cat "$RUNNER_TEMP/terraform-plan.txt"
+          case "$status" in
+            0)
+              echo 'changes=false' >> "$GITHUB_OUTPUT"
+              echo 'No changes. Terraform apply skipped.' >> "$GITHUB_STEP_SUMMARY"
+              ;;
+            2)
+              echo 'changes=true' >> "$GITHUB_OUTPUT"
+              ;;
+            *) exit "$status" ;;
+          esac
+      - name: Summarize production plan
+        if: ${{ !cancelled() && (steps.plan.outcome == 'success' || steps.plan.outcome == 'failure') }}
+        run: python3 ../ci/plan-summary.py "$RUNNER_TEMP/terraform-plan.txt"
+      - name: Apply the saved production plan
+        if: steps.plan.outputs.changes == 'true'
+        run: terraform apply -input=false tfplan
