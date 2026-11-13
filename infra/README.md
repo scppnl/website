@@ -40,7 +40,7 @@ both APIs for a rebuild and republish.
 | Terraform manages | Terraform does **not** manage |
 | --- | --- |
 | Enabled Google APIs | The Turnstile secret **values**: they would end up in plain text in the state file. Add them with `gcloud secrets versions add`. |
-| Docker Hub cache repository | The running **image**: CI deploys it. Terraform ignores `image`, so applying never rolls an API back. |
+| Docker Hub cache repository, and read access to it for the deploy account | The running **image**: CI deploys it. Terraform ignores `image`, so applying never rolls an API back. |
 | Runtime and deploy service accounts | The GitHub environment variables: copy them from the outputs. |
 | Secret containers and who may read them | Frontends, Cloudflare, Docker Hub |
 | Cloud Run services: environment variables, secret reference, runtime account, scaling, timeout, public access | Cloud Run revisions and traffic: CI creates them; roll back with `gcloud run services update-traffic`. |
