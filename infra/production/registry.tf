@@ -16,3 +16,13 @@ resource "google_artifact_registry_repository" "dockerhub" {
 
   depends_on = [google_project_service.apis]
 }
+
+# CI deploys images through this cache, and Cloud Run only accepts a deploy when
+# the deploying account may read the image. Read-only, and only this repository.
+resource "google_artifact_registry_repository_iam_member" "deployer_reads_cache" {
+  project    = local.project_id
+  location   = local.region
+  repository = google_artifact_registry_repository.dockerhub.name
+  role       = "roles/artifactregistry.reader"
+  member     = "serviceAccount:${module.github_deployer.service_account_email}"
+}
