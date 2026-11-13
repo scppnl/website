@@ -6,6 +6,24 @@ keyless GitHub Actions login. Frontends stay on Cloudflare and are not described
 here. GitHub Actions checks and plans pull requests, then applies changes on `main`
 after approval in the `infrastructure` environment.
 
+Booking email is released through three ordered PRs, so CI can apply complete
+plans without attaching an empty secret or deploying an unconfigured API:
+
+1. Merge the secret-bootstrap PR and approve its `infrastructure` job. It enables
+   Gmail API and creates the protected `booking-gmail-oauth` container, without
+   changing either Cloud Run service.
+2. Upload the authorized `noreply@scpp.nl` credentials as the first secret version
+   using `gcloud secrets versions add booking-gmail-oauth --project=websites-514515 --data-file="C:\path\to\application_default_credentials.json"`.
+   Secret values stay outside Git, GitHub Actions, and Terraform state.
+3. Merge the runtime-configuration PR and approve its Terraform apply. This grants
+   only the booking runtime access and attaches the populated secret and mailbox
+   settings. The current API image remains live.
+4. Once that apply succeeds, merge the email implementation PR to deploy the API
+   through application CI. Keep `BOOKING_API_BASE_URL` unset until delivery is verified.
+
+Mailbox OAuth authorization is performed locally; a mailbox does not need Google
+Cloud project permissions. No local Terraform apply or targeted apply is required.
+
 | | |
 | --- | --- |
 | Project | `websites-514515` (number `979979719406`) |
