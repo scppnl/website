@@ -1,2 +1,5 @@
 # Documentation does not affect application builds or tests.
 **/*.md
+
+# Terraform has its own checks; Nx project selection must ignore its workflow.
+.github/workflows/terraform.yml

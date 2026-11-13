@@ -3,7 +3,8 @@
 Terraform for the Google Cloud hosting of the contact and booking APIs: Cloud Run
 services, their runtime accounts and secrets, the Docker Hub image cache, and the
 keyless GitHub Actions login. Frontends stay on Cloudflare and are not described
-here. CI does not run Terraform: apply from a workstation.
+here. GitHub Actions checks and plans pull requests, then applies changes on `main`
+after approval in the `infrastructure` environment.
 
 | | |
 | --- | --- |
@@ -15,6 +16,7 @@ here. CI does not run Terraform: apply from a workstation.
 
 ```
 infra/
+├── ci/                    bounded plan summaries for GitHub Actions
 ├── modules/
 │   ├── cloud-run-api/     one API: runtime account, secret + access, Cloud Run service,
 │   │                      public access, deploy-account grants. Has offline tests.
@@ -25,7 +27,6 @@ infra/
     ├── registry.tf        Docker Hub pull-through cache
     ├── github.tf          module "github_deployer"
     ├── apis.tf            the list of APIs (local.apis) and module "apis"
-    ├── imports.tf         adopts the resources created by hand; delete after first apply
     ├── outputs.tf         API URLs and the two GitHub variable values
     └── locals.tf          project, region, repository IDs
 ```
@@ -50,86 +51,93 @@ both APIs for a rebuild and republish.
 All IAM is additive (`*_iam_member`), so Terraform never removes access it does not
 know about.
 
-## First-time setup (adopting what already exists)
+## GitHub Actions flow
 
-Nothing is recreated: `imports.tf` adopts the 26 resources created by hand, and the
-APIs keep serving. Run from the repository root in PowerShell.
+[The Terraform workflow](../.github/workflows/terraform.yml) runs when a pull request
+into `main` or a push to `main` changes `infra/**` or the workflow itself. It can also
+be started manually. CI pins Terraform to **1.17.2**.
 
-Install Terraform (1.7 or later):
+1. Every matching run checks formatting, validates production with the backend
+   disabled, and runs the module's mock-provider tests without cloud credentials.
+2. Same-repository pull requests authenticate as `terraform-plan` and run a read-only
+   plan against production. Find the plan in the job's run summary; long output is
+   truncated there, with the full output in the step log. Fork pull requests still
+   run all offline checks and receive a notice that the cloud plan is skipped.
+3. After merge, the apply job waits for the required reviewer in the **`infrastructure`**
+   environment. **Check the PR's plan before approving**, including the commit being
+   released. Approval allows the job to create a fresh production plan and apply it;
+   there is no second approval between that plan and apply.
+4. The approved job authenticates as `terraform-apply`, initializes the backend, and
+   saves a fresh plan. If it reports no changes, the job says so and skips apply.
+   Otherwise it summarizes the plan and applies that exact saved plan. A failed plan
+   fails the job and never reaches apply.
 
-```powershell
-winget install Hashicorp.Terraform
-```
+Applies run only for pushes or manual runs on `main`. They share the
+`terraform-production` concurrency group with cancellation disabled. Apply retains
+normal state locking. PR plans use `-lock=false` because the read-only identity cannot
+write a lock; they are previews and may become stale before merge. No PR plan files
+are uploaded or reused for apply.
 
-Sign in for Terraform. It uses application default credentials, which are separate from
-`gcloud auth login`:
+Authentication uses Workload Identity Federation, with no GitHub secrets:
+
+| Job | Variables | Location |
+| --- | --- | --- |
+| PR plan | `TF_PLAN_WORKLOAD_IDENTITY_PROVIDER`, `TF_PLAN_SERVICE_ACCOUNT` | Repository |
+| Apply | `TF_APPLY_WORKLOAD_IDENTITY_PROVIDER`, `TF_APPLY_SERVICE_ACCOUNT` | `infrastructure` environment |
+
+The two Terraform identities have separate pools and are provisioned outside
+Terraform. The existing `github` pool, `github-deployer` account, `production`
+environment and `GCP_*` variables remain dedicated to API deployment. Do not use them
+for Terraform. Only the plan and apply jobs can request OIDC tokens.
+
+The initial local apply adopted the resources created by hand, and a follow-up plan
+showed no changes. `production/imports.tf` was removed after that first apply; those
+resources are already tracked in state. Do not repeat the adoption or recreate the
+state bucket. The first CI plan should likewise show **No changes**.
+
+Terraform-only changes are excluded from Nx application selection, including edits
+to this workflow. The workflow is excluded both from `sharedGlobals` in `nx.json`
+and from affected-project selection in `.nxignore`. Changing `nx.json` itself still
+selects the applications; when changing shared CI inputs, check published API tags
+before merging to avoid trying to overwrite an existing Docker Hub version.
+
+## Local recovery
+
+Use this path when CI cannot perform an authorized recovery. Install Terraform
+**1.17.2**, check out the intended commit, and use an operator account with the
+necessary resource and state-bucket permissions. Coordinate with pending or running
+CI applies: GitHub concurrency does not serialize local commands. Keep state locking
+enabled and do not use `-target`.
+
+Run from the repository root in PowerShell. Application default credentials are
+separate from `gcloud auth login`:
 
 ```powershell
 gcloud auth application-default login
-```
-
-```powershell
 gcloud auth application-default set-quota-project websites-514515
+terraform -chdir=infra/production init -input=false -lockfile=readonly
+terraform -chdir=infra/production plan -input=false -out=recovery.tfplan
+terraform -chdir=infra/production show -no-color recovery.tfplan
 ```
 
-Create the state bucket. This is the one thing Terraform cannot create for itself:
+Review the saved plan before applying. Investigate unexpected replacements,
+destructions, IAM changes, or service configuration changes against the intended
+code and live setup. Then apply that exact plan and confirm the resulting state:
 
 ```powershell
-gcloud storage buckets create gs://websites-514515-tfstate --project=websites-514515 --location=europe-west4 --uniform-bucket-level-access --public-access-prevention
+terraform -chdir=infra/production apply -input=false recovery.tfplan
+terraform -chdir=infra/production plan -input=false
+Remove-Item infra/production/recovery.tfplan
 ```
 
-Initialise:
-
-```powershell
-terraform -chdir=infra/production init
-```
-
-Preview:
-
-```powershell
-terraform -chdir=infra/production plan
-```
-
-**Do not apply until the plan is clean.** Expected: `26 to import, 0 to add, 0 to destroy`.
-Only these in-place changes are fine:
-
-- State bucket: versioning and a lifecycle rule are switched on.
-- Cloud Run services: `deletion_protection` is set (a Terraform-only setting).
-
-Anything that says `must be replaced`, `destroy`, or changes the environment variables,
-secret reference, runtime account or provider condition means the code and the live
-setup differ. Do not apply; compare the plan with `infra/production/apis.tf`
-and `infra/modules/`, and fix the code (or, if the live setup is wrong, apply to fix it).
-
-Apply:
-
-```powershell
-terraform -chdir=infra/production apply
-```
-
-Then:
-
-1. Run the second `plan` and confirm `No changes`.
-2. Delete `infra/production/imports.tf` and commit that.
-3. Check both APIs still answer: `curl.exe -fsS https://contact-api-979979719406.europe-west4.run.app/`
-   prints `Contact API`, and the same for `booking-api` prints `Booking API`.
-
-The provider condition in `modules/github-deployer/main.tf` is the tightened version
-(repository and owner IDs, `main`, the `production` environment, push or manual runs
-only). If the live provider still has the original condition, the first plan shows
-exactly that one change; applying it is the intended hardening.
+The follow-up plan should report no changes. Check that both APIs still answer at
+`https://contact-api-979979719406.europe-west4.run.app/` (`Contact API`) and
+`https://booking-api-979979719406.europe-west4.run.app/` (`Booking API`).
 
 ## Everyday changes
 
-Edit the code, then preview and apply:
-
-```powershell
-terraform -chdir=infra/production plan
-```
-
-```powershell
-terraform -chdir=infra/production apply
-```
+Edit the code, run the offline checks below, and open a pull request. Review its plan,
+merge, and approve the `infrastructure` job to apply.
 
 - **Add or remove a frontend origin or Turnstile hostname:** edit `cors_allowed_origins`
   and `turnstile_allowed_hostnames` for that API in `production/apis.tf`. Keep the two
@@ -187,5 +195,6 @@ for Windows, Linux and macOS (arm64). Upgrade it with
   If the state is damaged, restore an earlier version of
   `gs://websites-514515-tfstate/production/default.tfstate`.
 - Never commit `*.tfstate` or `*.tfvars`; `infra/.gitignore` excludes them.
-- Terraform needs a person with Owner or equivalent rights on the project. The GitHub
-  deploy account deliberately cannot change any of this.
+- Terraform CI uses its dedicated plan/apply identities with the preconfigured
+  permissions. The API deploy account is not a Terraform identity. If a required
+  permission is missing, stop and report it; do not widen access from the pipeline.
