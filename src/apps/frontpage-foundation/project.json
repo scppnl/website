@@ -27,6 +27,9 @@
           "env": "BOOKING_TURNSTILE_SITE_KEY"
         },
         {
+          "env": "BOOKING_API_BASE_URL"
+        },
+        {
           "env": "REQUIRE_TURNSTILE_SITE_KEY"
         }
       ]

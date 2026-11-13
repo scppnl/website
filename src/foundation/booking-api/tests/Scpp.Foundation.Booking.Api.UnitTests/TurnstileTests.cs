@@ -109,5 +109,5 @@ public sealed class TurnstileTests
             Name = "Renter", Email = "renter@example.org", Building = "groot", GroupType = "family",
             Date = new DateOnly(2099, 6, 4), Dayparts = ["ochtend"], Guests = 20, TurnstileToken = token
         }, new BookingRequestValidator(TimeProvider.System), NullLogger<BookingEndpoint>.Instance,
-        new TurnstileVerifier(client, new("test-secret", ["blokhutdewildert.nl"])), CancellationToken.None);
+        new TurnstileVerifier(client, new("test-secret", ["blokhutdewildert.nl"])), new BookingEmailStub(), CancellationToken.None);
 }

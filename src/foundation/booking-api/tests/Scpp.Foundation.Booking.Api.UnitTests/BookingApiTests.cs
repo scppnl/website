@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Scpp.Foundation.Booking.Api.Serialization;
 using Scpp.Foundation.Booking.Api.Verification;
 using Scpp.Foundation.Booking.Contracts;
+using Scpp.Foundation.Booking.Api.Email;
 
 namespace Scpp.Foundation.Booking.Api.UnitTests;
 
@@ -18,6 +19,7 @@ public sealed class BookingApiTests
     private WebApplication app = null!;
     private HttpClient client = null!;
     private readonly SiteverifyStub verification = new();
+    private readonly BookingEmailStub email = new();
 
     [TestInitialize]
     public async Task Start()
@@ -28,6 +30,7 @@ public sealed class BookingApiTests
                 builder.Configuration["Cors:AllowedOrigins:0"] = AllowedOrigin;
                 builder.Services.AddHttpClient<TurnstileVerifier>()
                     .ConfigurePrimaryHttpMessageHandler(() => verification);
+                builder.Services.AddSingleton<IBookingEmailSender>(email);
             });
         await app.StartAsync();
         client = new HttpClient { BaseAddress = new Uri(app.Urls.Single()) };
@@ -69,6 +72,7 @@ public sealed class BookingApiTests
 
         Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
         Assert.AreEqual("", await response.Content.ReadAsStringAsync());
+        Assert.AreEqual(1, email.Calls);
     }
 
     [TestMethod]
@@ -85,6 +89,7 @@ public sealed class BookingApiTests
             new[] { "name", "email", "building", "groupType", "date", "dayparts", "guests", "turnstileToken" },
             body.RootElement.GetProperty("errors").EnumerateObject().Select(field => field.Name).ToArray());
         Assert.AreEqual(0, verification.Calls);
+        Assert.AreEqual(0, email.Calls);
     }
 
     [TestMethod]
@@ -103,6 +108,7 @@ public sealed class BookingApiTests
         using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Assert.AreEqual((int)status, body.RootElement.GetProperty("status").GetInt32());
         Assert.AreEqual(1, verification.Calls);
+        Assert.AreEqual(0, email.Calls);
     }
 
     [TestMethod]
@@ -164,5 +170,21 @@ public sealed class BookingApiTests
     {
         builder.Configuration["BOOKING_TURNSTILE_SECRET_KEY"] = "test-secret";
         builder.Configuration["Turnstile:AllowedHostnames:0"] = "blokhutdewildert.nl";
+        builder.Configuration["BookingEmail:From"] = "noreply@scpp.nl";
+        builder.Configuration["BookingEmail:To"] = "verhuur@scpp.nl";
+        builder.Configuration["BOOKING_GMAIL_OAUTH_JSON"] = "{\"client_id\":\"client\",\"client_secret\":\"secret\",\"refresh_token\":\"refresh\"}";
+    }
+
+    [TestMethod]
+    public async Task EmailFailureReturnsSerialized503()
+    {
+        email.Accepted = false;
+        using var response = await client.PostAsync("/bookings", new StringContent(
+            "{\"name\":\"Renter\",\"email\":\"renter@example.org\",\"building\":\"groot\",\"groupType\":\"family\",\"date\":\"2099-06-04\",\"dayparts\":[\"ochtend\"],\"guests\":10,\"turnstileToken\":\"token\"}",
+            Encoding.UTF8, "application/json"));
+        Assert.AreEqual(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.AreEqual(503, body.RootElement.GetProperty("status").GetInt32());
+        Assert.AreEqual(1, email.Calls);
     }
 }

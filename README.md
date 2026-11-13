@@ -312,9 +312,10 @@ curl http://localhost:5080/
 production endpoint is `https://api.scpp.nl/bookings`. Accepted requests are logged
 once at Information level with the booking fields, including
 contact details and remarks, and return HTTP 204 with no body. This iteration does
-not store a booking, check availability, send email, or arrange follow-up. The
-form retains its existing success presentation; a successful POST currently means
-only that the API validated and logged the request. A fresh `turnstileToken` is
+not store a booking or check availability. After validation and verification, the API
+emails `verhuur@scpp.nl` from the Workspace mailbox `noreply@scpp.nl`, with the
+applicant in Reply-To. HTTP 204 means Gmail accepted the notification; email failure
+returns `503` and no successful receipt. A fresh `turnstileToken` is
 required; tokens and secrets are excluded from receipt logs.
 
 ```sh
@@ -342,8 +343,8 @@ allows `http://localhost:4200`.
 Set `BOOKING_TURNSTILE_SITE_KEY` for the frontend and use matching development
 widget credentials on the API as described in the booking API guide.
 
-For production, set `bookingApiBaseUrl` in the frontend's
-`src/environments/environment.ts` to the API origin before building. Its default
+For production, set repository Actions variable `BOOKING_API_BASE_URL` to the API
+origin only after verifying actual email delivery. Its default
 is empty: submission is disabled with an unavailable notice; the price calculator
 remains usable. A booking site key is also required. Configure the API's explicit
 allowed frontend origins, for example
@@ -352,6 +353,10 @@ by default outside Development; wildcard origins and credentials are not enabled
 Use HTTPS API and frontend origins in production. The API runs on Cloud Run as
 described in [production deployments](#cloud-run-api-deployments); frontend URL
 configuration remains a separate change.
+The API also requires `BookingEmail__From`, `BookingEmail__To`, and the Secret
+Manager-backed `BOOKING_GMAIL_OAUTH_JSON`. See the [booking Gmail rollout guide](src/foundation/booking-api/README.md#gmail-configuration-and-rollout)
+for mailbox consent, secret bootstrap, form activation and recovery. Image-only CI
+deployment does not configure these values.
 Both APIs route Microsoft `ILogger<T>` events through Serilog to readable console
 output. The default minimum level is Information, with Microsoft.AspNetCore and
 System at Warning. Each event includes its timestamp, level, logger category,

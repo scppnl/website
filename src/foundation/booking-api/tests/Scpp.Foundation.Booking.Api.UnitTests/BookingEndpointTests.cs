@@ -51,16 +51,18 @@ public sealed class BookingEndpointTests
         using var client = new HttpClient(stub);
         var verifier = new TurnstileVerifier(client, new("test-secret", ["blokhutdewildert.nl"]));
         var validator = new BookingRequestValidator(Clock);
-        Assert.IsInstanceOfType<NoContent>((await BookingEndpoint.Post(Request(), validator, logger, verifier, CancellationToken.None)).Result);
+        var email = new BookingEmailStub();
+        Assert.IsInstanceOfType<NoContent>((await BookingEndpoint.Post(Request(), validator, logger, verifier, email, CancellationToken.None)).Result);
         Assert.HasCount(1, logger.Entries);
         logger.Entries.Clear();
         stub.Response = "{\"success\":false,\"error-codes\":[\"timeout-or-duplicate\"]}";
-        var replay = await BookingEndpoint.Post(Request(), validator, logger, verifier, CancellationToken.None);
+        var replay = await BookingEndpoint.Post(Request(), validator, logger, verifier, email, CancellationToken.None);
         Assert.AreEqual(403, ((ProblemHttpResult)replay.Result).StatusCode);
         stub.Response = "not-json";
-        var unavailable = await BookingEndpoint.Post(Request(), validator, logger, verifier, CancellationToken.None);
+        var unavailable = await BookingEndpoint.Post(Request(), validator, logger, verifier, email, CancellationToken.None);
         Assert.AreEqual(503, ((ProblemHttpResult)unavailable.Result).StatusCode);
         Assert.IsEmpty(logger.Entries);
+        Assert.AreEqual(1, email.Calls);
         var json = JsonSerializer.Serialize(((ProblemHttpResult)unavailable.Result).ProblemDetails, BookingJsonContext.Default.ProblemDetails);
         Assert.IsTrue(json.Contains("503"));
     }
@@ -166,6 +168,19 @@ public sealed class BookingEndpointTests
         Assert.IsEmpty(logger.Entries);
     }
 
+    [TestMethod]
+    public async Task EmailFailureNeverLogsSuccessfulReceipt()
+    {
+        var logger = new RecordingLogger();
+        using var client = new HttpClient(new SiteverifyStub());
+        var sender = new BookingEmailStub { Accepted = false };
+        var result = await BookingEndpoint.Post(Request(), new BookingRequestValidator(Clock), logger,
+            new TurnstileVerifier(client, new("secret", ["blokhutdewildert.nl"])), sender, CancellationToken.None);
+        Assert.AreEqual(503, ((ProblemHttpResult)result.Result).StatusCode);
+        Assert.AreEqual(1, sender.Calls);
+        Assert.IsEmpty(logger.Entries);
+    }
+
     private static BookingRequestDto Request(int guests = 30, DateOnly? date = null) => new()
     {
         TurnstileToken = "token",
@@ -179,7 +194,7 @@ public sealed class BookingEndpointTests
     {
         using var client = new HttpClient(new SiteverifyStub());
         var verifier = new TurnstileVerifier(client, new("test-secret", ["blokhutdewildert.nl"]));
-        return BookingEndpoint.Post(request, new BookingRequestValidator(Clock), logger, verifier, CancellationToken.None)
+        return BookingEndpoint.Post(request, new BookingRequestValidator(Clock), logger, verifier, new BookingEmailStub(), CancellationToken.None)
             .GetAwaiter().GetResult();
     }
 
