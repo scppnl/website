@@ -3,4 +3,4 @@ using Scpp.Shared.Contact.Api.Verification;
 
 namespace Scpp.Shared.Contact.Api.Models;
 
-public sealed record ContactSubmissionResult(ContactValidationResult Validation, VerificationOutcome? Verification);
+public sealed record ContactSubmissionResult(ContactValidationResult Validation, VerificationOutcome? Verification, bool? Delivered = null);

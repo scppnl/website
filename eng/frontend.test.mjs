@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { siteKey, testSiteKey, bookingApiUrl } from './frontend.mjs';
+import { siteKey, testSiteKey, bookingApiUrl, contactApiUrl } from './frontend.mjs';
 
 test('booking API activation defaults off and accepts only an HTTPS origin', () => {
   assert.equal(bookingApiUrl({}), '');
@@ -27,4 +27,12 @@ test('booking keys are independent and enforce release validation when selected'
   assert.equal(siteKey({ [name]: 'booking-key', TURNSTILE_SITE_KEY: 'contact-key', REQUIRE_TURNSTILE_SITE_KEY: 'true' }, name), 'booking-key');
   assert.throws(() => siteKey({ [name]: 'bad"value' }, name));
   assert.equal(siteKey({ TURNSTILE_SITE_KEY: 'contact-key', REQUIRE_TURNSTILE_SITE_KEY: 'true' }), 'contact-key');
+});
+
+test('contact API activation uses a public HTTPS origin for both forms', () => {
+  assert.equal(contactApiUrl({}), '');
+  assert.equal(contactApiUrl({ CONTACT_API_BASE_URL: ' https://contact-api-979979719406.europe-west4.run.app/ ' }),
+    'https://contact-api-979979719406.europe-west4.run.app');
+  for (const value of ['http://example.org', 'https://example.org/contact', 'https://user:password@example.org', 'https://example.org?x=1', 'https://example.org#contact'])
+    assert.throws(() => contactApiUrl({ CONTACT_API_BASE_URL: value }), /CONTACT_API_BASE_URL must be an HTTPS origin/);
 });

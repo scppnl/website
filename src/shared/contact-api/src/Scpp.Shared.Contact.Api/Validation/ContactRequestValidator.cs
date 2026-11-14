@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+using Scpp.Shared.Contact.Infrastructure.Email;
 using Scpp.Shared.Contact.Domain.Models;
 using Scpp.Shared.Contact.Models;
 
@@ -40,7 +40,7 @@ public static class ContactRequestValidator
         {
             errors["turnstileToken"] = ["Invalid verification token."];
         }
-        if (normalized.Email is not null && (!new EmailAddressAttribute().IsValid(normalized.Email) || normalized.Email.Any(char.IsWhiteSpace)))
+        if (normalized.Email is not null && normalized.Email.Length <= 254 && !MailboxAddress.IsValid(normalized.Email))
         {
             errors["email"] = ["Enter a valid email address."];
         }

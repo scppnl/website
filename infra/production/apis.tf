@@ -7,7 +7,9 @@ locals {
   apis = {
     "contact-api" = {
       additional_env = {
-        ContactEmail__From = "noreply@scpp.nl"
+        ContactEmail__From          = "noreply@scpp.nl"
+        ContactEmail__FoundationTo  = "stichting@scpp.nl"
+        ContactEmail__AssociationTo = "info@scpp.nl"
       }
       additional_secrets = {
         CONTACT_GMAIL_OAUTH_JSON = google_secret_manager_secret.contact_gmail_oauth.secret_id

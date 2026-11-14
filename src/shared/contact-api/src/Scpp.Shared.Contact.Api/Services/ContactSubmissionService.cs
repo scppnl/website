@@ -19,11 +19,12 @@ public sealed class ContactSubmissionService(IContactSubmissionSink sink, IConta
         }
 
         var verification = await verifier.VerifyAsync(request.TurnstileToken!, traceId, cancellationToken);
+        bool? delivered = null;
         if (verification == VerificationOutcome.Accepted)
         {
-            await sink.SubmitAsync(submission, traceId, cancellationToken);
+            delivered = await sink.SubmitAsync(submission, traceId, cancellationToken);
         }
 
-        return new ContactSubmissionResult(result, verification);
+        return new ContactSubmissionResult(result, verification, delivered);
     }
 }

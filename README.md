@@ -289,9 +289,13 @@ All five projects are also in `Scpp.slnx` and belong to the `contact-api` Nx
 component, so changes to any layer also build and test the API. The API host
 references Domain, Infrastructure and Models and wires their dependencies.
 `GET /` returns HTTP 200 with plain text `Contact API`. `POST /contact` validates
-and logs requests from both sites. The planned production endpoint is
-`https://api.scpp.nl/contact`; production submissions remain disabled until hosting
-is configured. See the [contact API guide](src/shared/contact-api/README.md)
+and emails requests from both sites through
+`https://contact-api-979979719406.europe-west4.run.app/contact`.
+Association messages go to `info@scpp.nl`; foundation messages go to
+`stichting@scpp.nl`, both from `noreply@scpp.nl` with the visitor as Reply-To.
+Set repository Actions variable `CONTACT_API_BASE_URL` to
+`https://contact-api-979979719406.europe-west4.run.app` after verifying delivery,
+then run CI with `sites_only=true` to enable both `/contact` pages. See the [contact API guide](src/shared/contact-api/README.md)
 for its contract, local setup and frontend configuration.
 
 ```sh
@@ -313,7 +317,7 @@ curl http://localhost:5080/
 ### Booking requests
 
 `POST /bookings` accepts the foundation website's booking JSON. The planned
-production endpoint is `https://api.scpp.nl/bookings`. Accepted requests are logged
+production endpoint is `https://booking-api-979979719406.europe-west4.run.app/bookings`. Accepted requests are logged
 once at Information level with the booking fields, including
 contact details and remarks, and return HTTP 204 with no body. This iteration does
 not store a booking or check availability. After validation and verification, the API

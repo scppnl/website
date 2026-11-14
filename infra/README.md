@@ -70,29 +70,30 @@ Populate a new secret with an enabled credential version before attaching it to
 Cloud Run. An empty container cannot satisfy a runtime reference to `latest`.
 Each API uses its own credential secret, even when both authorize `noreply@scpp.nl`.
 
-The contact Cloud Run service uses `ContactEmail__From=noreply@scpp.nl` and
+The contact Cloud Run service uses `ContactEmail__From=noreply@scpp.nl`,
+`ContactEmail__FoundationTo=stichting@scpp.nl`,
+`ContactEmail__AssociationTo=info@scpp.nl`, and
 `CONTACT_GMAIL_OAUTH_JSON`, a secret environment reference to
 `contact-gmail-oauth:latest`. The shared module grants secret-specific
 `roles/secretmanager.secretAccessor` access to
 `contact-api-runtime@websites-514515.iam.gserviceaccount.com`.
-These settings prepare the infrastructure; the contact application currently
-validates and logs submissions and does not yet send email.
+The contact application uses these settings to send verified submissions through
+Gmail before returning HTTP 204 and logging its normalized receipt.
 
-For contact, upload the generated authorized-user credentials from the isolated
-Windows PowerShell gcloud configuration directory (`$contactAuthDir`):
+For contact, use a separate OAuth client in the existing Workspace Internal app,
+authorized as `noreply@scpp.nl` with only the `gmail.send` scope, following the
+[contact rollout guide](../src/shared/contact-api/README.md#gmail-configuration-and-rollout).
+Upload the protected JSON file with the operator's Google Cloud account:
 
 ```powershell
-gcloud secrets versions add contact-gmail-oauth --project=websites-514515 --data-file="$contactAuthDir\application_default_credentials.json"
+$contactCredentialFile = "C:\secure\contact-gmail-oauth.json"
+gcloud secrets versions add contact-gmail-oauth --project=websites-514515 --data-file="$contactCredentialFile"
 gcloud secrets versions list contact-gmail-oauth --project=websites-514515 --filter="state=ENABLED" --format="table(name,state,createTime)"
 ```
 
-The credential file must contain `client_id`, `client_secret` and `refresh_token`
-authorized as the sender mailbox. The downloaded OAuth client JSON alone does not
-contain a refresh token. Keep credential contents out of Git, logs and Terraform
-variables. The gcloud ADC authorization process requests Cloud Platform scope as
-well as Gmail sending scope; it does not produce a Gmail-only grant. See the
-[booking Gmail configuration guide](../src/foundation/booking-api/README.md#gmail-configuration-and-rollout)
-for Gmail-only authorization guidance.
+The file must contain `client_id`, `client_secret` and `refresh_token`.
+Do not use gcloud ADC login to authorize the mailbox: it requests additional
+Cloud scopes. Credential values stay outside Git, GitHub Actions and Terraform state.
 
 To rotate credentials, upload a new version and deploy a new Cloud Run revision
 through CI so every new instance loads the updated value. Environment references

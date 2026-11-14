@@ -27,6 +27,7 @@
             "server": "src/main.server.ts",
             "outputMode": "static",
             "define": {
+              "__CONTACT_API_BASE_URL__": "\"\"",
               "__TURNSTILE_SITE_KEY__": "\"\""
             }
           },

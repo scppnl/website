@@ -11,12 +11,15 @@ internal sealed class RecordingSink : IContactSubmissionSink
     internal CancellationToken CancellationToken { get; private set; }
     internal Task Completion { get; init; } = Task.CompletedTask;
 
-    public Task SubmitAsync(ContactSubmission submission, string traceId, CancellationToken cancellationToken)
+    internal bool Delivered { get; init; } = true;
+
+    public async Task<bool> SubmitAsync(ContactSubmission submission, string traceId, CancellationToken cancellationToken)
     {
         Calls++;
         Submission = submission;
         TraceId = traceId;
         CancellationToken = cancellationToken;
-        return Completion;
+        await Completion;
+        return Delivered;
     }
 }

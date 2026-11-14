@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.7] - 2026-11-14
+
+### Added
+
+- Send verified contact messages through Gmail from `noreply@scpp.nl`, routing
+  foundation requests to `stichting@scpp.nl` and association requests to `info@scpp.nl`.
+- Activate both existing contact pages through the public `CONTACT_API_BASE_URL`
+  build setting, using the Cloud Run origin.
+
+### Changed
+
+- Return HTTP 204 and log the normalized receipt only after Gmail accepts the
+  message; delivery failures return HTTP 503 without automatic resend.
+
 ## [0.0.6] - 2026-11-14
 
 ### Changed

@@ -64,9 +64,13 @@ and [limits](https://developers.cloudflare.com/workers/platform/limits/#static-a
 ## Forms
 
 The contact form validates inputs and posts through `ContactMessageService` to the
-shared contact API. Accepted requests are currently logged, and the UI confirms
-receipt after the API succeeds. Development builds use `http://localhost:5081`;
-production submissions stay disabled until an API URL is configured. See the
+shared contact API. At `/contact`, requests use `source: foundation` and are emailed
+from `noreply@scpp.nl` to `stichting@scpp.nl`, with the visitor as Reply-To.
+The UI confirms success after Gmail accepts the message. Development builds use
+`http://localhost:5081`. Set repository Actions variable `CONTACT_API_BASE_URL` to
+`https://contact-api-979979719406.europe-west4.run.app` after verifying delivery,
+then run CI on `main` with `sites_only=true` to rebuild both sites. Empty URL or
+Turnstile configuration disables submission; failure retains input for a fresh-token retry. See the
 [contact API guide](../../shared/contact-api/README.md) for startup and configuration.
 
 The booking form posts to the .NET booking API and retains its existing validation,
