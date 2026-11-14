@@ -1,4 +1,4 @@
-# Stichting Clubhuis De Wildert
+# Stichting Blokhut De Wildert
 
 Angular 22 with prerendered HTML and client hydration. Cloudflare Workers Static
 Assets serves this site; Angular's server bootstrap runs only during the build.

@@ -65,7 +65,7 @@ export interface BuildingInfo {
 }
 
 export const foundation = {
-  name: 'Stichting Clubhuis De Wildert',
+  name: 'Stichting Blokhut De Wildert',
   address: {
     street: 'Huijbergsebaan 415',
     postalCode: '4624 RG',
@@ -255,7 +255,7 @@ export const home = {
     title: 'Welkom bij De Wildert',
     paragraphs: <readonly Copy[]>[
       {
-        long: 'Stichting Clubhuis De Wildert beheert en verhuurt het clubhuis aan de Huijbergsebaan in Bergen op Zoom. De gebouwen zijn ingericht op groepen: er is ruimte om te koken, te eten, samen te werken en buiten te spelen.',
+        long: 'Stichting Blokhut De Wildert beheert en verhuurt het clubhuis aan de Huijbergsebaan in Bergen op Zoom. De gebouwen zijn ingericht op groepen: er is ruimte om te koken, te eten, samen te werken en buiten te spelen.',
       },
       {
         long: 'De opbrengst van de verhuur gaat naar het onderhoud van de gebouwen en het terrein, zodat het een fijne plek blijft voor jong en oud.',
