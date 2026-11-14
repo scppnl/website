@@ -26,7 +26,9 @@ public sealed class GmailHostTests
             builder.Configuration["BOOKING_GMAIL_OAUTH_JSON"] = "{\"client_id\":\"client\",\"client_secret\":\"secret\",\"refresh_token\":\"refresh\"}";
             builder.Services.AddHttpClient<TurnstileVerifier>().ConfigurePrimaryHttpMessageHandler(() => verification);
             builder.Services.AddHttpClient("gmail-oauth").ConfigurePrimaryHttpMessageHandler(() => oauth);
-            builder.Services.AddHttpClient<IBookingEmailSender, GmailBookingEmailSender>().ConfigurePrimaryHttpMessageHandler(() => gmail);
+            // Change only the existing typed client's transport. Re-registering the
+            // sender here would hide a missing production IBookingEmailSender mapping.
+            builder.Services.AddHttpClient(nameof(IBookingEmailSender)).ConfigurePrimaryHttpMessageHandler(() => gmail);
         });
         await app.StartAsync();
         using var client = new HttpClient { BaseAddress = new Uri(app.Urls.Single()) };
