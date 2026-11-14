@@ -5,6 +5,6 @@ public sealed record ContactSubmission(
     string Name,
     string Email,
     string Message,
-    string? ChildName = null,
-    string? Phone = null,
-    string? Subject = null);
+    string? ChildName,
+    string? Phone,
+    string? Subject);

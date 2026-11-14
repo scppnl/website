@@ -1,3 +1,4 @@
+using Scpp.Foundation.Booking.Contracts;
 using Scpp.Foundation.Booking.Api.Configuration;
 using Scpp.Foundation.Booking.Api.Endpoints;
 using Scpp.Foundation.Booking.Api.Email;
@@ -14,6 +15,24 @@ internal static class BookingApi
     {
         var builder = WebApplication.CreateSlimBuilder(args);
         builder.AddApiLogging();
+        AddServices(builder);
+        configure?.Invoke(builder);
+        builder.Services.AddSingleton(TurnstileSettings.Load(builder.Configuration, builder.Environment));
+        builder.Services.AddSingleton(BookingEmailSettings.Load(builder.Configuration));
+
+        AddCors(builder);
+
+        var app = builder.Build();
+        app.UseApiRequestLogging();
+        app.UseCors();
+        app.MapGet("/", DummyEndpoint.Get);
+        app.MapPost("/bookings", (BookingRequestDto request, BookingEndpoint endpoint, CancellationToken cancellationToken) =>
+            endpoint.PostAsync(request, cancellationToken));
+        return app;
+    }
+
+    private static void AddServices(WebApplicationBuilder builder)
+    {
         builder.Services.ConfigureHttpJsonOptions(options =>
             options.SerializerOptions.TypeInfoResolverChain.Insert(0, BookingJsonContext.Default));
         builder.Services.AddSingleton(TimeProvider.System);
@@ -24,22 +43,16 @@ internal static class BookingApi
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
         builder.Services.AddHttpClient<IBookingEmailSender, GmailBookingEmailSender>(client => client.Timeout = Timeout.InfiniteTimeSpan)
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
-        configure?.Invoke(builder);
-        builder.Services.AddSingleton(TurnstileSettings.Load(builder.Configuration, builder.Environment));
-        builder.Services.AddSingleton(BookingEmailSettings.Load(builder.Configuration));
+        builder.Services.AddScoped<BookingEndpoint>();
+    }
 
+    private static void AddCors(WebApplicationBuilder builder)
+    {
         var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins")
             .GetChildren().Select(origin => origin.Value).OfType<string>().ToArray();
         if (allowedOrigins.Contains("*"))
             throw new InvalidOperationException("Cors:AllowedOrigins must contain explicit origins, not '*'.");
         builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
             policy.WithOrigins(allowedOrigins).WithMethods("POST").WithHeaders("Content-Type")));
-
-        var app = builder.Build();
-        app.UseApiRequestLogging();
-        app.UseCors();
-        app.MapGet("/", DummyEndpoint.Get);
-        app.MapPost("/bookings", BookingEndpoint.Post);
-        return app;
     }
 }

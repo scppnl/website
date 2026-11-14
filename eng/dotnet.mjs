@@ -16,7 +16,7 @@ export function dotnet(args) {
     return absolute;
   });
   for (const path of resolved) {
-    const flags = action === 'restore' ? [] : ['--configuration', 'Release', '--no-restore'];
+    const flags = action === 'restore' ? ['-p:Configuration=Release'] : ['--configuration', 'Release', '--no-restore'];
     if (action === 'test') flags.push('--no-build');
     run('dotnet', [action, path, ...flags]);
   }

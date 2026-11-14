@@ -9,7 +9,7 @@ namespace Scpp.Shared.Contact.Api.UnitTests.Services;
 [TestClass]
 public sealed class ContactSubmissionServiceTests
 {
-    private static ContactRequest Valid() => new("foundation", " Jan ", " jan@example.nl ", " Hello ", Subject: "question", TurnstileToken: "test-token");
+    private static ContactRequest Valid() => new() { Source = "foundation", Name = " Jan ", Email = " jan@example.nl ", Message = " Hello ", Subject = "question", TurnstileToken = "test-token" };
 
     [TestMethod]
     public async Task SendsNormalizedSubmissionOnceAndForwardsTraceAndCancellationToken()
@@ -22,7 +22,7 @@ public sealed class ContactSubmissionServiceTests
         var result = await service.SubmitAsync(Valid(), "test-trace", cancellation.Token);
 
         Assert.IsEmpty(result.Validation.Errors);
-        Assert.AreEqual(new ContactSubmission("foundation", "Jan", "jan@example.nl", "Hello", Subject: "question"),
+        Assert.AreEqual(new ContactSubmission("foundation", "Jan", "jan@example.nl", "Hello", null, null, "question"),
             result.Validation.Submission);
         Assert.AreEqual(1, sink.Calls);
         Assert.IsTrue(result.Delivered);
@@ -50,6 +50,7 @@ public sealed class ContactSubmissionServiceTests
         Assert.AreEqual(0, sink.Calls);
         Assert.AreEqual(0, verifier.Calls);
         Assert.IsNull(result.Verification);
+        Assert.IsNull(result.Delivered);
     }
 
     [TestMethod]
@@ -65,6 +66,7 @@ public sealed class ContactSubmissionServiceTests
 
         Assert.IsEmpty(result.Validation.Errors);
         Assert.AreEqual(outcome, result.Verification);
+        Assert.IsNull(result.Delivered);
         Assert.AreEqual(1, verifier.Calls);
         Assert.AreEqual(0, sink.Calls);
     }

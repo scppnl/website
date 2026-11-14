@@ -410,6 +410,18 @@ npm run dotnet -- build Scpp.slnx
 npm run dotnet -- test Scpp.slnx
 ```
 
+All .NET projects inherit warning level `9999` from `Directory.Build.props`.
+Release builds treat compiler, analyzer, MSBuild, trimming, and Native AOT warnings
+as errors; Debug builds report warnings without failing. The orchestration helper
+restores, builds, and tests with Release settings.
+
+The shared `NoWarn` list is the approved baseline. Additional exceptions use
+`SuppressMessage` attributes at the affected member or type, with a justification:
+fixed Google/Cloudflare protocol URLs (`S1075`), private delivery exceptions
+(`S3871`), and failure logging that deliberately excludes provider exceptions to
+protect credentials and message data (`S6667`). Fix other diagnostics in code
+rather than expanding suppressions or lowering rule severities.
+
 ### Build and run the API images
 
 Use Ubuntu 24.04 amd64, matching CI and the runtime image, with the selected .NET

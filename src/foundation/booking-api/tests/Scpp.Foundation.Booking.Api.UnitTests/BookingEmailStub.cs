@@ -8,7 +8,7 @@ internal sealed class BookingEmailStub : IBookingEmailSender
     internal int Calls { get; private set; }
     internal bool Accepted { get; set; } = true;
 
-    public Task<bool> Send(BookingRequestDto request, CancellationToken cancellationToken)
+    public Task<bool> SendAsync(BookingRequestDto request, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         Calls++;

@@ -25,6 +25,6 @@ public sealed class ContactSubmissionService(IContactSubmissionSink sink, IConta
             delivered = await sink.SubmitAsync(submission, traceId, cancellationToken);
         }
 
-        return new ContactSubmissionResult(result, verification, delivered);
+        return new ContactSubmissionResult(result, verification) { Delivered = delivered };
     }
 }

@@ -9,10 +9,12 @@ namespace Scpp.Shared.Contact.Api.UnitTests.Validation;
 public sealed class ContactRequestValidatorTests
 {
     private static ContactRequest Valid(string source = "foundation") =>
-        new(source, " Jan Jansen ", " jan@example.nl ", " Hello\nworld ",
-            source == "association" ? " Piet " : null,
-            source == "foundation" ? " 0164 123456 " : null,
-            source == "foundation" ? "question" : null, "test-token");
+        new() {
+            Source = source, Name = " Jan Jansen ", Email = " jan@example.nl ", Message = " Hello\nworld ",
+            ChildName = source == "association" ? " Piet " : null,
+            Phone = source == "foundation" ? " 0164 123456 " : null,
+            Subject = source == "foundation" ? "question" : null, TurnstileToken = "test-token"
+        };
 
     [TestMethod]
     [DataRow("association")]

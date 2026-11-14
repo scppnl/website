@@ -9,23 +9,23 @@ using Scpp.Foundation.Booking.Contracts;
 
 namespace Scpp.Foundation.Booking.Api.Endpoints;
 
-internal sealed class BookingEndpoint
+internal sealed class BookingEndpoint(BookingRequestValidator validator, ILogger<BookingEndpoint> logger,
+    TurnstileVerifier verifier, IBookingEmailSender emailSender)
 {
-    internal static async Task<Results<NoContent, ValidationProblem, ProblemHttpResult>> Post(
-        BookingRequestDto request, BookingRequestValidator validator, ILogger<BookingEndpoint> logger,
-        TurnstileVerifier verifier, IBookingEmailSender emailSender, CancellationToken cancellationToken)
+    internal async Task<Results<NoContent, ValidationProblem, ProblemHttpResult>> PostAsync(
+        BookingRequestDto request, CancellationToken cancellationToken)
     {
         var errors = validator.Validate(request);
         if (errors.Count > 0)
-            return TypedResults.ValidationProblem(errors);
+            return TypedResults.ValidationProblem(errors.ToDictionary(error => error.Key, error => error.Value));
 
-        var verification = await verifier.Verify(request.TurnstileToken!, cancellationToken);
+        var verification = await verifier.VerifyAsync(request.TurnstileToken!, cancellationToken);
         if (verification != VerificationOutcome.Accepted)
             return TypedResults.Problem(
                 statusCode: verification == VerificationOutcome.Rejected ? 403 : 503,
                 title: "Booking verification failed. Please try again.");
 
-        if (!await emailSender.Send(request, cancellationToken))
+        if (!await emailSender.SendAsync(request, cancellationToken))
             return TypedResults.Problem(statusCode: 503, title: "Booking email could not be sent. Please try again.");
 
         logger.LogInformation("Booking request received: {BookingRequest}",
