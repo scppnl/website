@@ -6,7 +6,9 @@ namespace Scpp.Foundation.Booking.Api.Verification;
 
 internal sealed class TurnstileVerifier(HttpClient client, TurnstileSettings settings)
 {
-    internal async Task<VerificationOutcome> Verify(string token, CancellationToken cancellationToken)
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S1075:URIs should not be hardcoded",
+        Justification = "Cloudflare Siteverify is a fixed protocol endpoint shared by all deployments.")]
+    internal async Task<VerificationOutcome> VerifyAsync(string token, CancellationToken cancellationToken)
     {
         try
         {

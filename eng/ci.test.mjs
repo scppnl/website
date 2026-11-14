@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { after, test } from 'node:test';
@@ -120,4 +120,28 @@ test('.NET helper requires explicit existing project or solution paths', () => {
     assert.equal(result.status, 1);
     assert.match(result.stderr, /Usage:|Expected an existing/);
   }
+});
+
+test('.NET helper restores, builds and tests with consistent Release settings', { skip: process.platform === 'win32' }, () => {
+  const bin = join(directory, 'bin');
+  mkdirSync(bin);
+  const executable = join(bin, 'dotnet');
+  const log = join(directory, 'dotnet-arguments');
+  writeFileSync(executable, `#!/usr/bin/env node
+require('node:fs').appendFileSync(process.env.TEST_DOTNET_LOG, JSON.stringify(process.argv.slice(2)) + '\\n');
+`);
+  chmodSync(executable, 0o755);
+  writeFileSync(join(directory, 'test.slnx'), '<Solution />');
+  for (const action of ['restore', 'build', 'test']) {
+    const result = spawnSync(process.execPath, ['eng/dotnet.mjs', action, 'test.slnx'], {
+      cwd: directory, encoding: 'utf8', env: { ...childEnv, PATH: `${bin}:${childEnv.PATH}`, TEST_DOTNET_LOG: log },
+    });
+    assert.equal(result.status, 0, result.stderr);
+  }
+  const commands = readFileSync(log, 'utf8').trim().split('\n').map(line => JSON.parse(line));
+  assert.deepEqual(commands, [
+    ['restore', join(directory, 'test.slnx'), '-p:Configuration=Release'],
+    ['build', join(directory, 'test.slnx'), '--configuration', 'Release', '--no-restore'],
+    ['test', join(directory, 'test.slnx'), '--configuration', 'Release', '--no-restore', '--no-build'],
+  ]);
 });

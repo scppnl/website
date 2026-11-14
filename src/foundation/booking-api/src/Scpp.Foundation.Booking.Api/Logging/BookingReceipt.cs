@@ -3,11 +3,22 @@ using Scpp.Foundation.Booking.Contracts;
 namespace Scpp.Foundation.Booking.Api.Logging;
 
 // Explicitly list receipt fields so credentials cannot enter the existing submission log.
-internal sealed record BookingReceipt(
-    string? Name, string? Organisation, string? Email, string? Phone, string? Building,
-    string? GroupType, DateOnly Date, string[]? Dayparts, int Guests, string? Remarks)
+internal sealed record BookingReceipt
 {
-    internal static BookingReceipt From(BookingRequestDto request) => new(
-        request.Name, request.Organisation, request.Email, request.Phone, request.Building,
-        request.GroupType, request.Date, request.Dayparts, request.Guests, request.Remarks);
+    public string? Name { get; init; }
+    public string? Organisation { get; init; }
+    public string? Email { get; init; }
+    public string? Phone { get; init; }
+    public string? Building { get; init; }
+    public string? GroupType { get; init; }
+    public DateOnly Date { get; init; }
+    public string[]? Dayparts { get; init; }
+    public int Guests { get; init; }
+    public string? Remarks { get; init; }
+
+    internal static BookingReceipt From(BookingRequestDto request) => new() {
+        Name = request.Name, Organisation = request.Organisation, Email = request.Email, Phone = request.Phone,
+        Building = request.Building, GroupType = request.GroupType, Date = request.Date,
+        Dayparts = request.Dayparts, Guests = request.Guests, Remarks = request.Remarks
+    };
 }

@@ -10,12 +10,14 @@ public sealed class TurnstileVerifier(
 {
     public async Task<TurnstileVerificationOutcome> VerifyAsync(string token, string traceId, CancellationToken cancellationToken)
     {
-        var outcome = await Verify(token, cancellationToken);
+        var outcome = await VerifyCoreAsync(token, cancellationToken);
         logger.LogDebug("Contact verification outcome: {Outcome} ({TraceId})", outcome, traceId);
         return outcome;
     }
 
-    private async Task<TurnstileVerificationOutcome> Verify(string token, CancellationToken cancellationToken)
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S1075:URIs should not be hardcoded",
+        Justification = "Cloudflare Siteverify is a fixed protocol endpoint shared by all deployments.")]
+    private async Task<TurnstileVerificationOutcome> VerifyCoreAsync(string token, CancellationToken cancellationToken)
     {
         try
         {

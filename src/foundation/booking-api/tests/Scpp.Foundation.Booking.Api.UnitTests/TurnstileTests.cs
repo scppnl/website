@@ -22,13 +22,14 @@ public sealed class TurnstileTests
     [DataRow("{\"success\":true,\"hostname\":\"blokhutdewildert.nl\"}", 403)]
     [DataRow("{\"success\":true,\"action\":\"booking\"}", 403)]
     [DataRow("{}", 503)]
+    [DataRow("{\"success\":null}", 503)]
     [DataRow("null", 503)]
     [DataRow("not-json", 503)]
     public async Task EndpointRequiresSuccessfulBookingVerification(string response, int status)
     {
         using var stub = new SiteverifyStub { Response = response };
         using var client = new HttpClient(stub);
-        var result = await Post("fresh+token", client);
+        var result = await PostAsync("fresh+token", client);
         if (status == 204) Assert.IsInstanceOfType<NoContent>(result.Result);
         else Assert.AreEqual(status, ((ProblemHttpResult)result.Result).StatusCode);
         Assert.AreEqual("https://challenges.cloudflare.com/turnstile/v0/siteverify", stub.Url);
@@ -42,20 +43,20 @@ public sealed class TurnstileTests
         {
             using var stub = new SiteverifyStub();
             using var client = new HttpClient(stub);
-            var result = await Post(token, client);
+            var result = await PostAsync(token, client);
             Assert.IsInstanceOfType<ValidationProblem>(result.Result);
             Assert.IsTrue(((ValidationProblem)result.Result).ProblemDetails.Errors.ContainsKey("turnstileToken"));
             Assert.AreEqual(0, stub.Calls);
         }
         using var boundaryClient = new HttpClient(new SiteverifyStub());
-        Assert.IsInstanceOfType<NoContent>((await Post(new string('x', 2048), boundaryClient)).Result);
+        Assert.IsInstanceOfType<NoContent>((await PostAsync(new string('x', 2048), boundaryClient)).Result);
     }
 
     [TestMethod]
     public async Task UpstreamErrorsAndTimeoutsFailClosed()
     {
         using var httpFailure = new HttpClient(new SiteverifyStub { Status = HttpStatusCode.InternalServerError });
-        Assert.AreEqual(503, ((ProblemHttpResult)(await Post("token", httpFailure)).Result).StatusCode);
+        Assert.AreEqual(503, ((ProblemHttpResult)(await PostAsync("token", httpFailure)).Result).StatusCode);
         foreach (var network in new[] { true, false })
         {
             using var stub = new SiteverifyStub { Respond = async token => {
@@ -64,7 +65,7 @@ public sealed class TurnstileTests
                 return new(HttpStatusCode.OK);
             } };
             using var client = new HttpClient(stub) { Timeout = TimeSpan.FromMilliseconds(25) };
-            Assert.AreEqual(503, ((ProblemHttpResult)(await Post("token", client)).Result).StatusCode);
+            Assert.AreEqual(503, ((ProblemHttpResult)(await PostAsync("token", client)).Result).StatusCode);
         }
     }
 
@@ -78,7 +79,7 @@ public sealed class TurnstileTests
         using var client = new HttpClient(stub);
         using var cancellation = new CancellationTokenSource(25);
         var verifier = new TurnstileVerifier(client, new("test-secret", ["blokhutdewildert.nl"]));
-        await Assert.ThrowsAsync<OperationCanceledException>(() => verifier.Verify("token", cancellation.Token));
+        await Assert.ThrowsAsync<OperationCanceledException>(() => verifier.VerifyAsync("token", cancellation.Token));
     }
 
     [TestMethod]
@@ -104,10 +105,9 @@ public sealed class TurnstileTests
             ["BOOKING_TURNSTILE_SECRET_KEY"] = secret, ["Turnstile:AllowedHostnames:0"] = host
         }).Build(), new TestHostEnvironment(environment));
 
-    private static Task<Results<NoContent, ValidationProblem, ProblemHttpResult>> Post(string? token, HttpClient client) =>
-        BookingEndpoint.Post(new BookingRequestDto {
+    private static Task<Results<NoContent, ValidationProblem, ProblemHttpResult>> PostAsync(string? token, HttpClient client) =>
+        new BookingEndpoint(new BookingRequestValidator(TimeProvider.System), NullLogger<BookingEndpoint>.Instance, new TurnstileVerifier(client, new("test-secret", ["blokhutdewildert.nl"])), new BookingEmailStub()).PostAsync(new BookingRequestDto {
             Name = "Renter", Email = "renter@example.org", Building = "groot", GroupType = "family",
             Date = new DateOnly(2099, 6, 4), Dayparts = ["ochtend"], Guests = 20, TurnstileToken = token
-        }, new BookingRequestValidator(TimeProvider.System), NullLogger<BookingEndpoint>.Instance,
-        new TurnstileVerifier(client, new("test-secret", ["blokhutdewildert.nl"])), new BookingEmailStub(), CancellationToken.None);
+        }, CancellationToken.None);
 }

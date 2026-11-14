@@ -7,7 +7,7 @@ namespace Scpp.Shared.Contact.Api.Endpoints;
 
 internal static class ContactEndpoint
 {
-    internal static async Task<Results<NoContent, ValidationProblem, ProblemHttpResult>> Post(
+    internal static async Task<Results<NoContent, ValidationProblem, ProblemHttpResult>> PostAsync(
         ContactRequest request, HttpContext context, IContactSubmissionService service,
         CancellationToken cancellationToken)
     {

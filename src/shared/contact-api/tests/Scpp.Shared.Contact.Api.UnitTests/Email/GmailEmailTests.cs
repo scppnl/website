@@ -22,6 +22,22 @@ public sealed class GmailEmailTests
         source == "foundation" ? "viewing" : null);
 
     [TestMethod]
+    public async Task ProviderExceptionDataNeverEntersLogs()
+    {
+        using var stub = new GmailHttpStub();
+        stub.Respond = (_, _) => throw new HttpRequestException("secret-token and private message");
+        var logs = new EmailLogRecorder();
+        var settings = Settings();
+        using var tokens = new GmailTokenProvider(stub, settings, new EmailTestClock());
+        using var client = stub.CreateClient("");
+        var sender = new GmailContactEmailSender(client, tokens, settings, new EmailTestClock(), logs);
+        Assert.IsFalse(await sender.SendAsync(Request(), CancellationToken.None));
+        Assert.IsTrue(logs.Messages.Any(message => message.Contains("network", StringComparison.Ordinal)));
+        Assert.IsFalse(logs.Messages.Any(message => message.Contains("secret-token", StringComparison.Ordinal)));
+        Assert.IsEmpty(logs.Exceptions);
+    }
+
+    [TestMethod]
     [DataRow("foundation", "stichting@scpp.nl")]
     [DataRow("association", "info@scpp.nl")]
     public async Task SendsCompleteMimeMessageWithFixedRecipientsAndSafeReplyTo(string source, string to)
@@ -31,7 +47,7 @@ public sealed class GmailEmailTests
         using var tokens = new GmailTokenProvider(stub, Settings(), clock);
         using var http = stub.CreateClient("");
         var sender = new GmailContactEmailSender(http, tokens, Settings(), clock, NullLogger<GmailContactEmailSender>.Instance);
-        Assert.IsTrue(await sender.Send(Request(source), CancellationToken.None));
+        Assert.IsTrue(await sender.SendAsync(Request(source), CancellationToken.None));
         Assert.HasCount(2, stub.Requests);
         var requests = stub.Requests.ToArray();
         Assert.AreEqual("https://oauth2.googleapis.com/token", requests[0].Url);
@@ -80,10 +96,10 @@ public sealed class GmailEmailTests
             await Task.Yield();
             return new(HttpStatusCode.OK) { Content = new StringContent(stub.OAuthResponse) };
         };
-        await Task.WhenAll(Enumerable.Range(0, 10).Select(_ => tokens.GetToken(CancellationToken.None)));
+        await Task.WhenAll(Enumerable.Range(0, 10).Select(_ => tokens.GetTokenAsync(CancellationToken.None)));
         Assert.HasCount(1, stub.Requests);
         clock.Now = clock.Now.AddSeconds(3541);
-        await tokens.GetToken(CancellationToken.None);
+        await tokens.GetTokenAsync(CancellationToken.None);
         Assert.HasCount(2, stub.Requests);
     }
 
@@ -99,7 +115,7 @@ public sealed class GmailEmailTests
         using var stub = new GmailHttpStub();
         if (oauth) stub.OAuthStatus = (HttpStatusCode)status;
         else stub.GmailStatus = (HttpStatusCode)status;
-        Assert.IsFalse(await Send(stub));
+        Assert.IsFalse(await SendAsync(stub));
         Assert.AreEqual(oauth ? 1 : 2, stub.Requests.Count);
     }
 
@@ -116,7 +132,7 @@ public sealed class GmailEmailTests
         using var stub = new GmailHttpStub();
         if (oauth) stub.OAuthResponse = response;
         else stub.GmailResponse = response;
-        Assert.IsFalse(await Send(stub));
+        Assert.IsFalse(await SendAsync(stub));
     }
 
     [TestMethod]
@@ -124,9 +140,9 @@ public sealed class GmailEmailTests
     {
         using var stub = new GmailHttpStub();
         stub.Respond = (_, _) => throw new HttpRequestException("must not be exposed");
-        Assert.IsFalse(await Send(stub));
+        Assert.IsFalse(await SendAsync(stub));
         stub.Respond = (_, _) => throw new TaskCanceledException("provider timeout");
-        Assert.IsFalse(await Send(stub));
+        Assert.IsFalse(await SendAsync(stub));
         var entered = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         stub.Respond = async (_, token) => {
             entered.SetResult();
@@ -134,7 +150,7 @@ public sealed class GmailEmailTests
             return new(HttpStatusCode.OK);
         };
         using var cancellation = new CancellationTokenSource();
-        var sending = Send(stub, cancellation.Token);
+        var sending = SendAsync(stub, cancellation.Token);
         await entered.Task;
         cancellation.Cancel();
         await Assert.ThrowsAsync<OperationCanceledException>(() => sending);
@@ -161,13 +177,13 @@ public sealed class GmailEmailTests
         using var http = stub.CreateClient("");
         var logger = new EmailLogRecorder();
         var sender = new GmailContactEmailSender(http, tokens, Settings(), clock, logger);
-        Assert.IsFalse(await sender.Send(Request(), CancellationToken.None));
+        Assert.IsFalse(await sender.SendAsync(Request(), CancellationToken.None));
         Assert.HasCount(2, stub.Requests);
         CollectionAssert.AreEqual(new[] { "Contact email unavailable (gmail-unauthorized)" }, logger.Messages);
 
         stub.GmailStatus = HttpStatusCode.OK;
         stub.OAuthResponse = "{\"access_token\":\"renewed\",\"expires_in\":3600,\"token_type\":\"Bearer\"}";
-        Assert.IsTrue(await sender.Send(Request(), CancellationToken.None));
+        Assert.IsTrue(await sender.SendAsync(Request(), CancellationToken.None));
         var requests = stub.Requests.ToArray();
         Assert.HasCount(4, requests);
         Assert.AreEqual("https://oauth2.googleapis.com/token", requests[2].Url);
@@ -179,12 +195,12 @@ public sealed class GmailEmailTests
     {
         using var stub = new GmailHttpStub();
         using var tokens = new GmailTokenProvider(stub, Settings(), new EmailTestClock());
-        var old = await tokens.GetToken(CancellationToken.None);
-        await tokens.Invalidate(old, CancellationToken.None);
+        var old = await tokens.GetTokenAsync(CancellationToken.None);
+        await tokens.InvalidateAsync(old, CancellationToken.None);
         stub.OAuthResponse = "{\"access_token\":\"renewed\",\"expires_in\":3600,\"token_type\":\"Bearer\"}";
-        Assert.AreEqual("renewed", await tokens.GetToken(CancellationToken.None));
-        await tokens.Invalidate(old, CancellationToken.None);
-        Assert.AreEqual("renewed", await tokens.GetToken(CancellationToken.None));
+        Assert.AreEqual("renewed", await tokens.GetTokenAsync(CancellationToken.None));
+        await tokens.InvalidateAsync(old, CancellationToken.None);
+        Assert.AreEqual("renewed", await tokens.GetTokenAsync(CancellationToken.None));
         Assert.HasCount(2, stub.Requests);
     }
 
@@ -231,16 +247,16 @@ public sealed class GmailEmailTests
         using var http = stub.CreateClient("");
         var logger = new EmailLogRecorder();
         var sender = new GmailContactEmailSender(http, tokens, Settings(), clock, logger);
-        Assert.IsFalse(await sender.Send(Request(), CancellationToken.None));
+        Assert.IsFalse(await sender.SendAsync(Request(), CancellationToken.None));
         CollectionAssert.AreEqual(new[] { "Contact email unavailable (gmail-rejected)" }, logger.Messages);
     }
 
-    private static async Task<bool> Send(GmailHttpStub stub, CancellationToken cancellationToken = default)
+    private static async Task<bool> SendAsync(GmailHttpStub stub, CancellationToken cancellationToken = default)
     {
         var clock = new EmailTestClock();
         using var tokens = new GmailTokenProvider(stub, Settings(), clock);
         using var client = stub.CreateClient("");
         return await new GmailContactEmailSender(client, tokens, Settings(), clock, NullLogger<GmailContactEmailSender>.Instance)
-            .Send(Request(), cancellationToken);
+            .SendAsync(Request(), cancellationToken);
     }
 }

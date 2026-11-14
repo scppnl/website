@@ -27,10 +27,12 @@ public sealed class ContactRequestTests
     private readonly SiteverifyStub siteverify = new();
     private readonly GmailHttpStub gmail = new();
     private static ContactRequest Valid(string source = "foundation") =>
-        new(source, " Jan Jansen ", " jan@example.nl ", " Hello\nworld ",
-            source == "association" ? " Piet " : null,
-            source == "foundation" ? " 0164 123456 " : null,
-            source == "foundation" ? "question" : null, "test-token");
+        new() {
+            Source = source, Name = " Jan Jansen ", Email = " jan@example.nl ", Message = " Hello\nworld ",
+            ChildName = source == "association" ? " Piet " : null,
+            Phone = source == "foundation" ? " 0164 123456 " : null,
+            Subject = source == "foundation" ? "question" : null, TurnstileToken = "test-token"
+        };
 
     [TestInitialize]
     public async Task Start()
@@ -217,6 +219,7 @@ public sealed class ContactRequestTests
     [TestMethod]
     [DataRow("null", 200)]
     [DataRow("{}", 200)]
+    [DataRow("{\"success\":null}", 200)]
     [DataRow("not json", 200)]
     [DataRow("{}", 500)]
     public async Task ProviderFailuresAreUnavailableWithoutReceipt(string body, int status)
