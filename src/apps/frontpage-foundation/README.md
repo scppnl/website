@@ -75,17 +75,22 @@ success, and error presentation. Run the API in Development on port 5080 (see th
 The development build uses `http://localhost:5080`; the API allows the development
 frontend origin `http://localhost:4200`.
 
-Before a production build, set `bookingApiBaseUrl` in
-`src/environments/environment.ts` to the separately hosted API origin and configure
+Before a production build, set `BOOKING_API_BASE_URL` in the process environment
+(repository Actions variable in CI) to the separately hosted API origin and configure
 that API's `Cors:AllowedOrigins` with the frontend origin. An empty URL, the default
 in production, rejects submission without sending a request. This configuration is
 compiled into the static assets; changing it requires a rebuild.
+Use **CI → Run workflow → main → sites_only** to rebuild/deploy the websites
+without publishing API images or bumping API versions. The CLI equivalent is
+`gh workflow run ci.yml --repo=scppnl/website --ref=main -f sites_only=true`.
 
-The API currently only validates and logs accepted requests, including contact
-details and remarks. HTTP 204 triggers the existing success state; no booking is
-stored, email sent, or follow-up arranged.
-Review these temporary behaviors before a public launch. Static hosting does not
-add a form backend, and this change does not deploy the booking API.
+The API validates and verifies requests, emails the rental team, and then logs a
+receipt. HTTP 204 triggers the existing success state only after Gmail accepts the
+notification. Email failures return 503, preserve entered values, and require a fresh
+Turnstile token. A booking is still a request awaiting confirmation. Follow the
+[Gmail rollout guide](../../foundation/booking-api/README.md#gmail-configuration-and-rollout)
+and verify real delivery before setting the production URL. Clear the variable and
+rebuild to disable submissions if email delivery fails persistently.
 
 ## Turnstile protection
 

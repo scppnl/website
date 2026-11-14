@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Scpp.Foundation.Booking.Api.Logging;
+using Scpp.Foundation.Booking.Api.Email;
 using Scpp.Foundation.Booking.Api.Serialization;
 using Scpp.Foundation.Booking.Api.Validation;
 using Scpp.Foundation.Booking.Api.Verification;
@@ -12,7 +13,7 @@ internal sealed class BookingEndpoint
 {
     internal static async Task<Results<NoContent, ValidationProblem, ProblemHttpResult>> Post(
         BookingRequestDto request, BookingRequestValidator validator, ILogger<BookingEndpoint> logger,
-        TurnstileVerifier verifier, CancellationToken cancellationToken)
+        TurnstileVerifier verifier, IBookingEmailSender emailSender, CancellationToken cancellationToken)
     {
         var errors = validator.Validate(request);
         if (errors.Count > 0)
@@ -23,6 +24,9 @@ internal sealed class BookingEndpoint
             return TypedResults.Problem(
                 statusCode: verification == VerificationOutcome.Rejected ? 403 : 503,
                 title: "Booking verification failed. Please try again.");
+
+        if (!await emailSender.Send(request, cancellationToken))
+            return TypedResults.Problem(statusCode: 503, title: "Booking email could not be sent. Please try again.");
 
         logger.LogInformation("Booking request received: {BookingRequest}",
             JsonSerializer.Serialize(BookingReceipt.From(request), BookingJsonContext.Default.BookingReceipt));

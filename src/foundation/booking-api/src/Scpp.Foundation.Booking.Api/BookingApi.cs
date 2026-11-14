@@ -1,5 +1,6 @@
 using Scpp.Foundation.Booking.Api.Configuration;
 using Scpp.Foundation.Booking.Api.Endpoints;
+using Scpp.Foundation.Booking.Api.Email;
 using Scpp.Foundation.Booking.Api.Logging;
 using Scpp.Foundation.Booking.Api.Serialization;
 using Scpp.Foundation.Booking.Api.Validation;
@@ -18,8 +19,14 @@ internal static class BookingApi
         builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddSingleton<BookingRequestValidator>();
         builder.Services.AddHttpClient<TurnstileVerifier>(client => client.Timeout = TimeSpan.FromSeconds(10));
+        builder.Services.AddSingleton<GmailTokenProvider>();
+        builder.Services.AddHttpClient("gmail-oauth", client => client.Timeout = Timeout.InfiniteTimeSpan)
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+        builder.Services.AddHttpClient<IBookingEmailSender, GmailBookingEmailSender>(client => client.Timeout = Timeout.InfiniteTimeSpan)
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
         configure?.Invoke(builder);
         builder.Services.AddSingleton(TurnstileSettings.Load(builder.Configuration, builder.Environment));
+        builder.Services.AddSingleton(BookingEmailSettings.Load(builder.Configuration));
 
         var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins")
             .GetChildren().Select(origin => origin.Value).OfType<string>().ToArray();

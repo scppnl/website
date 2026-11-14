@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using Scpp.Foundation.Booking.Contracts;
+using Scpp.Foundation.Booking.Api.Email;
 
 namespace Scpp.Foundation.Booking.Api.Validation;
 
@@ -17,7 +18,7 @@ internal sealed class BookingRequestValidator(TimeProvider clock)
             errors["turnstileToken"] = ["A current security verification token is required (at most 2,048 characters)."];
         if (string.IsNullOrWhiteSpace(request.Name))
             errors["name"] = ["Name is required."];
-        if (string.IsNullOrWhiteSpace(request.Email) || !new EmailAddressAttribute().IsValid(request.Email))
+        if (!MailboxAddress.IsValid(request.Email) || !new EmailAddressAttribute().IsValid(request.Email))
             errors["email"] = ["A valid email address is required."];
         if (request.Building is null || !Buildings.Contains(request.Building))
             errors["building"] = ["Choose a supported building."];

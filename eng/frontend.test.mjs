@@ -1,6 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { siteKey, testSiteKey } from './frontend.mjs';
+import { siteKey, testSiteKey, bookingApiUrl } from './frontend.mjs';
+
+test('booking API activation defaults off and accepts only an HTTPS origin', () => {
+  assert.equal(bookingApiUrl({}), '');
+  assert.equal(bookingApiUrl({ BOOKING_API_BASE_URL: ' https://booking.example.org/ ' }), 'https://booking.example.org');
+  for (const value of ['booking.example.org', 'http://example.org', 'https://example.org/bookings', 'https://user:password@example.org', 'https://example.org?x=1'])
+    assert.throws(() => bookingApiUrl({ BOOKING_API_BASE_URL: value }), /BOOKING_API_BASE_URL must be an HTTPS origin/);
+});
 
 test('only release builds require a real site key', () => {
   assert.equal(siteKey({}), '');
