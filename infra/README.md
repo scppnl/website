@@ -59,6 +59,39 @@ in the same bucket.
 All IAM is additive (`*_iam_member`), so Terraform never removes access it does not
 know about.
 
+## Gmail OAuth secrets
+
+Terraform owns the `booking-gmail-oauth` and `contact-gmail-oauth` secret containers
+in `websites-514515`, with replicas in `europe-west4` and `prevent_destroy` enabled.
+Credential values are uploaded by an operator; Terraform never reads or manages
+secret versions. Mailbox creation and OAuth consent are also operator tasks.
+
+Populate a new secret with an enabled credential version before attaching it to
+Cloud Run. An empty container cannot satisfy a runtime reference to `latest`.
+Each API uses its own credential secret, even when both authorize `noreply@scpp.nl`.
+
+For contact, upload the generated authorized-user credentials from the isolated
+Windows PowerShell gcloud configuration directory (`$contactAuthDir`):
+
+```powershell
+gcloud secrets versions add contact-gmail-oauth --project=websites-514515 --data-file="$contactAuthDir\application_default_credentials.json"
+gcloud secrets versions list contact-gmail-oauth --project=websites-514515 --filter="state=ENABLED" --format="table(name,state,createTime)"
+```
+
+The credential file must contain `client_id`, `client_secret` and `refresh_token`
+authorized as the sender mailbox. The downloaded OAuth client JSON alone does not
+contain a refresh token. Keep credential contents out of Git, logs and Terraform
+variables. The gcloud ADC authorization process requests Cloud Platform scope as
+well as Gmail sending scope; it does not produce a Gmail-only grant. See the
+[booking Gmail configuration guide](../src/foundation/booking-api/README.md#gmail-configuration-and-rollout)
+for Gmail-only authorization guidance.
+
+To rotate credentials, upload a new version and deploy a new Cloud Run revision
+through CI so every new instance loads the updated value. Environment references
+to `latest` are resolved at instance startup; adding a version does not refresh
+already running instances. An unchanged Terraform apply does not force a revision.
+Verify the new revision before disabling an older version.
+
 ## GitHub Actions flow
 
 [The Terraform workflow](../.github/workflows/terraform.yml) runs when a pull request
