@@ -114,6 +114,61 @@ run "booking_email_configuration" {
   }
 }
 
+run "contact_email_configuration" {
+  command = plan
+
+  override_resource {
+    target          = google_service_account.runtime
+    override_during = plan
+    values = {
+      email = "contact-api-runtime@test-project.iam.gserviceaccount.com"
+      name  = "projects/test-project/serviceAccounts/contact-api-runtime@test-project.iam.gserviceaccount.com"
+    }
+  }
+
+  variables {
+    additional_env = {
+      ContactEmail__From = "noreply@scpp.nl"
+    }
+    additional_secrets = {
+      CONTACT_GMAIL_OAUTH_JSON = "contact-gmail-oauth"
+    }
+  }
+
+  assert {
+    condition = one([
+      for e in google_cloud_run_v2_service.this.template[0].containers[0].env : e.value
+      if e.name == "ContactEmail__From"
+    ]) == "noreply@scpp.nl"
+    error_message = "Contact email must use the configured sender mailbox."
+  }
+
+  assert {
+    condition = one([
+      for e in google_cloud_run_v2_service.this.template[0].containers[0].env : e.value_source[0].secret_key_ref[0].secret
+      if e.name == "CONTACT_GMAIL_OAUTH_JSON"
+      ]) == "contact-gmail-oauth" && one([
+      for e in google_cloud_run_v2_service.this.template[0].containers[0].env : e.value_source[0].secret_key_ref[0].version
+      if e.name == "CONTACT_GMAIL_OAUTH_JSON"
+    ]) == "latest"
+    error_message = "Contact OAuth credentials must reference the latest contact secret version."
+  }
+
+  assert {
+    condition = (
+      length(google_secret_manager_secret_iam_member.additional_runtime_reads) == 1 &&
+      google_secret_manager_secret_iam_member.additional_runtime_reads["CONTACT_GMAIL_OAUTH_JSON"].secret_id == "contact-gmail-oauth" &&
+      google_secret_manager_secret_iam_member.additional_runtime_reads["CONTACT_GMAIL_OAUTH_JSON"].role == "roles/secretmanager.secretAccessor"
+    )
+    error_message = "Contact email requires secret accessor access only to its configured credential secret."
+  }
+
+  assert {
+    condition     = google_secret_manager_secret_iam_member.additional_runtime_reads["CONTACT_GMAIL_OAUTH_JSON"].member == "serviceAccount:contact-api-runtime@test-project.iam.gserviceaccount.com"
+    error_message = "The contact runtime account must receive the credential access grant."
+  }
+}
+
 run "rejects_localhost_hostnames" {
   command = plan
 
