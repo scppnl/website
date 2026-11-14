@@ -42,7 +42,7 @@ export const routes: Routes = [
     title: 'Reserveren',
     data: {
       description:
-        'Vraag online een reservering aan voor het clubhuis van Stichting Clubhuis De Wildert.',
+        'Vraag online een reservering aan voor het clubhuis van Stichting Blokhut De Wildert.',
     },
     loadComponent: () => import('./pages/booking/booking').then((m) => m.Booking),
   },
@@ -51,7 +51,7 @@ export const routes: Routes = [
     title: 'Contact',
     data: {
       description:
-        'Neem contact op met Stichting Clubhuis De Wildert over de verhuur van het clubhuis.',
+        'Neem contact op met Stichting Blokhut De Wildert over de verhuur van het clubhuis.',
     },
     loadComponent: () => import('./pages/contact/contact').then((m) => m.Contact),
   },

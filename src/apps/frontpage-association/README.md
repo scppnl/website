@@ -63,7 +63,7 @@ and [limits](https://developers.cloudflare.com/workers/platform/limits/#static-a
 
 ## Rental enquiries
 
-The `/verhuur` page refers visitors to Stichting Clubhuis De Wildert, which
+The `/verhuur` page refers visitors to Stichting Blokhut De Wildert, which
 manages and rents out the accommodation. Rental information and reservations
 are handled on the separate foundation site:
 https://scpp-foundation.de-wildert-penp.workers.dev/. The association has no rental form.
