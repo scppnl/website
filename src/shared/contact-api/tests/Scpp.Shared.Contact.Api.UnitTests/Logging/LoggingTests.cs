@@ -1,10 +1,8 @@
-using System.Collections.Concurrent;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Scpp.Shared.Contact.Api.Configuration;
 using Scpp.Shared.Contact.Api.Endpoints;
 using Serilog.Core;

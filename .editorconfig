@@ -32,7 +32,7 @@ tab_width = 2
 indent_size = 4
 tab_width = 4
 
-dotnet_code_quality_unused_parameters = all:warning
+dotnet_code_quality_unused_parameters = all
 
 dotnet_diagnostic.AV1500.max_statement_count = 15
 dotnet_diagnostic.AV1561.max_constructor_parameter_count = 8
@@ -68,9 +68,11 @@ csharp_style_var_for_built_in_types = false:none
 csharp_style_var_when_type_is_apparent = true:suggestion
 
 csharp_prefer_braces = true:warning
+dotnet_diagnostic.IDE0011.severity = warning
 csharp_space_after_keywords_in_control_flow_statements = false
 csharp_preferred_modifier_order = public, private, protected, internal, new, abstract, virtual, sealed, override, static, readonly, extern, unsafe, volatile, async:suggestion
 csharp_style_prefer_switch_expression = true:warning
+dotnet_diagnostic.IDE0066.severity = warning
 
 dotnet_style_parentheses_in_arithmetic_binary_operators = never_if_unnecessary:none
 dotnet_style_parentheses_in_other_binary_operators = never_if_unnecessary:none

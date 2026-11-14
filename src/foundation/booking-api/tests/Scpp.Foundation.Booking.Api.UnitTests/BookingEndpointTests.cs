@@ -2,7 +2,6 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Scpp.Foundation.Booking.Api.Endpoints;
 using Scpp.Foundation.Booking.Api.Serialization;
 using Scpp.Foundation.Booking.Api.Validation;
@@ -190,8 +189,10 @@ public sealed class BookingEndpointTests
         using var cancellation = new CancellationTokenSource();
         using var gmail = new GmailHttpStub();
         gmail.Respond = async (request, token) => {
-            if (request.RequestUri!.Host == "oauth2.googleapis.com")
+            if (request.RequestUri!.Host == "oauth2.googleapis.com") {
                 return new(System.Net.HttpStatusCode.OK) { Content = new StringContent(gmail.OAuthResponse) };
+            }
+
             cancellation.Cancel();
             await Task.Yield();
             Assert.IsFalse(token.IsCancellationRequested, "Client disconnect must not cancel an in-flight email.");

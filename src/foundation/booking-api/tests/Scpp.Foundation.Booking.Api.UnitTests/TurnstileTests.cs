@@ -2,7 +2,6 @@ using System.Net;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Scpp.Foundation.Booking.Api.Configuration;
 using Scpp.Foundation.Booking.Api.Endpoints;
 using Scpp.Foundation.Booking.Api.Validation;
@@ -30,8 +29,12 @@ public sealed class TurnstileTests
         using var stub = new SiteverifyStub { Response = response };
         using var client = new HttpClient(stub);
         var result = await PostAsync("fresh+token", client);
-        if (status == 204) Assert.IsInstanceOfType<NoContent>(result.Result);
-        else Assert.AreEqual(status, ((ProblemHttpResult)result.Result).StatusCode);
+        if (status == 204) {
+            Assert.IsInstanceOfType<NoContent>(result.Result);
+        } else {
+            Assert.AreEqual(status, ((ProblemHttpResult)result.Result).StatusCode);
+        }
+
         Assert.AreEqual("https://challenges.cloudflare.com/turnstile/v0/siteverify", stub.Url);
         Assert.AreEqual("secret=test-secret&response=fresh%2Btoken", stub.Body);
     }
@@ -60,7 +63,10 @@ public sealed class TurnstileTests
         foreach (var network in new[] { true, false })
         {
             using var stub = new SiteverifyStub { Respond = async token => {
-                if (network) throw new HttpRequestException("network");
+                if (network) {
+                    throw new HttpRequestException("network");
+                }
+
                 await Task.Delay(Timeout.Infinite, token);
                 return new(HttpStatusCode.OK);
             } };
@@ -92,8 +98,10 @@ public sealed class TurnstileTests
             ("1x0000000000000000000000000000000AA", "blokhutdewildert.nl"),
             ("2x0000000000000000000000000000000AA", "blokhutdewildert.nl"),
             ("3x0000000000000000000000000000000AA", "blokhutdewildert.nl")
-        })
+        }) {
             Assert.Throws<InvalidOperationException>(() => Load(secret, host, "Production"));
+        }
+
         Assert.Throws<InvalidOperationException>(() => TurnstileSettings.Load(
             new ConfigurationBuilder().Build(), new TestHostEnvironment("Production")));
         Assert.HasCount(1, Load("test-secret", "blokhutdewildert.nl", "Production").AllowedHostnames);

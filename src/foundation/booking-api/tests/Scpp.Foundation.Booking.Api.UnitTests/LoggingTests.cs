@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Scpp.Foundation.Booking.Api.Endpoints;
 using Scpp.Foundation.Booking.Api.Logging;
 using Serilog.Core;

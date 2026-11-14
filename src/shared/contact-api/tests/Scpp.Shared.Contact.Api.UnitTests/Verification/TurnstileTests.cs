@@ -2,7 +2,6 @@ using System.Net;
 using Microsoft.Extensions.Logging.Abstractions;
 using Scpp.Shared.Contact.Infrastructure.Verification;
 using Scpp.Shared.Contact.Api.UnitTests.Testing;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace Scpp.Shared.Contact.Api.UnitTests.Verification;
 
@@ -17,7 +16,10 @@ public sealed class TurnstileTests
             using var stub = new SiteverifyStub
             {
                 Respond = async token => {
-                    if (network) throw new HttpRequestException("network");
+                    if (network) {
+                        throw new HttpRequestException("network");
+                    }
+
                     await Task.Delay(Timeout.Infinite, token);
                     return new(HttpStatusCode.OK);
                 }

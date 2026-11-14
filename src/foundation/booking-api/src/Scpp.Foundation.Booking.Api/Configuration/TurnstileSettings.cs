@@ -12,8 +12,10 @@ internal sealed record TurnstileSettings(string SecretKey, HashSet<string> Allow
             (!environment.IsDevelopment() &&
                 (secret is "1x0000000000000000000000000000000AA" or "2x0000000000000000000000000000000AA" or "3x0000000000000000000000000000000AA" ||
                  hostnames.Any(host => host.Equals("localhost", StringComparison.OrdinalIgnoreCase) ||
-                     System.Net.IPAddress.TryParse(host, out var address) && System.Net.IPAddress.IsLoopback(address)))))
+                     System.Net.IPAddress.TryParse(host, out var address) && System.Net.IPAddress.IsLoopback(address))))) {
             throw new InvalidOperationException("Configure BOOKING_TURNSTILE_SECRET_KEY and Turnstile:AllowedHostnames. Production must not use test secrets or loopback hostnames.");
+        }
+
         return new(secret, hostnames);
     }
 }
