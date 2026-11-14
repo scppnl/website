@@ -1,11 +1,13 @@
 # Contact API
 
-The .NET 10 minimal API accepts contact requests from both frontends. It currently
-validates and logs normalized contact fields through structured console
-logging, using Serilog through Microsoft `ILogger<T>` with readable console output.
-An additional request completion event records method, path, status, and duration.
-It does not send email or persist requests. Logs contain submitted names,
-email addresses and message text. A successful response confirms receipt only.
+The .NET 10 minimal API validates requests from both frontends, verifies Turnstile,
+and sends a Gmail notification from `noreply@scpp.nl`. Foundation requests go to
+`stichting@scpp.nl`; association requests go to `info@scpp.nl`. The visitor's validated
+email is Reply-To. HTTP 204 means Gmail accepted the notification, not guaranteed
+inbox delivery. No visitor confirmation email is sent.
+
+The normalized receipt log retains submitted contact fields; tokens and credentials
+are excluded. Serilog uses Microsoft `ILogger<T>` and logs request completion.
 
 ## Structure
 
@@ -16,12 +18,12 @@ The component uses separate .NET projects with these responsibilities:
 | `Scpp.Shared.Contact.Api` | HTTP endpoints, validation, submission orchestration, result models, service interfaces, JSON serialization and host configuration | Domain, Infrastructure, Models |
 | `Scpp.Shared.Contact.Models` | Public `ContactRequest` JSON contract | None |
 | `Scpp.Shared.Contact.Domain` | Immutable normalized `ContactSubmission` model | None |
-| `Scpp.Shared.Contact.Infrastructure` | Turnstile Siteverify client and structured logging submission destination | Domain |
+| `Scpp.Shared.Contact.Infrastructure` | Turnstile verification, Gmail delivery and structured receipt logging | Domain |
 
 Within the API, `Endpoints`, `Serialization` and `Configuration` separate HTTP
 handling from host configuration. The API also owns `Interfaces`, `Services`,
 `Models`, `Validation` and `Verification`; Domain owns submission `Models`, and
-Infrastructure owns `Logging`, `Verification` and its provider JSON `Serialization`.
+Infrastructure owns `Email`, `Logging`, `Verification` and provider JSON `Serialization`.
 All projects live under `src/` and belong to both the component and repository solutions.
 
 `ContactApi.Build` is the composition root. It registers scoped
@@ -31,8 +33,10 @@ to the submission service. Validation produces either field errors or a normaliz
 domain submission. The submission service verifies valid requests through
 `IContactVerificationService`; only accepted submissions reach the sink. The endpoint
 maps validation errors to `400`, rejected verification to `403`, unavailable
-verification to `503`, and returns `204` after the sink completes.
-Unexpected sink failures propagate to the existing server error handling.
+verification to `503`, and returns `204` only after Gmail accepts the message. Expected delivery failures
+return `503` Problem Details without a receipt log; unexpected failures propagate
+to server error handling. The API sink sends through Infrastructure and then logs
+one normalized receipt. `ContactSubmissionResult.Delivered` carries delivery success.
 The API's service adapters connect its interfaces to concrete Infrastructure
 implementations. Infrastructure references Domain only and never references the API.
 
@@ -58,6 +62,10 @@ Create a separate development widget (see below), then configure its secret thro
 your local secret manager or environment as `CONTACT_TURNSTILE_SECRET_KEY`. Set
 `Turnstile__AllowedHostnames__0=localhost` and optionally index `1` to `127.0.0.1`.
 Do not put real secrets in committed appsettings or shell command arguments.
+Email settings are also required in Development: configure `ContactEmail__From`,
+`ContactEmail__FoundationTo`, `ContactEmail__AssociationTo`, and
+`CONTACT_GMAIL_OAUTH_JSON` through a local secret manager/environment, using a
+separate authorized test mailbox and test recipients. Tests stub Google services.
 
 Development CORS permits `http://localhost` on ports 4173, 4200, 8787 and 8788.
 Start either frontend with its `npm start`; the development build connects to
@@ -90,11 +98,11 @@ curl -i http://localhost:5081/contact \
 | `phone` | Optional foundation form field, at most 50 characters |
 | `subject` | Required for foundation: `question`, `viewing`, `other`; omitted for association |
 
-Surrounding whitespace is trimmed before validation and logging. Whitespace-only
+Surrounding whitespace is trimmed before validation, email delivery and logging. Whitespace-only
 required fields are rejected; blank optional fields become null. Internal message
 formatting is preserved. After field validation, the API calls `https://challenges.cloudflare.com/turnstile/v0/siteverify`.
 It requires `success: true`, action `contact`, and an exact configured frontend
-hostname match before accepting the request. Accepted requests produce one structured log entry with
+hostname match before accepting the request. After Gmail accepts the notification, requests produce one structured log entry with
 all contact fields (excluding the verification token), UTC timestamp and trace identifier, then return `204 No Content`.
 Invalid fields return `400 application/problem+json` with an `errors` dictionary
 keyed by camelCase field names. Malformed JSON returns `400`; unsupported content
@@ -110,16 +118,19 @@ in the contact handler logs. Cancellation propagates to the verification request
 The production API runs on Cloud Run at
 `https://contact-api-979979719406.europe-west4.run.app`; `GET /` returns HTTP 200
 with `Contact API`, and the submission endpoint is `POST /contact`.
-Both frontends use an injectable
-`CONTACT_API_BASE_URL`, whose default is their Angular environment's
-`contactApiBaseUrl`. Configuring a frontend to use this service is a separate
-change: set its API base URL to the HTTPS origin above (without `/contact`) and
-rebuild. Submissions then reach that origin's `/contact` endpoint. The development replacement
-is `environment.development.ts`. The public Turnstile site key is supplied at build time as `TURNSTILE_SITE_KEY`.
-A Worker runtime variable cannot configure these static Angular assets.
-Production defaults to an empty API URL; the forms
-show an unavailable notice and disable submission until configured. No requests
-are sent during prerendering or hydration.
+Both frontends use injectable `CONTACT_API_BASE_URL`, defaulting to their Angular
+environment's `contactApiBaseUrl`. The build wrapper injects the public repository
+Actions variable `CONTACT_API_BASE_URL` into both production bundles. Set it to
+`https://contact-api-979979719406.europe-west4.run.app`, without `/contact`.
+The association `/contact` form submits `source: association`; the foundation
+`/contact` form submits `source: foundation`. The server chooses the recipient.
+Development replacements retain `http://localhost:5081`.
+
+An empty URL or site key disables submission with an unavailable notice. Invalid
+nonempty API URLs fail the build; use an HTTPS origin with no path or credentials.
+Worker runtime variables cannot configure these static Angular assets. Nx's build
+inputs include the URL. No requests are sent during prerendering or hydration.
+Foundation `/reserveren` continues using the separate booking API and rental mailbox.
 
 The API's default CORS allowlist is empty. Set `Cors:AllowedOrigins` through
 configuration, for example these environment variables when starting the hosted API:
@@ -146,8 +157,8 @@ HTTP tests start a local Kestrel server to verify actual binding, status codes,
 Problem Details serialization, logging and CORS. Frontend tests cover request
 mapping, validation, pending state, successful reset, failure/retry and an absent
 API URL. Service tests verify validation and submission orchestration without
-starting a web host. Later delivery behavior belongs behind `IContactSubmissionSink`,
-after validation; the current implementation only logs submissions.
+starting a web host. Delivery tests cover fixed routing, MIME encoding, safe headers, cached OAuth refresh,
+provider failures, cancellation, and receipt timing behind `IContactSubmissionSink`.
 
 ## Turnstile: GitHub and Cloudflare deployment setup
 
@@ -166,7 +177,7 @@ while the workflow remains failed; any selected tag already pushed needs a
 
 See [Cloud Run deployments](../../../README.md#cloud-run-api-deployments) for the
 service/revision/digest/commit outcome summary, independent failures, deployment
-retries and rollback to a retained revision. Frontend URL settings are separate.
+retries and rollback to a retained revision. Frontend URL activation is described below.
 
 ### 1. Create the production Cloudflare widget
 
@@ -229,8 +240,8 @@ avoid stale cached builds.
 
 The Cloud Run service already attaches the Secret Manager secret as runtime
 variable `CONTACT_TURNSTILE_SECRET_KEY` and stores the hostname and CORS values
-below. Runtime configuration is managed in Google Cloud and carried over to new
-revisions. CI updates only the image and does not set or clear these values,
+below. Runtime configuration is managed by Terraform and carried over to new
+image revisions. CI updates only the image and does not set or clear these values,
 secret attachments, service account, scaling or ingress.
 
 ```text
@@ -251,17 +262,23 @@ omits optional `remoteip` until the host's proxy trust model is configured.
 
 ### 4. Enable the frontends and verify
 
-Set `contactApiBaseUrl` in **each** app's `src/environments/environment.ts` to the
-hosted HTTPS API origin (without `/contact`). Deploy the protected API first,
-then commit the frontend URL configuration and let CI rebuild/deploy both sites.
-Until both URL and site key exist, forms remain disabled with an unavailable notice.
+Set the **repository Actions variable** `CONTACT_API_BASE_URL` to
+`https://contact-api-979979719406.europe-west4.run.app` only after the email-enabled
+API is deployed and delivery verified. Both sites use the same API origin and their
+own fixed source values. Keep `CONTACT_TURNSTILE_SITE_KEY` configured as above.
 
-Check both `/contact` pages with real widget tokens: a valid submission returns
-`204` and produces one receipt log; invalid/missing tokens produce no receipt log.
-Verify expiry, retry after error, and replay rejection after redemption propagation.
-Turnstile's replay detection is eventually consistent; it is not application-level
-exactly-once processing. Existing receipt logging contains personal data; Turnstile
-does not change its retention or introduce email delivery.
+Run **CI → Run workflow → main**, with **sites_only** enabled, to rebuild and deploy
+both sites without API image publication or version bumps:
+
+```powershell
+gh workflow run ci.yml --repo=scppnl/website --ref=main -f sites_only=true
+```
+
+Variable changes do not trigger a build. On each deployed `/contact` page, submit
+with a fresh real widget token: confirm HTTP 204, one receipt log, correct destination,
+and Reply-To. Invalid/missing/expired tokens produce no email or receipt. Verify
+fresh-token retry after error. Turnstile replay detection is eventually consistent,
+not application-level exactly-once processing.
 
 ### Development and automated tests
 
@@ -281,3 +298,56 @@ dummy tokens work. Use real development keys for end-to-end verification.
 References: [server verification](https://developers.cloudflare.com/turnstile/get-started/server-side-validation/),
 [widget lifecycle](https://developers.cloudflare.com/turnstile/get-started/client-side-rendering/),
 [testing](https://developers.cloudflare.com/turnstile/troubleshooting/testing/).
+
+## Gmail configuration and rollout
+
+Terraform already manages `contact-gmail-oauth`, its attachment as
+`CONTACT_GMAIL_OAUTH_JSON`, and secret-specific accessor access for
+`contact-api-runtime@websites-514515.iam.gserviceaccount.com`. It also configures:
+
+```text
+ContactEmail__From=noreply@scpp.nl
+ContactEmail__FoundationTo=stichting@scpp.nl
+ContactEmail__AssociationTo=info@scpp.nl
+```
+
+Startup validates all three mailbox settings and the JSON fields `client_id`,
+`client_secret`, and `refresh_token`. It does not test credentials against Google.
+No credential value belongs in GitHub Actions, images or Terraform state.
+
+1. Confirm the existing `noreply@scpp.nl` Gmail-enabled Workspace mailbox and that
+   `stichting@scpp.nl` and `info@scpp.nl` accept messages, including group restrictions.
+   Check existing Google SPF, DKIM and DMARC configuration.
+2. Verify an enabled version of `contact-gmail-oauth` exists. If replacement is
+   needed, create a separate contact Web OAuth client in the existing Internal
+   **De Wildert / P&P APIs** app. Use the
+   [booking Gmail-only consent procedure](../../foundation/booking-api/README.md#workspace-and-oauth-setup-administrator-once),
+   authorizing `noreply@scpp.nl` with only `https://www.googleapis.com/auth/gmail.send`.
+   Upload its protected credential JSON directly to Secret Manager with the
+   operator's account; mailbox authorization must not use gcloud ADC.
+3. Apply recipient/runtime configuration through the infrastructure workflow,
+   inspect its Terraform plan, and deploy the email-enabled contact image through CI.
+   Cloud Run needs an enabled secret version before starting a revision. Allow
+   outbound HTTPS to `oauth2.googleapis.com` and `gmail.googleapis.com`.
+4. From a frontend running on an allowed CORS/Turnstile hostname and configured to
+   use the deployed API, verify one controlled foundation request arrives only in
+   `stichting@scpp.nl` and one association request only in `info@scpp.nl`, both from
+   `noreply@scpp.nl`. Check content, accents and Reply-To.
+5. Enable both production contact pages with `CONTACT_API_BASE_URL` and a websites-only
+   rebuild as above. No additional GitHub email credential secret is needed.
+
+Email authentication and sending share a 15-second deadline, after Turnstile's
+10-second deadline. Caller cancellation stops work before sending; after submission
+starts, the bounded send and receipt recording finish even if the visitor disconnects.
+There is no durable queue, automatic send retry, or deduplication. A timeout after
+Gmail acceptance can cause a duplicate when the visitor retries.
+
+Provider failures return generic HTTP 503. Forms keep their values and require a
+fresh Turnstile token. Monitor Cloud Run request failures and `Contact email unavailable`
+warning categories. Provider bodies and credentials are never logged. Gmail 401
+invalidates only the rejected cached token; the next submission refreshes it.
+To rotate credentials, upload a new secret version and deploy a new revision so
+instances read `latest`. Verify delivery before retiring superseded grants.
+For persistent failures, clear `CONTACT_API_BASE_URL` and run `sites_only=true`
+to disable the forms while repairing the service. `GET /` remains a non-sending
+identity check and does not prove email delivery is working.

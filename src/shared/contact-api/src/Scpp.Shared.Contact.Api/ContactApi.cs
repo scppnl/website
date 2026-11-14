@@ -12,6 +12,7 @@ internal static class ContactApi
         builder.AddContactApi();
         configure?.Invoke(builder);
         builder.Services.AddSingleton(TurnstileConfiguration.Load(builder.Configuration, builder.Environment));
+        builder.Services.AddSingleton(ContactEmailConfiguration.Load(builder.Configuration));
         var app = builder.Build();
         app.UseApiRequestLogging();
         app.UseCors();

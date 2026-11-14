@@ -25,6 +25,7 @@ public sealed class ContactSubmissionServiceTests
         Assert.AreEqual(new ContactSubmission("foundation", "Jan", "jan@example.nl", "Hello", Subject: "question"),
             result.Validation.Submission);
         Assert.AreEqual(1, sink.Calls);
+        Assert.IsTrue(result.Delivered);
         Assert.AreSame(result.Validation.Submission, sink.Submission);
         Assert.AreEqual("test-trace", sink.TraceId);
         Assert.AreEqual(cancellation.Token, sink.CancellationToken);
@@ -82,6 +83,17 @@ public sealed class ContactSubmissionServiceTests
         completion.SetResult();
         var result = await pending;
         Assert.IsEmpty(result.Validation.Errors);
+    }
+
+    [TestMethod]
+    public async Task ReportsDeliveryFailureAfterVerification()
+    {
+        var sink = new RecordingSink { Delivered = false };
+        var service = new ContactSubmissionService(sink, new RecordingVerificationService());
+        var result = await service.SubmitAsync(Valid(), "trace", CancellationToken.None);
+        Assert.AreEqual(VerificationOutcome.Accepted, result.Verification);
+        Assert.IsFalse(result.Delivered);
+        Assert.AreEqual(1, sink.Calls);
     }
 
     [TestMethod]

@@ -23,6 +23,11 @@ internal static class ContactEndpoint
                 title: "Contact verification failed. Please try again.");
         }
 
+        if (result.Delivered != true)
+        {
+            return TypedResults.Problem(statusCode: 503, title: "Contact email could not be sent. Please try again.");
+        }
+
         return TypedResults.NoContent();
     }
 }

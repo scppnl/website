@@ -31,6 +31,9 @@
         },
         {
           "env": "REQUIRE_TURNSTILE_SITE_KEY"
+        },
+        {
+          "env": "CONTACT_API_BASE_URL"
         }
       ]
     },

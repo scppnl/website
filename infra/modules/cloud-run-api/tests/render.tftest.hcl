@@ -128,11 +128,21 @@ run "contact_email_configuration" {
 
   variables {
     additional_env = {
-      ContactEmail__From = "noreply@scpp.nl"
+      ContactEmail__From          = "noreply@scpp.nl"
+      ContactEmail__FoundationTo  = "stichting@scpp.nl"
+      ContactEmail__AssociationTo = "info@scpp.nl"
     }
     additional_secrets = {
       CONTACT_GMAIL_OAUTH_JSON = "contact-gmail-oauth"
     }
+  }
+
+  assert {
+    condition = alltrue([
+      for name, address in { ContactEmail__FoundationTo = "stichting@scpp.nl", ContactEmail__AssociationTo = "info@scpp.nl" } :
+      one([for e in google_cloud_run_v2_service.this.template[0].containers[0].env : e.value if e.name == name]) == address
+    ])
+    error_message = "Contact recipients must match the foundation and association mailboxes."
   }
 
   assert {

@@ -1,4 +1,7 @@
 using Scpp.Shared.Contact.Models;
+using Scpp.Shared.Contact.Api.UnitTests.Email;
+using Scpp.Shared.Contact.Infrastructure.Email;
+using Microsoft.Extensions.Configuration;
 using Scpp.Shared.Contact.Infrastructure.Verification;
 using Scpp.Shared.Contact.Api.UnitTests.Testing;
 using System.Net;
@@ -22,6 +25,7 @@ public sealed class ContactRequestTests
     private HttpClient client = null!;
     private readonly RequestLogs logs = new();
     private readonly SiteverifyStub siteverify = new();
+    private readonly GmailHttpStub gmail = new();
     private static ContactRequest Valid(string source = "foundation") =>
         new(source, " Jan Jansen ", " jan@example.nl ", " Hello\nworld ",
             source == "association" ? " Piet " : null,
@@ -34,6 +38,14 @@ public sealed class ContactRequestTests
         app = ContactApi.Build(["--urls", "http://127.0.0.1:0", "--Cors:AllowedOrigins:0", "http://localhost:4173",
             "--CONTACT_TURNSTILE_SECRET_KEY", "test-secret", "--Turnstile:AllowedHostnames:0", "scpp.nl"],
             builder => {
+                builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?> {
+                    ["ContactEmail:From"] = "noreply@scpp.nl",
+                    ["ContactEmail:FoundationTo"] = "stichting@scpp.nl",
+                    ["ContactEmail:AssociationTo"] = "info@scpp.nl",
+                    ["CONTACT_GMAIL_OAUTH_JSON"] = "{\"client_id\":\"test\",\"client_secret\":\"test\",\"refresh_token\":\"test\"}"
+                });
+                builder.Services.AddHttpClient("gmail-oauth").ConfigurePrimaryHttpMessageHandler(() => gmail);
+                builder.Services.AddHttpClient<GmailContactEmailSender>().ConfigurePrimaryHttpMessageHandler(() => gmail);
                 builder.Services.AddSingleton<ILogEventSink>(logs);
                 builder.Services.AddHttpClient<TurnstileVerifier>().ConfigurePrimaryHttpMessageHandler(() => siteverify);
             });
@@ -57,6 +69,11 @@ public sealed class ContactRequestTests
         var response = await client.PostAsJsonAsync("/contact", Valid(source));
         Assert.AreEqual(HttpStatusCode.NoContent, response.StatusCode);
         Assert.AreEqual("", await response.Content.ReadAsStringAsync());
+        using var sent = JsonDocument.Parse(gmail.Requests.Last().Body);
+        var raw = sent.RootElement.GetProperty("raw").GetString()!.Replace('-', '+').Replace('_', '/');
+        var mime = Encoding.UTF8.GetString(Convert.FromBase64String(raw.PadRight((raw.Length + 3) / 4 * 4, '=')));
+        var recipient = source == "foundation" ? "stichting@scpp.nl" : "info@scpp.nl";
+        StringAssert.Contains(mime, $"From: noreply@scpp.nl\r\nTo: {recipient}\r\nReply-To: jan@example.nl\r\n");
         var logEvent = logs.Entries.Single();
         Assert.AreEqual(
             "Contact request received at {Timestamp} ({TraceId}): {Source}, {Name}, {Email}, {Message}, {ChildName}, {Phone}, {Subject}",
@@ -82,6 +99,7 @@ public sealed class ContactRequestTests
         Assert.AreEqual(HttpStatusCode.NotFound, response.StatusCode);
         Assert.AreEqual(0, siteverify.Calls);
         Assert.AreEqual(0, logs.Entries.Count);
+        Assert.AreEqual(0, gmail.Requests.Count);
     }
 
     [TestMethod]
@@ -97,6 +115,7 @@ public sealed class ContactRequestTests
         var errors = body.RootElement.GetProperty("errors");
         foreach (var key in new[] { "name", "email", "message" }) Assert.IsTrue(errors.TryGetProperty(key, out _));
         Assert.AreEqual(0, logs.Entries.Count);
+        Assert.AreEqual(0, gmail.Requests.Count);
     }
 
     [TestMethod]
@@ -109,6 +128,7 @@ public sealed class ContactRequestTests
         })
             Assert.AreEqual(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/contact", request)).StatusCode);
         Assert.AreEqual(0, logs.Entries.Count);
+        Assert.AreEqual(0, gmail.Requests.Count);
     }
 
     [TestMethod]
@@ -129,6 +149,7 @@ public sealed class ContactRequestTests
         var response = await client.PostAsync("/contact", new StringContent(body, Encoding.UTF8, type));
         Assert.AreEqual(status, response.StatusCode);
         Assert.AreEqual(0, logs.Entries.Count);
+        Assert.AreEqual(0, gmail.Requests.Count);
     }
 
     [TestMethod]
@@ -158,6 +179,7 @@ public sealed class ContactRequestTests
         }
         Assert.AreEqual(0, siteverify.Calls);
         Assert.AreEqual(0, logs.Entries.Count);
+        Assert.AreEqual(0, gmail.Requests.Count);
     }
 
     [TestMethod]
@@ -189,6 +211,7 @@ public sealed class ContactRequestTests
         Assert.AreEqual(HttpStatusCode.Forbidden, response.StatusCode);
         Assert.AreEqual("application/problem+json", response.Content.Headers.ContentType!.MediaType);
         Assert.AreEqual(0, logs.Entries.Count);
+        Assert.AreEqual(0, gmail.Requests.Count);
     }
 
     [TestMethod]
@@ -202,6 +225,38 @@ public sealed class ContactRequestTests
         siteverify.Status = (HttpStatusCode)status;
         Assert.AreEqual(HttpStatusCode.ServiceUnavailable, (await client.PostAsJsonAsync("/contact", Valid())).StatusCode);
         Assert.AreEqual(0, logs.Entries.Count);
+        Assert.AreEqual(0, gmail.Requests.Count);
+    }
+
+    [TestMethod]
+    public async Task GmailFailureReturnsUnavailableWithoutReceiptOrRetry()
+    {
+        gmail.GmailStatus = HttpStatusCode.Forbidden;
+        gmail.GmailResponse = "private-provider-body";
+        var response = await client.PostAsJsonAsync("/contact", Valid());
+        Assert.AreEqual(HttpStatusCode.ServiceUnavailable, response.StatusCode);
+        Assert.AreEqual("application/problem+json", response.Content.Headers.ContentType!.MediaType);
+        Assert.IsFalse((await response.Content.ReadAsStringAsync()).Contains("private-provider-body"));
+        Assert.AreEqual(0, logs.Entries.Count);
+        Assert.AreEqual(2, gmail.Requests.Count);
+    }
+
+    [TestMethod]
+    public async Task ReceiptIsRecordedAfterSendEvenWhenVisitorDisconnects()
+    {
+        using var cancellation = new CancellationTokenSource();
+        gmail.Respond = (request, token) => {
+            if (request.RequestUri!.Host == "oauth2.googleapis.com")
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(gmail.OAuthResponse) });
+            cancellation.Cancel();
+            token.ThrowIfCancellationRequested();
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(gmail.GmailResponse) });
+        };
+        using var scope = app.Services.CreateScope();
+        var sink = scope.ServiceProvider.GetRequiredService<Scpp.Shared.Contact.Api.Interfaces.IContactSubmissionSink>();
+        var submission = Scpp.Shared.Contact.Api.Validation.ContactRequestValidator.Validate(Valid()).Submission!;
+        Assert.IsTrue(await sink.SubmitAsync(submission, "trace", cancellation.Token));
+        Assert.AreEqual(1, logs.Entries.Count);
     }
 
     [TestMethod]

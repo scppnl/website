@@ -71,7 +71,13 @@ https://scpp-foundation.de-wildert-penp.workers.dev/. The association has no ren
 ## Forms
 
 
-The contact form validates inputs and posts to the shared contact API. The API currently logs accepted requests and returns a receipt confirmation. Development builds use `http://localhost:5081`; production submissions stay disabled until an API URL is configured. See the [contact API guide](../../shared/contact-api/README.md) for local startup, validation, configuration and logging behavior.
+The `/contact` form validates inputs and posts `source: association` to the shared
+contact API. Notifications go from `noreply@scpp.nl` to `info@scpp.nl`, with the
+visitor as Reply-To. Success follows Gmail acceptance. Development uses
+`http://localhost:5081`. Set repository Actions variable `CONTACT_API_BASE_URL` to
+`https://contact-api-979979719406.europe-west4.run.app` after verifying delivery,
+then run CI on `main` with `sites_only=true` to rebuild both sites. Empty URL or
+Turnstile configuration disables submission; failures retain input for a fresh-token retry. See the [contact API guide](../../shared/contact-api/README.md) for local startup, validation, configuration and logging behavior.
 
 Run `npm test -- --watch=false` for contact form and HTTP service tests. The Nx test target also runs the static-hosting checks.
 

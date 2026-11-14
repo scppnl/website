@@ -3,6 +3,7 @@ using Scpp.Shared.Contact.Api.Interfaces;
 using Scpp.Shared.Contact.Api.Services;
 using Scpp.Shared.Contact.Api.Verification;
 using Scpp.Shared.Contact.Infrastructure.Logging;
+using Scpp.Shared.Contact.Infrastructure.Email;
 using Scpp.Shared.Contact.Infrastructure.Verification;
 
 namespace Scpp.Shared.Contact.Api.Configuration;
@@ -14,6 +15,12 @@ internal static class ContactApiConfiguration
         builder.Services.AddScoped<IContactSubmissionService, ContactSubmissionService>();
         builder.Services.AddScoped<IContactSubmissionSink, ContactSubmissionSink>();
         builder.Services.AddScoped<LoggingContactSubmissionSink>();
+        builder.Services.AddSingleton(TimeProvider.System);
+        builder.Services.AddSingleton<GmailTokenProvider>();
+        builder.Services.AddHttpClient("gmail-oauth", client => client.Timeout = Timeout.InfiniteTimeSpan)
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
+        builder.Services.AddHttpClient<GmailContactEmailSender>(client => client.Timeout = Timeout.InfiniteTimeSpan)
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler { AllowAutoRedirect = false });
         builder.Services.AddScoped<IContactVerificationService, ContactVerificationService>();
         builder.Services.AddHttpClient<TurnstileVerifier>(
             client => client.Timeout = TimeSpan.FromSeconds(10));

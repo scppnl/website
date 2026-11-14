@@ -67,6 +67,7 @@ jobs:
           CI_SITES_ONLY: ${{ github.event_name == 'workflow_dispatch' && inputs.sites_only && 'true' || 'false' }}
           TURNSTILE_SITE_KEY: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && secrets.CONTACT_TURNSTILE_SITE_KEY || '1x00000000000000000000AA' }}
           BOOKING_TURNSTILE_SITE_KEY: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && secrets.BOOKING_TURNSTILE_SITE_KEY || '1x00000000000000000000AA' }}
+          CONTACT_API_BASE_URL: ${{ vars.CONTACT_API_BASE_URL }}
           BOOKING_API_BASE_URL: ${{ vars.BOOKING_API_BASE_URL }}
           REQUIRE_TURNSTILE_SITE_KEY: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
       - name: Upload association assets

@@ -4,5 +4,5 @@ namespace Scpp.Shared.Contact.Api.Interfaces;
 
 public interface IContactSubmissionSink
 {
-    Task SubmitAsync(ContactSubmission submission, string traceId, CancellationToken cancellationToken);
+    Task<bool> SubmitAsync(ContactSubmission submission, string traceId, CancellationToken cancellationToken);
 }
