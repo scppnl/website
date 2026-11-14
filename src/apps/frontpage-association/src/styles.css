@@ -51,13 +51,12 @@ footer{background:#e8e9dc}
 /* Original group photography. */
 .hero-photo{object-position:50% 48%}
 .memories{padding-bottom:20px}
-.memory-grid{display:grid;grid-template-columns:1.15fr 1fr 1fr;gap:22px}
+.memory-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;align-items:start}
 .memory-grid figure,.location-grid figure{margin:0;min-width:0}
-.memory-grid img{width:100%;height:310px;object-fit:cover;border-radius:6px}
+.memory-grid img{width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;border-radius:6px}
 .memory-grid figure:nth-child(1) img{object-position:50% 45%}
-.memory-grid figure:nth-child(2){padding-top:36px}
-.memory-grid figure:nth-child(3){padding-top:72px}
 .memory-grid figcaption,.location-grid figcaption{padding-top:13px;font-size:14px;font-weight:600;color:var(--muted)}
+@media(min-width:761px){.memory-grid figcaption{padding-top:16px}}
 .rental-gallery{padding-top:0}
 .location-grid{display:grid;grid-template-columns:1.6fr 1fr;gap:26px}
 .location-grid img{width:100%;height:390px;object-fit:cover;border-radius:6px}
