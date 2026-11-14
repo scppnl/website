@@ -6,6 +6,12 @@ locals {
   # image and Terraform ignores it (see modules/cloud-run-api).
   apis = {
     "contact-api" = {
+      additional_env = {
+        ContactEmail__From = "noreply@scpp.nl"
+      }
+      additional_secrets = {
+        CONTACT_GMAIL_OAUTH_JSON = google_secret_manager_secret.contact_gmail_oauth.secret_id
+      }
       image          = "${local.registry_host}/scppnl/contact-api:0.0.3"
       secret_id      = "contact-turnstile-secret-key"
       secret_env_var = "CONTACT_TURNSTILE_SECRET_KEY"

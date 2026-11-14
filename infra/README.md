@@ -70,6 +70,14 @@ Populate a new secret with an enabled credential version before attaching it to
 Cloud Run. An empty container cannot satisfy a runtime reference to `latest`.
 Each API uses its own credential secret, even when both authorize `noreply@scpp.nl`.
 
+The contact Cloud Run service uses `ContactEmail__From=noreply@scpp.nl` and
+`CONTACT_GMAIL_OAUTH_JSON`, a secret environment reference to
+`contact-gmail-oauth:latest`. The shared module grants secret-specific
+`roles/secretmanager.secretAccessor` access to
+`contact-api-runtime@websites-514515.iam.gserviceaccount.com`.
+These settings prepare the infrastructure; the contact application currently
+validates and logs submissions and does not yet send email.
+
 For contact, upload the generated authorized-user credentials from the isolated
 Windows PowerShell gcloud configuration directory (`$contactAuthDir`):
 
