@@ -4,6 +4,7 @@ locals {
   config_env = merge(
     { for i, origin in var.cors_allowed_origins : "Cors__AllowedOrigins__${i}" => origin },
     { for i, host in var.turnstile_allowed_hostnames : "Turnstile__AllowedHostnames__${i}" => host },
+    var.additional_env,
   )
 
   deployer_member = "serviceAccount:${var.deployer_service_account_email}"
@@ -39,6 +40,14 @@ resource "google_secret_manager_secret" "turnstile" {
 resource "google_secret_manager_secret_iam_member" "runtime_reads" {
   project   = var.project_id
   secret_id = google_secret_manager_secret.turnstile.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.runtime.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "additional_runtime_reads" {
+  for_each  = var.additional_secrets
+  project   = var.project_id
+  secret_id = each.value
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.runtime.email}"
 }
@@ -87,10 +96,23 @@ resource "google_cloud_run_v2_service" "this" {
           value = env.value
         }
       }
+
+      dynamic "env" {
+        for_each = var.additional_secrets
+        content {
+          name = env.key
+          value_source {
+            secret_key_ref {
+              secret  = env.value
+              version = "latest"
+            }
+          }
+        }
+      }
     }
   }
 
-  depends_on = [google_secret_manager_secret_iam_member.runtime_reads]
+  depends_on = [google_secret_manager_secret_iam_member.runtime_reads, google_secret_manager_secret_iam_member.additional_runtime_reads]
 
   lifecycle {
     # CI deploys new images (and may add labels); Terraform owns everything else.

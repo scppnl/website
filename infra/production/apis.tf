@@ -23,6 +23,13 @@ locals {
       ]
     }
     "booking-api" = {
+      additional_env = {
+        BookingEmail__From = "noreply@scpp.nl"
+        BookingEmail__To   = "verhuur@scpp.nl"
+      }
+      additional_secrets = {
+        BOOKING_GMAIL_OAUTH_JSON = google_secret_manager_secret.booking_gmail_oauth.secret_id
+      }
       image          = "${local.registry_host}/scppnl/booking-api:0.0.3"
       secret_id      = "booking-turnstile-secret-key"
       secret_env_var = "BOOKING_TURNSTILE_SECRET_KEY"
@@ -51,6 +58,8 @@ module "apis" {
   cors_allowed_origins           = each.value.cors_allowed_origins
   turnstile_allowed_hostnames    = each.value.turnstile_allowed_hostnames
   deployer_service_account_email = module.github_deployer.service_account_email
+  additional_env                 = try(each.value.additional_env, {})
+  additional_secrets             = try(each.value.additional_secrets, {})
 
   depends_on = [
     google_project_service.apis,
