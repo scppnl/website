@@ -89,7 +89,10 @@ it to `sharedGlobals` so affected selection and task hashes both include it.
 After every selected project's checks pass, `ci.yml` publishes affected websites
 on pushes to `main`. PRs only validate. A manual **CI → Run workflow** run targeting
 `main` checks and publishes both websites; manual runs on other branches only
-validate. Markdown-only pushes publish nothing. Shared tooling or workflow
+validate. Enable **sites_only** to build/test/deploy just the websites, for example
+after changing frontend configuration variables. This skips API images and needs
+no API version bump. From the CLI, use `gh workflow run ci.yml --repo=scppnl/website --ref=main -f sites_only=true`.
+Markdown-only pushes publish nothing. Shared tooling or workflow
 changes affect both sites. The first push containing this deployment workflow
 therefore publishes both.
 
@@ -190,8 +193,9 @@ successful `main` push deploys both sites with passing smoke checks.
 
 After each selected image is pushed and its manifest verified, CI exposes its
 service name and digest to an independent API deployment matrix. Only `main`
-pushes and manual runs deploy; PRs and other branches only validate. Manual runs
-select both APIs and need unused versions for both. No API selection means no
+pushes and manual runs deploy; PRs and other branches only validate. Full manual runs
+select both APIs and need unused versions for both; **sites_only** runs skip APIs.
+No API selection means no
 API deployment. Main runs remain serialized.
 
 | Service | Production URL | Expected `GET /` text | Main endpoint |
@@ -383,10 +387,10 @@ The separate Docker job publishes Native AOT executables and builds images for
 affected projects with a `docker` target, after the check job passes. It runs on
 Ubuntu 24.04 with `clang` and `zlib1g-dev`, targets Linux amd64, and checks out the
 same commit as the check job. On pushes to `main`, CI pushes affected images to
-Docker Hub after building them. Manual runs on `main` publish both APIs; PRs and
+Docker Hub after building them. Full manual runs on `main` publish both APIs; PRs and
 manual runs on other branches only build. A Docker build or publication failure
 fails the workflow and keeps those changes in the next main run's affected selection. Manual runs build
-all registered images; Markdown-only and frontend-only changes build none.
+all registered images unless **sites_only** is enabled; Markdown-only and frontend-only changes build none.
 Both APIs have `publish` and `docker` targets and participate in these image builds.
 API sources, tests, project configuration, and component solutions affect only
 their own API; the root solution affects both APIs.
@@ -477,8 +481,8 @@ reference, manifest digest, and source commit in the run summary.
 Bump the version of each selected API whenever its tag has already been
 published. This applies to manual runs, reruns, API test changes, and shared
 tooling/workflow changes that select both APIs. A manual **CI → Run workflow →
-main** run publishes both APIs and therefore needs unused versions for both.
-Both API versions are `0.0.4`; their selected tags must be unused in Docker Hub.
+main** run publishes both APIs unless **sites_only** is enabled. Use that option
+for frontend configuration changes; full runs need unused versions for both APIs.
 
 Main runs are serialized, and CI refuses to overwrite existing tags. Publication
 across repositories is not atomic: if one image is pushed before another fails,

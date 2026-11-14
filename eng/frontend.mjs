@@ -5,8 +5,8 @@ export const testSiteKey = '1x00000000000000000000AA';
 export function bookingApiUrl(env = process.env) {
   const value = (env.BOOKING_API_BASE_URL ?? '').trim().replace(/\/+$/, '');
   if (!value) return '';
-  const url = new URL(value);
-  if (url.protocol !== 'https:' || url.origin !== value || url.username || url.password)
+  const url = URL.parse(value);
+  if (!url || url.protocol !== 'https:' || url.origin !== value || url.username || url.password)
     throw new Error('BOOKING_API_BASE_URL must be an HTTPS origin without a path or credentials.');
   return value;
 }

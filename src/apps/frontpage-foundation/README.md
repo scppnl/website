@@ -80,6 +80,9 @@ Before a production build, set `BOOKING_API_BASE_URL` in the process environment
 that API's `Cors:AllowedOrigins` with the frontend origin. An empty URL, the default
 in production, rejects submission without sending a request. This configuration is
 compiled into the static assets; changing it requires a rebuild.
+Use **CI → Run workflow → main → sites_only** to rebuild/deploy the websites
+without publishing API images or bumping API versions. The CLI equivalent is
+`gh workflow run ci.yml --repo=scppnl/website --ref=main -f sites_only=true`.
 
 The API validates and verifies requests, emails the rental team, and then logs a
 receipt. HTTP 204 triggers the existing success state only after Gmail accepts the

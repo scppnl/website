@@ -10,7 +10,7 @@ internal static class BookingEmailMessage
     internal static string Create(BookingRequestDto request, BookingEmailSettings settings, DateTimeOffset now)
     {
         // Only validated mailbox addresses enter headers. Free text stays in the encoded body.
-        if (!BookingEmailSettings.IsMailbox(request.Email)) throw new ArgumentException("Invalid reply mailbox.");
+        if (!MailboxAddress.IsValid(request.Email)) throw new ArgumentException("Invalid reply mailbox.");
         var date = request.Date.ToString("dd-MM-yyyy", CultureInfo.InvariantCulture);
         var building = request.Building switch {
             "groot" => "Groot gebouw", "klein" => "Klein gebouw", "beide" => "Beide gebouwen", _ => "Alleen buitenterrein"

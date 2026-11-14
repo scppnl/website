@@ -36,5 +36,16 @@ internal sealed class GmailTokenProvider(IHttpClientFactory clients, BookingEmai
         finally { refreshLock.Release(); }
     }
 
+    internal async Task Invalidate(string rejectedToken, CancellationToken cancellationToken)
+    {
+        await refreshLock.WaitAsync(cancellationToken);
+        try
+        {
+            // A delayed 401 must not evict a newer token refreshed by another request.
+            if (string.Equals(accessToken, rejectedToken, StringComparison.Ordinal)) accessToken = null;
+        }
+        finally { refreshLock.Release(); }
+    }
+
     public void Dispose() => refreshLock.Dispose();
 }

@@ -145,7 +145,48 @@ public sealed class GmailEmailTests
     [DataRow("a@example.org,b@example.org")]
     [DataRow("Name<a@example.org>")]
     [DataRow("a@example.org\n")]
-    public void UnsafeReplyAddressesAreRejected(string address) => Assert.IsFalse(BookingEmailSettings.IsMailbox(address));
+    public void UnsafeReplyAddressesAreRejected(string address) => Assert.IsFalse(MailboxAddress.IsValid(address));
+
+    [TestMethod]
+    [DataRow("renter@example.org")]
+    [DataRow("renter@localhost")]
+    public void SafeSingleMailboxesAreAccepted(string address) => Assert.IsTrue(MailboxAddress.IsValid(address));
+
+    [TestMethod]
+    public async Task UnauthorizedSendInvalidatesCacheWithoutRetryingTheMessage()
+    {
+        using var stub = new GmailHttpStub { GmailStatus = HttpStatusCode.Unauthorized };
+        var clock = new EmailTestClock();
+        using var tokens = new GmailTokenProvider(stub, Settings(), clock);
+        using var http = stub.CreateClient("");
+        var logger = new EmailLogRecorder();
+        var sender = new GmailBookingEmailSender(http, tokens, Settings(), clock, logger);
+        Assert.IsFalse(await sender.Send(Request(), CancellationToken.None));
+        Assert.HasCount(2, stub.Requests);
+        CollectionAssert.AreEqual(new[] { "Booking email unavailable (gmail-unauthorized)" }, logger.Messages);
+
+        stub.GmailStatus = HttpStatusCode.OK;
+        stub.OAuthResponse = "{\"access_token\":\"renewed\",\"expires_in\":3600,\"token_type\":\"Bearer\"}";
+        Assert.IsTrue(await sender.Send(Request(), CancellationToken.None));
+        var requests = stub.Requests.ToArray();
+        Assert.HasCount(4, requests);
+        Assert.AreEqual("https://oauth2.googleapis.com/token", requests[2].Url);
+        Assert.AreEqual("Bearer renewed", requests[3].Authorization);
+    }
+
+    [TestMethod]
+    public async Task DelayedUnauthorizedResponseCannotEvictANewerCachedToken()
+    {
+        using var stub = new GmailHttpStub();
+        using var tokens = new GmailTokenProvider(stub, Settings(), new EmailTestClock());
+        var old = await tokens.GetToken(CancellationToken.None);
+        await tokens.Invalidate(old, CancellationToken.None);
+        stub.OAuthResponse = "{\"access_token\":\"renewed\",\"expires_in\":3600,\"token_type\":\"Bearer\"}";
+        Assert.AreEqual("renewed", await tokens.GetToken(CancellationToken.None));
+        await tokens.Invalidate(old, CancellationToken.None);
+        Assert.AreEqual("renewed", await tokens.GetToken(CancellationToken.None));
+        Assert.HasCount(2, stub.Requests);
+    }
 
     [TestMethod]
     public void SettingsFailAtStartupWithoutLeakingSecrets()
