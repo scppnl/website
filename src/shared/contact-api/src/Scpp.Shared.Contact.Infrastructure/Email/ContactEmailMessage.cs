@@ -9,8 +9,10 @@ internal static class ContactEmailMessage
     internal static string Create(ContactSubmission request, ContactEmailSettings settings, DateTimeOffset now)
     {
         var to = settings.Recipient(request.Source);
-        if (!MailboxAddress.IsValid(request.Email) || !MailboxAddress.IsValid(settings.From) || !MailboxAddress.IsValid(to))
+        if (!MailboxAddress.IsValid(request.Email) || !MailboxAddress.IsValid(settings.From) || !MailboxAddress.IsValid(to)) {
             throw new ArgumentException("Invalid contact mailbox.");
+        }
+
         var source = request.Source == "foundation" ? "Stichting Clubhuis De Wildert" : "Scouting Petrus & Paulus";
         var subject = request.Subject switch
         {

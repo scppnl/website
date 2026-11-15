@@ -13,6 +13,8 @@ internal sealed class EmailLogRecorder : ILogger<GmailContactEmailSender>
         Func<TState, Exception?, string> formatter)
     {
         Messages.Add(formatter(state, exception));
-        if (exception is not null) Exceptions.Add(exception);
+        if (exception is not null) {
+            Exceptions.Add(exception);
+        }
     }
 }

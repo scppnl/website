@@ -12,7 +12,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Serilog.Core;
 using Serilog.Events;
 
@@ -115,7 +114,10 @@ public sealed class ContactRequestTests
         Assert.AreEqual("application/problem+json", response.Content.Headers.ContentType!.MediaType);
         using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var errors = body.RootElement.GetProperty("errors");
-        foreach (var key in new[] { "name", "email", "message" }) Assert.IsTrue(errors.TryGetProperty(key, out _));
+        foreach (var key in new[] { "name", "email", "message" }) {
+            Assert.IsTrue(errors.TryGetProperty(key, out _));
+        }
+
         Assert.AreEqual(0, logs.Entries.Count);
         Assert.AreEqual(0, gmail.Requests.Count);
     }
@@ -127,8 +129,10 @@ public sealed class ContactRequestTests
             Valid() with { Email = "invalid" }, Valid() with { Email = "invalid address@example.nl" }, Valid() with { Source = "other" },
             Valid() with { Source = null }, Valid() with { Subject = "bad" },
             Valid() with { Subject = null }, Valid("association") with { Subject = "question" }
-        })
+        }) {
             Assert.AreEqual(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync("/contact", request)).StatusCode);
+        }
+
         Assert.AreEqual(0, logs.Entries.Count);
         Assert.AreEqual(0, gmail.Requests.Count);
     }
@@ -249,8 +253,10 @@ public sealed class ContactRequestTests
     {
         using var cancellation = new CancellationTokenSource();
         gmail.Respond = (request, token) => {
-            if (request.RequestUri!.Host == "oauth2.googleapis.com")
+            if (request.RequestUri!.Host == "oauth2.googleapis.com") {
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(gmail.OAuthResponse) });
+            }
+
             cancellation.Cancel();
             token.ThrowIfCancellationRequested();
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(gmail.GmailResponse) });

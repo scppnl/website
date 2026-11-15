@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Scpp.Foundation.Booking.Api.Email;
 using Scpp.Foundation.Booking.Api.Serialization;
 using Scpp.Foundation.Booking.Api.Verification;

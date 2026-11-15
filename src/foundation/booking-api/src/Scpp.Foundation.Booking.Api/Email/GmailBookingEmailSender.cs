@@ -59,10 +59,15 @@ internal sealed class GmailBookingEmailSender(HttpClient client, GmailTokenProvi
             await tokens.InvalidateAsync(token, cancellationToken);
             throw new GmailDeliveryException("gmail-unauthorized");
         }
-        if (!response.IsSuccessStatusCode) throw new GmailDeliveryException("gmail-rejected");
+        if (!response.IsSuccessStatusCode) {
+            throw new GmailDeliveryException("gmail-rejected");
+        }
+
         var result = await response.Content.ReadFromJsonAsync(BookingJsonContext.Default.GmailSendResponse, cancellationToken);
-        if (string.IsNullOrWhiteSpace(result?.Id) || result.Id.Length > 256 || result.Id.Any(char.IsControl))
+        if (string.IsNullOrWhiteSpace(result?.Id) || result.Id.Length > 256 || result.Id.Any(char.IsControl)) {
             throw new GmailDeliveryException("gmail-invalid-response");
+        }
+
         logger.LogInformation("Booking email accepted by Gmail ({ProviderMessageId})", result.Id);
     }
 }

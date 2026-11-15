@@ -41,6 +41,7 @@ for (const [files, expected] of [
   [['global.json'], all],
   [['package-lock.json'], all],
   [['Directory.Build.props'], all],
+  [['.editorconfig'], all],
   [['Directory.Packages.props'], all],
   [['NuGet.Config'], all],
   [['README.md', 'src/apps/frontpage-association/README.md', 'src/apps/frontpage-foundation/README.md', `${bookingRoot}/README.md`, `${contactRoot}/README.md`], []],

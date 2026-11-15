@@ -1,6 +1,9 @@
 <Project>
   <PropertyGroup>
     <WarningLevel>9999</WarningLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <!-- IDE0005 requires documentation analysis; CS1591 stays in the approved NoWarn list. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);1701;1702;AV1008;IDE0057;AV2210;AV1580;IDE0290;IDE0028;CA1859;S6678;IDE0305;CA1873;CS1591;AV2305</NoWarn>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <MSBuildTreatWarningsAsErrors>false</MSBuildTreatWarningsAsErrors>

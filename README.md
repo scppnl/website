@@ -415,6 +415,11 @@ Release builds treat compiler, analyzer, MSBuild, trimming, and Native AOT warni
 as errors; Debug builds report warnings without failing. The orchestration helper
 restores, builds, and tests with Release settings.
 
+Builds also enforce the warning-level C# style rules in `.editorconfig`, including
+braces around control-flow bodies, in production and test projects. XML
+documentation generation enables unused-import analysis (`IDE0005`); missing
+public documentation (`CS1591`) remains covered by the approved suppression list.
+
 The shared `NoWarn` list is the approved baseline. Additional exceptions use
 `SuppressMessage` attributes at the affected member or type, with a justification:
 fixed Google/Cloudflare protocol URLs (`S1075`), private delivery exceptions

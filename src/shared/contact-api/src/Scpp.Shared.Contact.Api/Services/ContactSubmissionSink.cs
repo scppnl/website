@@ -9,7 +9,9 @@ internal sealed class ContactSubmissionSink(GmailContactEmailSender sender, Logg
 {
     public async Task<bool> SubmitAsync(ContactSubmission submission, string traceId, CancellationToken cancellationToken)
     {
-        if (!await sender.SendAsync(submission, cancellationToken)) return false;
+        if (!await sender.SendAsync(submission, cancellationToken)) {
+            return false;
+        }
         // Record Gmail acceptance even if the visitor disconnected during sending.
         await sink.SubmitAsync(submission, traceId, CancellationToken.None);
         return true;

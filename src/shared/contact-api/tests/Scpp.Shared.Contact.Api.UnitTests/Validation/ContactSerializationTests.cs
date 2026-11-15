@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Scpp.Shared.Contact.Api.Serialization;
 using Scpp.Shared.Contact.Api.Validation;
 

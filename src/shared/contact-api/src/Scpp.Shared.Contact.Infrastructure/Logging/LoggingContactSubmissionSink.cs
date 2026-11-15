@@ -7,6 +7,8 @@ public sealed class LoggingContactSubmissionSink(ILogger<LoggingContactSubmissio
 {
     public Task SubmitAsync(ContactSubmission submission, string traceId, CancellationToken cancellationToken)
     {
+        // Always record an accepted submission, even after the visitor disconnects.
+        _ = cancellationToken;
         logger.LogInformation(
             "Contact request received at {Timestamp} ({TraceId}): {Source}, {Name}, {Email}, {Message}, {ChildName}, {Phone}, {Subject}",
             DateTimeOffset.UtcNow, traceId, submission.Source, submission.Name,

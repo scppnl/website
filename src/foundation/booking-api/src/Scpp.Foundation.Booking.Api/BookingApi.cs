@@ -50,8 +50,10 @@ internal static class BookingApi
     {
         var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins")
             .GetChildren().Select(origin => origin.Value).OfType<string>().ToArray();
-        if (allowedOrigins.Contains("*"))
+        if (allowedOrigins.Contains("*")) {
             throw new InvalidOperationException("Cors:AllowedOrigins must contain explicit origins, not '*'.");
+        }
+
         builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
             policy.WithOrigins(allowedOrigins).WithMethods("POST").WithHeaders("Content-Type")));
     }

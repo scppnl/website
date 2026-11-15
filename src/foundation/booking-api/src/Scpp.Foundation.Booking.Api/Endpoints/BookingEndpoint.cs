@@ -16,17 +16,20 @@ internal sealed class BookingEndpoint(BookingRequestValidator validator, ILogger
         BookingRequestDto request, CancellationToken cancellationToken)
     {
         var errors = validator.Validate(request);
-        if (errors.Count > 0)
+        if (errors.Count > 0) {
             return TypedResults.ValidationProblem(errors.ToDictionary(error => error.Key, error => error.Value));
+        }
 
         var verification = await verifier.VerifyAsync(request.TurnstileToken!, cancellationToken);
-        if (verification != VerificationOutcome.Accepted)
+        if (verification != VerificationOutcome.Accepted) {
             return TypedResults.Problem(
                 statusCode: verification == VerificationOutcome.Rejected ? 403 : 503,
                 title: "Booking verification failed. Please try again.");
+        }
 
-        if (!await emailSender.SendAsync(request, cancellationToken))
+        if (!await emailSender.SendAsync(request, cancellationToken)) {
             return TypedResults.Problem(statusCode: 503, title: "Booking email could not be sent. Please try again.");
+        }
 
         logger.LogInformation("Booking request received: {BookingRequest}",
             JsonSerializer.Serialize(BookingReceipt.From(request), BookingJsonContext.Default.BookingReceipt));

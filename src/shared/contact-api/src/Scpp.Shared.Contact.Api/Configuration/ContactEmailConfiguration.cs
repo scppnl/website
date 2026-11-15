@@ -24,8 +24,10 @@ internal static class ContactEmailConfiguration
         }
         if (!MailboxAddress.IsValid(from) || !MailboxAddress.IsValid(foundationTo) || !MailboxAddress.IsValid(associationTo) ||
             credentials is null || string.IsNullOrWhiteSpace(credentials.ClientId) ||
-            string.IsNullOrWhiteSpace(credentials.ClientSecret) || string.IsNullOrWhiteSpace(credentials.RefreshToken))
+            string.IsNullOrWhiteSpace(credentials.ClientSecret) || string.IsNullOrWhiteSpace(credentials.RefreshToken)) {
             throw new InvalidOperationException(error);
+        }
+
         return new(from!, foundationTo!, associationTo!, credentials);
     }
 }

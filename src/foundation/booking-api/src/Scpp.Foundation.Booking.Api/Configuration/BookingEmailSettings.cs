@@ -28,8 +28,10 @@ internal sealed class BookingEmailSettings(string from, string to, GmailOAuthCre
         }
         if (!MailboxAddress.IsValid(from) || !MailboxAddress.IsValid(to) || credentials is null ||
             string.IsNullOrWhiteSpace(credentials.ClientId) || string.IsNullOrWhiteSpace(credentials.ClientSecret) ||
-            string.IsNullOrWhiteSpace(credentials.RefreshToken))
+            string.IsNullOrWhiteSpace(credentials.RefreshToken)) {
             throw new InvalidOperationException(error);
+        }
+
         return new(from!, to!, credentials);
     }
 }

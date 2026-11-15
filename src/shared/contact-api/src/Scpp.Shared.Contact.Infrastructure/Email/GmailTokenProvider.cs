@@ -14,7 +14,10 @@ internal sealed class GmailTokenProvider(IHttpClientFactory clients, ContactEmai
         await refreshLock.WaitAsync(cancellationToken);
         try
         {
-            if (accessToken is not null && clock.GetUtcNow() < refreshAt) return accessToken;
+            if (accessToken is not null && clock.GetUtcNow() < refreshAt) {
+                return accessToken;
+            }
+
             return await RefreshAsync(cancellationToken);
         }
         finally { refreshLock.Release(); }
@@ -33,11 +36,16 @@ internal sealed class GmailTokenProvider(IHttpClientFactory clients, ContactEmai
             ["refresh_token"] = settings.Credentials.RefreshToken!
         });
         using var response = await client.PostAsync("https://oauth2.googleapis.com/token", body, cancellationToken);
-        if (!response.IsSuccessStatusCode) throw new GmailDeliveryException("oauth-rejected");
+        if (!response.IsSuccessStatusCode) {
+            throw new GmailDeliveryException("oauth-rejected");
+        }
+
         var token = await response.Content.ReadFromJsonAsync(GmailJsonContext.Default.GmailTokenResponse, cancellationToken);
         if (string.IsNullOrWhiteSpace(token?.AccessToken) || token.AccessToken.Any(character => char.IsControl(character) || char.IsWhiteSpace(character)) ||
-            token.ExpiresIn is <= 60 or > 86400 || !string.Equals(token.TokenType, "Bearer", StringComparison.OrdinalIgnoreCase))
+            token.ExpiresIn is <= 60 or > 86400 || !string.Equals(token.TokenType, "Bearer", StringComparison.OrdinalIgnoreCase)) {
             throw new GmailDeliveryException("oauth-invalid-response");
+        }
+
         accessToken = token.AccessToken;
         refreshAt = clock.GetUtcNow().AddSeconds(token.ExpiresIn - 60);
         return accessToken;
@@ -49,7 +57,9 @@ internal sealed class GmailTokenProvider(IHttpClientFactory clients, ContactEmai
         try
         {
             // A delayed 401 must not evict a newer token refreshed by another request.
-            if (string.Equals(accessToken, rejectedToken, StringComparison.Ordinal)) accessToken = null;
+            if (string.Equals(accessToken, rejectedToken, StringComparison.Ordinal)) {
+                accessToken = null;
+            }
         }
         finally { refreshLock.Release(); }
     }

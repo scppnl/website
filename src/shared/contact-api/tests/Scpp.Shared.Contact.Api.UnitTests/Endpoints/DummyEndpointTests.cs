@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Http;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Scpp.Shared.Contact.Api.Endpoints;
 
 namespace Scpp.Shared.Contact.Api.UnitTests.Endpoints;

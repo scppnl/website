@@ -3,7 +3,6 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Scpp.Shared.Contact.Api.Configuration;
 using Scpp.Shared.Contact.Infrastructure.Email;
 using Scpp.Shared.Contact.Domain.Models;
@@ -66,8 +65,10 @@ public sealed class GmailEmailTests
         var subject = parts[0].Split("Subject: =?utf-8?B?")[1].Split("?=")[0];
         Assert.AreEqual(source == "foundation" ? "Contact stichting – Bezichtiging" : "Contact vereniging", Encoding.UTF8.GetString(Convert.FromBase64String(subject)));
         var body = Encoding.UTF8.GetString(Convert.FromBase64String(parts[1]));
-        foreach (var value in new[] { "José Jansen", "renter@example.org", "Eén vraag:\r\nKunnen wij koffie zetten?" })
+        foreach (var value in new[] { "José Jansen", "renter@example.org", "Eén vraag:\r\nKunnen wij koffie zetten?" }) {
             StringAssert.Contains(body, value);
+        }
+
         StringAssert.Contains(body, source == "foundation" ? "Telefoon: 0123456789" : "Naam kind: Zoë");
         Assert.IsFalse(parts[0].Contains(source == "foundation" ? "info@scpp.nl" : "stichting@scpp.nl"));
     }
@@ -113,8 +114,12 @@ public sealed class GmailEmailTests
     public async Task ProviderErrorsFailWithoutRetry(bool oauth, int status)
     {
         using var stub = new GmailHttpStub();
-        if (oauth) stub.OAuthStatus = (HttpStatusCode)status;
-        else stub.GmailStatus = (HttpStatusCode)status;
+        if (oauth) {
+            stub.OAuthStatus = (HttpStatusCode)status;
+        } else {
+            stub.GmailStatus = (HttpStatusCode)status;
+        }
+
         Assert.IsFalse(await SendAsync(stub));
         Assert.AreEqual(oauth ? 1 : 2, stub.Requests.Count);
     }
@@ -130,8 +135,12 @@ public sealed class GmailEmailTests
     public async Task MalformedResponsesFailClosed(bool oauth, string response)
     {
         using var stub = new GmailHttpStub();
-        if (oauth) stub.OAuthResponse = response;
-        else stub.GmailResponse = response;
+        if (oauth) {
+            stub.OAuthResponse = response;
+        } else {
+            stub.GmailResponse = response;
+        }
+
         Assert.IsFalse(await SendAsync(stub));
     }
 

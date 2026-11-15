@@ -1,4 +1,3 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Scpp.Shared.Contact.Api.Verification;
 using Scpp.Shared.Contact.Api.Services;
 using Scpp.Shared.Contact.Domain.Models;

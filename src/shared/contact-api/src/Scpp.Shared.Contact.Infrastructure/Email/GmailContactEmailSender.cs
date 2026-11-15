@@ -60,10 +60,15 @@ internal sealed class GmailContactEmailSender(HttpClient client, GmailTokenProvi
             await tokens.InvalidateAsync(token, cancellationToken);
             throw new GmailDeliveryException("gmail-unauthorized");
         }
-        if (!response.IsSuccessStatusCode) throw new GmailDeliveryException("gmail-rejected");
+        if (!response.IsSuccessStatusCode) {
+            throw new GmailDeliveryException("gmail-rejected");
+        }
+
         var result = await response.Content.ReadFromJsonAsync(GmailJsonContext.Default.GmailSendResponse, cancellationToken);
-        if (string.IsNullOrWhiteSpace(result?.Id) || result.Id.Length > 256 || result.Id.Any(char.IsControl))
+        if (string.IsNullOrWhiteSpace(result?.Id) || result.Id.Length > 256 || result.Id.Any(char.IsControl)) {
             throw new GmailDeliveryException("gmail-invalid-response");
+        }
+
         logger.LogInformation("Contact email accepted by Gmail ({ProviderMessageId})", result.Id);
     }
 }

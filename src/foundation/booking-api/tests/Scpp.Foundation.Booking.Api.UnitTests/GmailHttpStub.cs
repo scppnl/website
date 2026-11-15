@@ -18,7 +18,10 @@ internal sealed class GmailHttpStub : HttpMessageHandler, IHttpClientFactory
     {
         Requests.Enqueue((request.RequestUri!.AbsoluteUri, await request.Content!.ReadAsStringAsync(cancellationToken),
             request.Headers.Authorization?.ToString()));
-        if (Respond is not null) return await Respond(request, cancellationToken);
+        if (Respond is not null) {
+            return await Respond(request, cancellationToken);
+        }
+
         var oauth = request.RequestUri.Host == "oauth2.googleapis.com";
         return new(oauth ? OAuthStatus : GmailStatus) { Content = new StringContent(oauth ? OAuthResponse : GmailResponse) };
     }

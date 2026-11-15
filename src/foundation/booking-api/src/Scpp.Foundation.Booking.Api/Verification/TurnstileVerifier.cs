@@ -19,9 +19,15 @@ internal sealed class TurnstileVerifier(HttpClient client, TurnstileSettings set
             });
             using var response = await client.PostAsync(
                 "https://challenges.cloudflare.com/turnstile/v0/siteverify", body, cancellationToken);
-            if (!response.IsSuccessStatusCode) return VerificationOutcome.Unavailable;
+            if (!response.IsSuccessStatusCode) {
+                return VerificationOutcome.Unavailable;
+            }
+
             var result = await response.Content.ReadFromJsonAsync(BookingJsonContext.Default.TurnstileResponse, cancellationToken);
-            if (result?.Success is null) return VerificationOutcome.Unavailable;
+            if (result?.Success is null) {
+                return VerificationOutcome.Unavailable;
+            }
+
             return result.Success == true && result.Action == "booking" && result.Hostname is not null &&
                 settings.AllowedHostnames.Contains(result.Hostname)
                 ? VerificationOutcome.Accepted : VerificationOutcome.Rejected;
