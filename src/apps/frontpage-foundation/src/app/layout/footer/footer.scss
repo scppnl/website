@@ -58,10 +58,21 @@ nav .footer__heading {
 }
 
 .footer__copy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0 1.5rem;
   margin: 1.5rem auto 0;
   padding-block: 1rem 1.5rem;
   border-top: 1px solid rgb(255 255 255 / 0.2);
   font-size: 0.875rem;
+}
+
+.footer__login {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
 }
 
 @media (min-width: 64rem) {

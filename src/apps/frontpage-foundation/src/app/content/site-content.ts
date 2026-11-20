@@ -71,9 +71,16 @@ export const foundation = {
     postalCode: '4624 RG',
     city: 'Bergen op Zoom',
   },
+  /** Google Workspace domains that may sign in to the management area. */
+  workspaceDomains: ['scpp.nl', 'blokhutdewildert.nl'],
   mapsUrl:
     'https://www.google.com/maps/place/Huijbergsebaan+415,+4624+RG+Bergen+op+Zoom/@51.4749186,4.3217393,17z/data=!3m1!4b1!4m6!3m5!1s0x47c412df2792939d:0x2488ef6c5c301ba5!8m2!3d51.4749186!4d4.3243142!16s%2Fg%2F11b8v55kgp?entry=ttu&g_ep=EgoyMDI2MTAyNy4wIKXMDSoASAFQAw%3D%3D',
 } as const;
+
+/** "@scpp.nl of @blokhutdewildert.nl", for copy about which accounts may sign in. */
+export const workspaceDomainsText = foundation.workspaceDomains
+  .map((domain) => `@${domain}`)
+  .join(' of ');
 
 export const navItems: readonly NavItem[] = [
   { path: '/', label: 'Home' },

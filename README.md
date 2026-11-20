@@ -314,6 +314,18 @@ ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/foundation/booking-a
 curl http://localhost:5080/
 ```
 
+### Foundation sign-in
+
+The foundation site has a Google Workspace sign-in page at `/inloggen` and a "no access"
+page at `/inloggen/geen-toegang`. Both are frontend-only: they are `noindex`, linked only
+from the footer, and the sign-in button is a link to `{AUTH_API_BASE_URL}/auth/google`
+(`?prompt=select_account` for "Ander account kiezen"). There are no local accounts.
+Set repository Actions variable `AUTH_API_BASE_URL` to the auth API origin (HTTPS, no path)
+once that API exists. Its default is empty: the button is disabled with an unavailable
+notice. Local development uses `http://localhost:5082`. The auth API must verify the Google
+account's Workspace domain (`scpp.nl` or `blokhutdewildert.nl`) itself, since Google's `hd`
+hint accepts one domain, and redirect other accounts to `/inloggen/geen-toegang`.
+
 ### Booking requests
 
 `POST /bookings` accepts the foundation website's booking JSON. The planned

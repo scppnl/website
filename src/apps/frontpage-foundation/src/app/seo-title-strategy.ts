@@ -3,7 +3,10 @@ import { Meta, Title } from '@angular/platform-browser';
 import { ActivatedRouteSnapshot, RouterStateSnapshot, TitleStrategy } from '@angular/router';
 import { foundation } from './content/site-content';
 
-/** Appends the foundation name to every page title and mirrors `data.description` into the meta description. */
+/**
+ * Appends the foundation name to every page title, mirrors `data.description` into the meta
+ * description and sets or removes the robots meta tag from `data.robots`.
+ */
 @Injectable({ providedIn: 'root' })
 export class SeoTitleStrategy extends TitleStrategy {
   private readonly title = inject(Title);
@@ -20,6 +23,13 @@ export class SeoTitleStrategy extends TitleStrategy {
     const description = route.data['description'];
     if (typeof description === 'string') {
       this.meta.updateTag({ name: 'description', content: description });
+    }
+
+    const robots = route.data['robots'];
+    if (typeof robots === 'string') {
+      this.meta.updateTag({ name: 'robots', content: robots });
+    } else {
+      this.meta.removeTag('name="robots"');
     }
   }
 }

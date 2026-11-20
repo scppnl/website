@@ -1,0 +1,59 @@
+<main id="main" tabindex="-1" class="login">
+  <div class="login__photo">
+    <app-photo
+      [src]="photo.src"
+      [alt]="photo.alt"
+      fill
+      priority
+      sizes="(min-width: 48rem) 50vw, 100vw"
+    />
+    <p class="login__place on-dark">
+      <span class="login__place-label">Clubhuis in het bos</span>
+      {{ foundation.address.street }}, {{ foundation.address.city }}
+    </p>
+    <app-logo class="login__badge" [size]="48" />
+  </div>
+
+  <div class="login__panel">
+    <a class="login__brand" routerLink="/" [attr.aria-label]="foundation.name">
+      <app-logo [size]="40" />
+      <span class="login__brand-name">
+        <span class="login__brand-prefix">Stichting</span>
+        <span class="login__brand-title">Blokhut De Wildert</span>
+      </span>
+    </a>
+
+    <div class="login__content">
+      <p class="login__org">{{ foundation.name }}</p>
+      <p class="eyebrow">Beheeromgeving</p>
+      <h1>Welkom terug</h1>
+      <p class="lead">
+        Log in met je Google-account van de stichting om reserveringen en berichten te beheren.
+      </p>
+
+      <app-google-sign-in-button [href]="signInUrl" />
+      @if (!signInUrl) {
+        <p class="alert alert--error login__unavailable" role="status">
+          Inloggen is tijdelijk niet beschikbaar. Probeer het later opnieuw.
+        </p>
+      }
+
+      <p class="login__note">
+        <app-icon name="lock" [size]="20" [strokeWidth]="2" />
+        <span>
+          Alleen voor bestuur en vrijwilligers met een <strong>{{ domains }}</strong
+          >-account. Je hebt geen apart wachtwoord nodig.
+        </span>
+      </p>
+
+      <p class="login__help">
+        Lukt het inloggen niet? <a routerLink="/contact">Neem contact op met de beheerder</a>.
+      </p>
+    </div>
+
+    <a class="login__back link-arrow" routerLink="/">
+      <app-icon name="chevron-right" [size]="18" [strokeWidth]="2.2" class="login__back-icon" />
+      Terug naar de website
+    </a>
+  </div>
+</main>

@@ -1,0 +1,35 @@
+<header class="denied__bar">
+  <div class="container denied__bar-inner">
+    <a class="denied__brand" routerLink="/" [attr.aria-label]="foundation.name">
+      <app-logo [size]="40" />
+      <span class="denied__brand-name">
+        <span class="denied__brand-prefix">Stichting</span>
+        <span class="denied__brand-title">Blokhut De Wildert</span>
+      </span>
+    </a>
+  </div>
+</header>
+
+<main id="main" tabindex="-1" class="denied">
+  <div class="denied__content">
+    <span class="denied__icon" aria-hidden="true">
+      <app-icon name="lock" [size]="30" [strokeWidth]="2" />
+    </span>
+    <h1>Geen toegang met dit account</h1>
+    <p class="lead">
+      Dit account hoort niet bij de Google Workspace van de stichting. Log in met je
+      <strong>{{ domains }}</strong
+      >-account.
+    </p>
+
+    <div class="denied__actions">
+      <app-google-sign-in-button [href]="retryUrl" label="Ander account kiezen" />
+      <a class="btn btn--outline" routerLink="/">Terug naar de website</a>
+    </div>
+
+    <p class="denied__help">
+      Hoor je bij het bestuur of ben je vrijwilliger, maar heb je nog geen account?
+      <a routerLink="/contact">Vraag er een aan bij de beheerder</a>.
+    </p>
+  </div>
+</main>
