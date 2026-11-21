@@ -195,6 +195,7 @@ After each selected image is pushed and its manifest verified, CI exposes its
 service name and digest to an independent API deployment matrix. Only `main`
 pushes and manual runs deploy; PRs and other branches only validate. Full manual runs
 select all three APIs and need unused versions for each; **sites_only** runs skip APIs.
+Changes to CI tooling alone do not select API images.
 No API selection means no
 API deployment. Main runs remain serialized.
 
@@ -422,14 +423,26 @@ affected projects with a `docker` target, after the check job passes. It runs on
 Ubuntu 24.04 with `clang` and `zlib1g-dev`, targets Linux amd64, and checks out the
 same commit as the check job. On pushes to `main`, CI pushes affected images to
 Docker Hub after building them. Full manual runs on `main` publish all three APIs; PRs and
-manual runs on other branches only build. A Docker build or publication failure
+manual runs on other branches only build, and PRs also check that each selected API's
+version tag is still unused (see below). A Docker build or publication failure
 fails the workflow and keeps those changes in the next main run's affected selection. Manual runs build
 all registered images unless **sites_only** is enabled; Markdown-only and frontend-only changes build none.
 All three APIs have `publish` and `docker` targets and participate in these image builds.
 API sources, tests, project configuration, and component solutions affect only
 their own API; the root solution affects all three APIs.
 Frontend-only changes select only the corresponding frontend. Shared SDK,
-build/package configuration, and CI tooling changes affect every project.
+build/package configuration, and CI tooling changes affect every project, so all
+of them are built and tested.
+
+API images are selected more narrowly. Changes limited to CI orchestration (`eng/`,
+`.github/`, the root `package.json` and `package-lock.json`, `nx.json`, `.nvmrc` and
+`.npmrc`) still build and test every project but publish no images, because they
+cannot change image contents. Everything else that selects an API (its own files,
+the root solution, SDK and build properties, `.editorconfig`, `.dockerignore`)
+needs an image and therefore an unused version. `eng/select-projects.mjs` reports
+both lists as `projects` and `imageProjects`. The check job summary explains why each
+API was selected: the compared commits, the changed files in its project and the shared
+files that selected it.
 Markdown-only changes select no projects.
 
 ```sh
@@ -525,6 +538,13 @@ are independent. There is no `latest`, `v` prefix, or commit tag.
 Versions must be valid Docker tags; for example, `1.2.3-rc.1` is supported but
 SemVer build metadata containing `+` is not. Local builds still use `<api>:ci`.
 
+Pull requests run the same tag lookup read-only before building images
+(`node eng/publish-containers.mjs check`): it never logs in or pushes, and fails the PR
+naming every selected API whose version tag already exists. This catches a missing bump
+before merge, because a failed `main` run keeps the successful-push baseline behind and
+repeats the failure on every later push. The check is anonymous, so a registry that cannot
+answer (for example a rate limit) only warns; the publish step on `main` still fails closed.
+
 Before pushing anything, CI checks that every selected version tag is absent.
 An existing tag fails the job with a request to bump that API's `.csproj`
 `Version`; authentication, rate-limit, or registry errors also fail the job.
@@ -533,8 +553,8 @@ the published manifests against the built images and records each verified image
 reference, manifest digest, and source commit in the run summary.
 
 Bump the version of each selected API whenever its tag has already been
-published. This applies to manual runs, reruns, API test changes, and shared
-tooling/workflow changes that select all APIs. A manual **CI → Run workflow →
+published. This applies to manual runs, reruns, API test changes, and changes to shared
+SDK or build configuration that select all APIs. A manual **CI → Run workflow →
 main** run publishes all three APIs unless **sites_only** is enabled. Use that option
 for frontend configuration changes; full runs need unused versions for every API.
 

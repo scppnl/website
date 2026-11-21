@@ -27,20 +27,61 @@ export function canPublish(env) {
     && ['push', 'workflow_dispatch'].includes(env.GITHUB_EVENT_NAME);
 }
 
-function requireMissing(reference, exec) {
+// Docker CLI's explicit manifest-not-found response only. Do not treat authentication,
+// rate limiting, timeouts, signals, or other registry errors as an available tag.
+export function tagStatus(reference, exec) {
   const result = exec('docker', ['manifest', 'inspect', reference]);
-  if (result.error) throw result.error;
-  if (result.status === 0) {
-    throw new Error(`${reference} already exists. Bump this API's csproj Version before publishing again.`);
-  }
-  // Docker CLI's explicit manifest-not-found response only. Do not treat authentication,
-  // rate limiting, timeouts, signals, or other registry errors as an available tag.
+  if (result.error) return { state: 'unknown', error: result.error, detail: result.error.message };
+  if (result.status === 0) return { state: 'exists' };
   const error = result.stderr?.trim();
-  if (result.status !== 1 || ![
+  if (result.status === 1 && [
     `no such manifest: ${reference}`,
     `no such manifest: docker.io/${reference}`,
-  ].includes(error)) {
-    throw new Error(`Cannot establish whether ${reference} exists (${result.signal ?? result.status}): ${error ?? ''}`);
+  ].includes(error)) return { state: 'missing' };
+  return { state: 'unknown', detail: `Cannot establish whether ${reference} exists (${result.signal ?? result.status}): ${error ?? ''}` };
+}
+
+function requireMissing(reference, exec, hint = '') {
+  const { state, error, detail } = tagStatus(reference, exec);
+  if (error) throw error;
+  if (state === 'exists') {
+    throw new Error(`${reference} already exists. Bump this API's csproj Version before publishing again.${hint}`);
+  }
+  if (state === 'unknown') throw new Error(detail);
+}
+
+function parseSelection(env) {
+  const selected = JSON.parse(env.CONTAINERS ?? 'null');
+  if (!Array.isArray(selected) || selected.some(name => typeof name !== 'string' || !projects.has(name))) {
+    throw new Error('Expected CONTAINERS to contain only registered APIs: auth-api, booking-api, contact-api');
+  }
+  return [...new Set(selected)];
+}
+
+function imageVersion(project, exec) {
+  const version = checked('dotnet', ['msbuild', projects.get(project), '-nologo',
+    '-property:Configuration=Release', '-getProperty:Version'], exec);
+  if (!/^[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,127}$/.test(version)) {
+    throw new Error(`Invalid Docker tag from ${project} csproj Version: ${JSON.stringify(version)}`);
+  }
+  return version;
+}
+
+// Read-only pull request check: report selected APIs whose version tag is already
+// published. It never logs in, builds, tags or pushes. A registry that cannot answer
+// (rate limits for anonymous requests, outages) only warns; the publish step on main
+// still fails closed.
+export function checkVersions(env = process.env, exec = execute, log = console.log) {
+  const stale = [];
+  for (const project of parseSelection(env)) {
+    const reference = `scppnl/${project}:${imageVersion(project, exec)}`;
+    const { state, detail } = tagStatus(reference, exec);
+    if (state === 'exists') stale.push({ project, reference });
+    else if (state === 'unknown') log(`::warning::${detail}. The version check for ${project} was skipped.`);
+  }
+  if (stale.length) {
+    throw new Error(`These selected APIs need a new csproj Version because their image tag already exists:\n${
+      stale.map(({ project, reference }) => `- ${project}: ${reference} (${projects.get(project)})`).join('\n')}`);
   }
 }
 
@@ -57,20 +98,13 @@ export function publishContainers(env = process.env, exec = execute) {
 
 function publish(env, exec, deployments) {
   if (!canPublish(env)) throw new Error('API images may only be published by push or workflow_dispatch on main');
-  const selected = JSON.parse(env.CONTAINERS ?? 'null');
-  if (!Array.isArray(selected) || selected.some(name => typeof name !== 'string' || !projects.has(name))) {
-    throw new Error('Expected CONTAINERS to contain only registered APIs: auth-api, booking-api, contact-api');
-  }
+  const selected = parseSelection(env);
   if (!selected.length) return [];
   if (env.DOCKER_HUB_USER !== 'scppnl') throw new Error('Set repository variable DOCKER_HUB_USER to scppnl');
   if (!/^[a-f0-9]{40}$/.test(env.GITHUB_SHA ?? '')) throw new Error('Expected the checked-out GitHub commit SHA');
 
-  const images = [...new Set(selected)].map(project => {
-    const version = checked('dotnet', ['msbuild', projects.get(project), '-nologo',
-      '-property:Configuration=Release', '-getProperty:Version'], exec);
-    if (!/^[a-zA-Z0-9_][a-zA-Z0-9_.-]{0,127}$/.test(version)) {
-      throw new Error(`Invalid Docker tag from ${project} csproj Version: ${JSON.stringify(version)}`);
-    }
+  const images = selected.map(project => {
+    const version = imageVersion(project, exec);
     const local = `${project}:ci`;
     const configDigest = checked('docker', ['image', 'inspect', '--format', '{{.Id}}', local], exec);
     if (configDigest.length !== 71 || !digestPattern.test(configDigest)) throw new Error(`Invalid local image digest for ${local}`);
@@ -79,7 +113,8 @@ function publish(env, exec, deployments) {
 
   // Check the entire batch before any tag/push so a version collision cannot
   // publish one API while failing another. Main workflow runs are serialized.
-  for (const image of images) requireMissing(image.reference, exec);
+  const hint = env.CI_BASELINE ? ` CI selected it by comparing with ${env.CI_BASELINE}; the check job summary lists the changed files.` : '';
+  for (const image of images) requireMissing(image.reference, exec, hint);
 
   if (env.GITHUB_STEP_SUMMARY) appendFileSync(env.GITHUB_STEP_SUMMARY, `## API images\n\nCommit: \`${env.GITHUB_SHA}\`\n\n`);
   const published = [];
@@ -104,4 +139,11 @@ function publish(env, exec, deployments) {
   return published;
 }
 
-if (isMain(import.meta.url)) main(() => publishContainers());
+if (isMain(import.meta.url)) main(() => {
+  const [command, ...rest] = process.argv.slice(2);
+  if (rest.length || (command !== undefined && command !== 'check')) {
+    throw new Error('Usage: node eng/publish-containers.mjs [check]');
+  }
+  if (command === 'check') checkVersions();
+  else publishContainers();
+});

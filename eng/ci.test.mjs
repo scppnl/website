@@ -21,7 +21,12 @@ writeFileSync(join(directory, 'npm.cjs'), 'process.exit(23);');
 writeFileSync(join(directory, 'node_modules/nx/bin/nx.js'), `
 const args = process.argv.slice(2);
 if (process.env.TEST_RUN_LOG && args[0] === 'run-many') require('node:fs').appendFileSync(process.env.TEST_RUN_LOG, JSON.stringify(args) + '\\n');
-if (args[0] === 'show' && args[1] === 'projects') console.log(process.env.TEST_PROJECTS || '["app"]');
+if (args[0] === 'show' && args[1] === 'projects') {
+  // The image query is the --files query without CI-only paths.
+  const files = args.find((arg) => arg.startsWith('--files='));
+  const imageQuery = files && !files.slice(8).split(',').some((file) => file.startsWith('eng/') || file.startsWith('.github/'));
+  console.log((imageQuery && process.env.TEST_IMAGE_PROJECTS) || process.env.TEST_PROJECTS || '["app"]');
+}
 else if (args[0] === 'show') console.log(JSON.stringify({root: 'app', metadata: {ci: {npm: process.env.FAIL_INSTALL === 'true'}},
   targets: ['booking-api', 'contact-api', 'another-api'].includes(args[2]) ? {docker: {}} : {}}));
 else process.exit(Number(process.env.TEST_NX_EXIT ?? 29));
@@ -98,6 +103,30 @@ test('websites-only manual runs build and export websites without selecting API 
   const workflow = readFileSync(join(root, '.github/workflows/ci.yml'), 'utf8');
   assert.match(workflow, /workflow_dispatch:\s+inputs:\s+sites_only:/);
   assert.match(workflow, /CI_SITES_ONLY:.*github.event_name == 'workflow_dispatch'.*inputs.sites_only/);
+});
+
+test('CI-only changes build and test every project but publish no images', () => {
+  const projects = ['booking-api', 'contact-api', 'frontpage-association'];
+  const cases = [
+    { files: ['eng/ci.mjs', '.github/workflows/ci.yml'], images: '[]', containers: [], event: 'push' },
+    { files: ['eng/ci.mjs', 'src/shared/contact-api/Program.cs'], images: '["contact-api"]', containers: ['contact-api'], event: 'push' },
+    { files: ['eng/ci.mjs', 'global.json'], images: '["booking-api","contact-api"]', containers: ['booking-api', 'contact-api'], event: 'pull_request' },
+    { files: ['eng/ci.mjs', 'global.json'], images: '["booking-api","contact-api"]', containers: [], event: 'workflow_dispatch', sitesOnly: 'true' },
+  ];
+  for (const [index, { files, images, containers, event, sitesOnly }] of cases.entries()) {
+    const output = join(directory, `image-selection-${index}`);
+    const runLog = join(directory, `image-selection-run-${index}`);
+    const result = spawnSync(process.execPath, ['eng/ci.mjs', ...files.map((file) => `--files=${file}`)], {
+      cwd: directory, encoding: 'utf8', env: { ...childEnv,
+        FAIL_INSTALL: 'false', TEST_PROJECTS: JSON.stringify(projects), TEST_IMAGE_PROJECTS: images, TEST_NX_EXIT: '0',
+        GITHUB_OUTPUT: output, TEST_RUN_LOG: runLog, GITHUB_EVENT_NAME: event, CI_SITES_ONLY: sitesOnly ?? 'false' },
+    });
+    assert.equal(result.status, 0, result.stderr);
+    const built = JSON.parse(readFileSync(runLog, 'utf8').trim());
+    assert.ok(built.includes(`--projects=${(sitesOnly ? ['frontpage-association'] : projects).join(',')}`));
+    assert.equal(readFileSync(output, 'utf8'),
+      `containers=${JSON.stringify(containers)}\nsites=["frontpage-association"]\n`);
+  }
 });
 
 test('subprocess errors and signals cannot report success', () => {

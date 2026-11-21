@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { canPublish, publishContainers } from './publish-containers.mjs';
+import { canPublish, checkVersions, publishContainers } from './publish-containers.mjs';
 import { root } from './process.mjs';
 
 const configDigest = `sha256:${'a'.repeat(64)}`;
@@ -196,4 +196,72 @@ test('only main push and manual main events can publish; workflow gates login an
   }
   assert.match(workflow, /username: \$\{\{ vars.DOCKER_HUB_USER \}\}/);
   assert.match(workflow, /password: \$\{\{ secrets.DOCKER_HUB_KEY \}\}/);
+});
+
+const prEnv = { GITHUB_REF: 'refs/pull/57/merge', GITHUB_EVENT_NAME: 'pull_request', CONTAINERS: env.CONTAINERS };
+const existing = project => (command, args) => command === 'docker' && args[0] === 'manifest'
+  && project.some(name => args.at(-1).includes(name)) ? ok('{}') : undefined;
+
+test('the pull request check reports every selected API whose version tag already exists', () => {
+  const { exec, calls } = fixture(existing(['booking-api', 'contact-api']));
+  assert.throws(() => checkVersions({ ...prEnv, CONTAINERS: '["auth-api","booking-api","contact-api"]' }, exec, () => {}), error => {
+    assert.match(error.message, /booking-api: scppnl\/booking-api:1\.2\.3 .*Scpp\.Foundation\.Booking\.Api\.csproj/);
+    assert.match(error.message, /contact-api: scppnl\/contact-api:2\.3\.4-rc\.1/);
+    assert.doesNotMatch(error.message, /auth-api/);
+    return true;
+  });
+  // Read-only: version lookups and manifest inspection only; no login, image, tag or push.
+  assert.ok(calls.every(call => call[0] === 'dotnet' || (call[1] === 'manifest' && !call.includes('--verbose'))));
+});
+
+test('the pull request check passes when every tag is unused and needs no publishing setup', () => {
+  const { exec, calls } = fixture();
+  checkVersions({ CONTAINERS: '["booking-api","contact-api"]' }, exec, () => {});
+  assert.equal(calls.filter(call => call[1] === 'manifest').length, 2);
+  checkVersions({ CONTAINERS: '[]' }, exec, () => {});
+});
+
+test('the pull request check only warns when the registry cannot answer', () => {
+  for (const answer of [
+    { status: 1, stderr: 'toomanyrequests: You have reached your unauthenticated pull rate limit' },
+    { status: 1, stderr: 'unauthorized: authentication required' },
+    { status: null, error: new Error('spawnSync docker ETIMEDOUT') },
+  ]) {
+    const logs = [];
+    const { exec } = fixture((command, args) => command === 'docker' && args[0] === 'manifest' ? answer : undefined);
+    checkVersions(prEnv, exec, line => logs.push(line));
+    assert.equal(logs.length, 2);
+    assert.ok(logs.every(line => line.startsWith('::warning::') && line.includes('skipped')));
+  }
+  // A definitive "exists" still fails even when another API cannot be checked.
+  const { exec } = fixture((command, args) => command !== 'docker' || args[0] !== 'manifest' ? undefined
+    : args.at(-1).includes('booking-api') ? ok('{}') : { status: 1, stderr: 'toomanyrequests' });
+  assert.throws(() => checkVersions(prEnv, exec, () => {}), /booking-api/);
+});
+
+test('the pull request check rejects unregistered APIs and invalid versions', () => {
+  const { exec } = fixture();
+  for (const CONTAINERS of ['null', '["other-api"]', '[1]']) {
+    assert.throws(() => checkVersions({ CONTAINERS }, exec, () => {}), /registered APIs|Unexpected/);
+  }
+  const bad = fixture(command => command === 'dotnet' ? ok('1.2.3+metadata') : undefined);
+  assert.throws(() => checkVersions(prEnv, bad.exec, () => {}), /Invalid Docker tag/);
+});
+
+test('an existing tag error on main names the baseline CI compared with', () => {
+  const { exec } = fixture(existing(['booking-api']));
+  assert.throws(() => publishContainers({ ...env, CI_BASELINE: 'cbaf46a' }, exec),
+    /booking-api:1\.2\.3 already exists\. Bump .*compar\w+ with cbaf46a/);
+  assert.throws(() => publishContainers(env, exec), /already exists\. Bump this API's csproj Version before publishing again\.$/);
+});
+
+test('the workflow runs the version check on pull requests only, before the native build', () => {
+  const workflow = readFileSync(join(root, '.github/workflows/ci.yml'), 'utf8');
+  const step = workflow.split('- name: Check API image versions are unused\n')[1];
+  assert.ok(step, 'workflow is missing the version check step');
+  assert.ok(step.trimStart().startsWith("if: github.event_name == 'pull_request'"));
+  assert.match(step.split('- name:')[0], /run: node eng\/publish-containers\.mjs check/);
+  assert.match(step.split('- name:')[0], /CONTAINERS: \$\{\{ needs\.check\.outputs\.containers \}\}/);
+  assert.ok(workflow.indexOf('Check API image versions are unused') < workflow.indexOf('Publish native APIs and build images'));
+  assert.ok(workflow.indexOf('Check API image versions are unused') < workflow.indexOf('Log in to Docker Hub'));
 });

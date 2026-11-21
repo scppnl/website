@@ -29,6 +29,7 @@ jobs:
     outputs:
       sites: ${{ steps.ci.outputs.sites }}
       containers: ${{ steps.ci.outputs.containers }}
+      baseline: ${{ steps.ci.outputs.baseline }}
     env:
       CI: 'true'
       NX_DAEMON: 'false'
@@ -129,6 +130,11 @@ jobs:
           sudo apt-get install --yes clang zlib1g-dev
       - name: Install orchestration dependencies
         run: npm ci --no-audit --no-fund
+      - name: Check API image versions are unused
+        if: github.event_name == 'pull_request'
+        run: node eng/publish-containers.mjs check
+        env:
+          CONTAINERS: ${{ needs.check.outputs.containers }}
       - name: Publish native APIs and build images
         run: node eng/containers.mjs
         env:
@@ -146,6 +152,7 @@ jobs:
         env:
           CONTAINERS: ${{ needs.check.outputs.containers }}
           DOCKER_HUB_USER: ${{ vars.DOCKER_HUB_USER }}
+          CI_BASELINE: ${{ needs.check.outputs.baseline }}
 
   deploy-api:
     name: Deploy ${{ matrix.service }}
