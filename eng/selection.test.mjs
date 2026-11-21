@@ -7,7 +7,8 @@ import { root } from './process.mjs';
 const env = { ...process.env };
 delete env.NODE_TEST_CONTEXT;
 const both = ['frontpage-association', 'frontpage-foundation'];
-const all = ['booking-api', 'contact-api', ...both];
+const all = ['auth-api', 'booking-api', 'contact-api', ...both];
+const authRoot = 'src/foundation/auth-api';
 const bookingRoot = 'src/foundation/booking-api';
 const contactRoot = 'src/shared/contact-api';
 for (const [files, expected] of [
@@ -21,7 +22,15 @@ for (const [files, expected] of [
   [[`${bookingRoot}/tests/Scpp.Foundation.Booking.Api.UnitTests/Scpp.Foundation.Booking.Api.UnitTests.csproj`], ['booking-api']],
   [[`${bookingRoot}/project.json`], ['booking-api']],
   [[`${bookingRoot}/Dockerfile`], ['booking-api']],
-  [['.dockerignore'], ['booking-api', 'contact-api']],
+  [[`${authRoot}/src/Scpp.Foundation.Auth.Api/Program.cs`], ['auth-api']],
+  [[`${authRoot}/src/Scpp.Foundation.Auth.Api/Scpp.Foundation.Auth.Api.csproj`], ['auth-api']],
+  [[`${authRoot}/src/Scpp.Foundation.Auth.Api/Sessions/CookieProtector.cs`], ['auth-api']],
+  [[`${authRoot}/src/Scpp.Foundation.Auth.Contracts/SessionResponseDto.cs`], ['auth-api']],
+  [[`${authRoot}/tests/Scpp.Foundation.Auth.Api.UnitTests/Endpoints/RootTests.cs`], ['auth-api']],
+  [[`${authRoot}/project.json`], ['auth-api']],
+  [[`${authRoot}/Dockerfile`], ['auth-api']],
+  [[`${authRoot}/Scpp.Foundation.Auth.Api.slnx`], ['auth-api']],
+  [['.dockerignore'], ['auth-api', 'booking-api', 'contact-api']],
   [[`${bookingRoot}/Scpp.Foundation.Booking.Api.slnx`], ['booking-api']],
   [[`${contactRoot}/src/Scpp.Shared.Contact.Api/Program.cs`], ['contact-api']],
   [[`${contactRoot}/src/Scpp.Shared.Contact.Api/Scpp.Shared.Contact.Api.csproj`], ['contact-api']],
@@ -34,7 +43,7 @@ for (const [files, expected] of [
   [[`${contactRoot}/project.json`], ['contact-api']],
   [[`${contactRoot}/Dockerfile`], ['contact-api']],
   [[`${contactRoot}/Scpp.Shared.Contact.slnx`], ['contact-api']],
-  [['Scpp.slnx'], ['booking-api', 'contact-api']],
+  [['Scpp.slnx'], ['auth-api', 'booking-api', 'contact-api']],
   [['eng/ci.mjs'], all],
   [['.github/workflows/ci.yml'], all],
   [['.github/workflows/terraform.yml', 'infra/production/apis.tf', 'infra/production/imports.tf', 'infra/README.md', 'infra/ci/plan-summary.py', 'infra/billing-guard/budget.tf', 'infra/billing-guard/function/main.py'], []],
@@ -44,7 +53,7 @@ for (const [files, expected] of [
   [['.editorconfig'], all],
   [['Directory.Packages.props'], all],
   [['NuGet.Config'], all],
-  [['README.md', 'src/apps/frontpage-association/README.md', 'src/apps/frontpage-foundation/README.md', `${bookingRoot}/README.md`, `${contactRoot}/README.md`], []],
+  [['README.md', 'src/apps/frontpage-association/README.md', 'src/apps/frontpage-foundation/README.md', `${authRoot}/README.md`, `${bookingRoot}/README.md`, `${contactRoot}/README.md`], []],
 ]) {
   test(`affected selection: ${files.join(', ')}`, () => {
     const result = spawnSync(process.execPath,

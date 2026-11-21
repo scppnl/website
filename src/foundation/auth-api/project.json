@@ -1,0 +1,57 @@
+{
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "name": "auth-api",
+  "projectType": "application",
+  "namedInputs": {
+    "default": [
+      "{projectRoot}/**/*",
+      "!{projectRoot}/**/*.md",
+      "!{projectRoot}/**/bin/**/*",
+      "!{projectRoot}/**/obj/**/*",
+      "!{projectRoot}/**/TestResults/**/*",
+      "{workspaceRoot}/Scpp.slnx",
+      "{workspaceRoot}/.dockerignore",
+      "sharedGlobals"
+    ]
+  },
+  "targets": {
+    "restore": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "command": "node eng/dotnet.mjs restore src/foundation/auth-api/Scpp.Foundation.Auth.Api.slnx"
+      }
+    },
+    "build": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "dependsOn": ["restore"],
+      "options": {
+        "command": "node eng/dotnet.mjs build src/foundation/auth-api/Scpp.Foundation.Auth.Api.slnx"
+      }
+    },
+    "publish": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "options": {
+        "command": "dotnet publish src/foundation/auth-api/src/Scpp.Foundation.Auth.Api/Scpp.Foundation.Auth.Api.csproj --configuration Release --runtime linux-x64 --self-contained true -p:PublishAot=true --output artifacts/publish/auth-api"
+      }
+    },
+    "docker": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "dependsOn": ["publish"],
+      "options": {
+        "command": "docker build --platform linux/amd64 --file src/foundation/auth-api/Dockerfile --tag auth-api:ci ."
+      }
+    },
+    "test": {
+      "executor": "nx:run-commands",
+      "cache": false,
+      "dependsOn": ["build"],
+      "options": {
+        "command": "node eng/dotnet.mjs test src/foundation/auth-api/Scpp.Foundation.Auth.Api.slnx"
+      }
+    }
+  }
+}

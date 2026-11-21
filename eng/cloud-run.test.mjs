@@ -11,11 +11,11 @@ const env = { GITHUB_REF: 'refs/heads/main', GITHUB_EVENT_NAME: 'push', GITHUB_S
 const ok = stdout => ({ status: 0, stdout, stderr: '' });
 
 test('only registered services and complete lowercase sha256 digests become deployment targets', () => {
-  for (const service of ['contact-api', 'booking-api']) {
+  for (const service of ['contact-api', 'booking-api', 'auth-api']) {
     const target = targetFor(service, digest);
     assert.equal(target.image, `europe-west4-docker.pkg.dev/websites-514515/dockerhub/scppnl/${service}@${digest}`);
     assert.equal(target.url, `https://${service}-979979719406.europe-west4.run.app`);
-    assert.equal(target.expected, service === 'contact-api' ? 'Contact API' : 'Booking API');
+    assert.equal(target.expected, { 'contact-api': 'Contact API', 'booking-api': 'Booking API', 'auth-api': 'Auth API' }[service]);
   }
   for (const service of ['', 'other-api', '--help', 'contact-api\n', 'contact-api;echo bad', null]) {
     assert.throws(() => targetFor(service, digest), /registered API/);
@@ -28,7 +28,7 @@ test('only registered services and complete lowercase sha256 digests become depl
 test('deployment checks existence and changes only the image, returning the ready revision', () => {
   const directory = mkdtempSync(join(tmpdir(), 'cloud-run-'));
   try {
-    for (const service of ['contact-api', 'booking-api']) {
+    for (const service of ['contact-api', 'booking-api', 'auth-api']) {
       const calls = [];
       const revision = `${service}-00004-abc`;
       const output = join(directory, service);
@@ -81,7 +81,7 @@ test('missing services, command failures and invalid revision responses fail dep
 });
 
 test('smoke checks exact identity and status at the service root with bounded retries', async () => {
-  for (const service of ['contact-api', 'booking-api']) {
+  for (const service of ['contact-api', 'booking-api', 'auth-api']) {
     const pauses = [];
     let calls = 0;
     await smoke(service, digest, {
