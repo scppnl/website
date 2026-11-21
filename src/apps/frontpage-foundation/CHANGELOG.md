@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add the lock access request form at `/toegang-aanvragen`: choose locks, a period and a
+  reason, with validation and a confirmation screen. Public, `noindex` and unlinked for now;
+  submitting is simulated until the API and sign-in exist.
 - Add the **Toegangsaanvragen** management page at `/beheer/toegangsaanvragen`: filter the access
   requests by status, search and lock, open one, and approve or reject it with a comment, one
   request or a person's whole series at once (showing the overlaps of every request in it), with

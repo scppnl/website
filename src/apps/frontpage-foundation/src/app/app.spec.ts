@@ -58,7 +58,7 @@ describe('App', () => {
   it('leaves the header and footer out of the sign-in pages', async () => {
     const harness = await RouterTestingHarness.create('/inloggen');
 
-    for (const url of ['/inloggen', '/inloggen/geen-toegang']) {
+    for (const url of ['/inloggen', '/inloggen/geen-toegang', '/toegang-aanvragen']) {
       await harness.navigateByUrl(url);
       await harness.fixture.whenStable();
       const compiled = harness.fixture.nativeElement as HTMLElement;

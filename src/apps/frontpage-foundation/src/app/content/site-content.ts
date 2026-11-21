@@ -5,6 +5,7 @@
  * with the real numbers, rates and rules before the site goes live.
  */
 
+import type { LockId } from '../lock-access/lock-access-request';
 import type { IconName } from '../shared/icon/icon';
 
 export interface PhotoSlot {
@@ -631,6 +632,67 @@ export const bookingPage = {
     { value: 'business', label: 'Bedrijf' },
     { value: 'other', label: 'Anders' },
   ] as const,
+};
+
+export const lockAccessPage = {
+  eyebrow: 'Sloten',
+  title: 'Toegang aanvragen',
+  lead: 'Kies de sloten en de periode waarin je erin moet, en vertel kort waarvoor. Het bestuur van de stichting beoordeelt je aanvraag en laat je het besluit per e-mail weten.',
+  locks: [
+    { id: 'voordeur-grote-gebouw', name: 'Voordeur grote gebouw', place: 'Grote gebouw' },
+    { id: 'voordeur-kleine-gebouw', name: 'Voordeur kleine gebouw', place: 'Kleine gebouw' },
+    {
+      id: 'magazijn-binnendeur',
+      name: 'Magazijn binnendeur',
+      place: 'Magazijn, vanuit het gebouw',
+    },
+    { id: 'magazijn-buitendeur', name: 'Magazijn buitendeur', place: 'Magazijn, vanaf buiten' },
+  ] as readonly { readonly id: LockId; readonly name: string; readonly place: string }[],
+  locksHint: 'Kies alle sloten die je nodig hebt. Je kunt er meerdere kiezen.',
+  selectAll: 'Alle sloten kiezen',
+  selectNone: 'Alles deselecteren',
+  periodTitle: 'Periode',
+  periodHint: 'Alle tijden zijn Nederlandse tijd.',
+  reasonLabel: 'Waarvoor heb je toegang nodig?',
+  reasonHint:
+    'Bijvoorbeeld de opkomst, de klus of het materiaal dat je ophaalt. Het bestuur leest dit bij het beoordelen.',
+  reasonMinLength: 10,
+  reasonMaxLength: 500,
+  errors: {
+    locks: 'Kies minstens één slot.',
+    startMissing: 'Vul een startdatum en starttijd in.',
+    startPast: 'De starttijd ligt in het verleden.',
+    endMissing: 'Vul een einddatum en eindtijd in.',
+    endBeforeStart: 'De eindtijd moet na de starttijd liggen.',
+    reason: 'Vertel kort waarvoor je toegang nodig hebt.',
+    submit: 'Het versturen is niet gelukt. Probeer het later opnieuw.',
+  },
+  sent: {
+    title: 'Aanvraag verstuurd',
+    text: 'Het bestuur bekijkt hem zo snel mogelijk.',
+    status: 'Openstaand',
+    again: 'Nog een aanvraag indienen',
+    sameLocks: 'Zelfde sloten, andere periode',
+  },
+  how: {
+    title: 'Zo werkt het',
+    steps: [
+      {
+        title: 'Je dient de aanvraag in',
+        text: 'Eén aanvraag per periode. Meerdere dagen? Dien gerust een paar aanvragen achter elkaar in.',
+      },
+      {
+        title: 'Het bestuur beoordeelt hem',
+        text: 'Het bestuur van de stichting keurt de aanvraag goed of wijst hem af, soms met een toelichting.',
+      },
+      {
+        title: 'Je krijgt een e-mail',
+        text: 'Na goedkeuring geldt je toegang alleen voor de gekozen sloten en periode.',
+      },
+    ],
+    tipTitle: 'Vraag op tijd aan.',
+    tip: 'Kies een starttijd ruim om je komst heen, zodat je niet voor een dichte deur staat.',
+  },
 };
 
 export const contactPage = {

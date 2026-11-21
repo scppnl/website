@@ -1,6 +1,8 @@
 import { Routes } from '@angular/router';
 import { AdminLayout } from './layout/admin-layout/admin-layout';
 import { SiteLayout } from './layout/site-layout/site-layout';
+import { LockAccessRequestService } from './lock-access/lock-access-request.service';
+import { SimulatedLockAccessRequestService } from './lock-access/simulated-lock-access-request.service';
 
 export const routes: Routes = [
   {
@@ -18,6 +20,17 @@ export const routes: Routes = [
     title: 'Geen toegang',
     data: { robots: 'noindex' },
     loadComponent: () => import('./pages/login-denied/login-denied').then((m) => m.LoginDenied),
+  },
+  {
+    path: 'toegang-aanvragen',
+    title: 'Toegang aanvragen',
+    data: {
+      description: 'Vraag het bestuur van de stichting toegang tot de sloten van het clubhuis.',
+      robots: 'noindex',
+    },
+    // Until the API exists, requests are only simulated. Swap this provider for the HTTP service.
+    providers: [{ provide: LockAccessRequestService, useClass: SimulatedLockAccessRequestService }],
+    loadComponent: () => import('./pages/lock-access/lock-access').then((m) => m.LockAccess),
   },
   {
     path: 'beheer',
