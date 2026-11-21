@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { test } from 'node:test';
 import { root } from './process.mjs';
+import { affectsImages, changedFiles } from './select-projects.mjs';
 
 // Exercise real Nx selection in ordinary CLI children, outside Node's test protocol.
 const env = { ...process.env };
@@ -71,4 +72,57 @@ test('documentation-only CI succeeds without installing or running apps', () => 
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /No affected projects/);
   assert.doesNotMatch(result.stdout, /Installing locked dependencies|nx run/);
+});
+
+const apis = ['auth-api', 'booking-api', 'contact-api'];
+// Images are only republished for changes that can alter their contents. CI-only
+// changes still build and test every project (see the table above) but never select an image.
+for (const [files, expected] of [
+  [['eng/ci.mjs'], []],
+  [['eng/publish-containers.mjs', '.github/workflows/ci.yml'], []],
+  [['.github/actions/setup/action.yml'], []],
+  [['package.json'], []],
+  [['package-lock.json'], []],
+  [['nx.json'], []],
+  [['.nvmrc'], []],
+  [['.npmrc'], []],
+  [['README.md', 'infra/production/apis.tf'], []],
+  [['.dockerignore'], apis],
+  [['global.json'], apis],
+  [['Directory.Build.props'], apis],
+  [['Directory.Packages.props'], apis],
+  [['NuGet.Config'], apis],
+  [['.editorconfig'], apis],
+  [['Scpp.slnx'], apis],
+  [[`${bookingRoot}/Dockerfile`], ['booking-api']],
+  [['eng/frontend.mjs', `${contactRoot}/src/Scpp.Shared.Contact.Api/Program.cs`], ['contact-api']],
+  [['.github/workflows/ci.yml', `${authRoot}/project.json`, `${bookingRoot}/project.json`], ['auth-api', 'booking-api']],
+  [['src/apps/frontpage-foundation/src/app/app.ts'], []],
+]) {
+  test(`affected images: ${files.join(', ')}`, () => {
+    const result = spawnSync(process.execPath,
+      ['eng/select-projects.mjs', ...files.map((file) => `--files=${file}`)],
+      { cwd: root, env, encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(JSON.parse(result.stdout).imageProjects.filter((name) => apis.includes(name)), expected);
+  });
+}
+
+test('only CI orchestration paths are exempt from image selection', () => {
+  for (const file of ['eng/ci.mjs', 'eng/nested/tool.mjs', '.github/workflows/ci.yml', '.github/actions/x/action.yml',
+    'package.json', 'package-lock.json', 'nx.json', '.nvmrc', '.npmrc']) assert.equal(affectsImages(file), false, file);
+  for (const file of ['global.json', '.editorconfig', '.dockerignore', 'Scpp.slnx', 'Directory.Build.props',
+    'engine/other.cs', '.githubx/file', 'src/apps/frontpage-foundation/package.json', 'src/apps/frontpage-foundation/package-lock.json',
+    `${bookingRoot}/Dockerfile`]) assert.equal(affectsImages(file), true, file);
+});
+
+test('changed files come from a NUL-delimited diff that lists both sides of renames', () => {
+  const calls = [];
+  const files = changedFiles({ base: 'a'.repeat(40), head: 'b'.repeat(40) }, (command, args) => {
+    calls.push([command, ...args]);
+    return 'old name.cs\0new/name.cs\0';
+  });
+  assert.deepEqual(files, ['old name.cs', 'new/name.cs']);
+  assert.deepEqual(calls, [['git', 'diff', '--name-only', '--no-renames', '-z', 'a'.repeat(40), 'b'.repeat(40)]]);
+  assert.deepEqual(changedFiles({ files: ['x'] }, () => assert.fail('explicit files need no diff')), ['x']);
 });
