@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { siteKey, testSiteKey, bookingApiUrl, contactApiUrl } from './frontend.mjs';
+import { siteKey, testSiteKey, bookingApiUrl, contactApiUrl, authApiUrl } from './frontend.mjs';
 
 test('booking API activation defaults off and accepts only an HTTPS origin', () => {
   assert.equal(bookingApiUrl({}), '');
@@ -35,4 +35,11 @@ test('contact API activation uses a public HTTPS origin for both forms', () => {
     'https://contact-api-979979719406.europe-west4.run.app');
   for (const value of ['http://example.org', 'https://example.org/contact', 'https://user:password@example.org', 'https://example.org?x=1', 'https://example.org#contact'])
     assert.throws(() => contactApiUrl({ CONTACT_API_BASE_URL: value }), /CONTACT_API_BASE_URL must be an HTTPS origin/);
+});
+
+test('auth API activation defaults off and accepts only an HTTPS origin', () => {
+  assert.equal(authApiUrl({}), '');
+  assert.equal(authApiUrl({ AUTH_API_BASE_URL: ' https://auth.example.org/ ' }), 'https://auth.example.org');
+  for (const value of ['auth.example.org', 'http://example.org', 'https://example.org/auth', 'https://user:password@example.org', 'https://example.org?x=1'])
+    assert.throws(() => authApiUrl({ AUTH_API_BASE_URL: value }), /AUTH_API_BASE_URL must be an HTTPS origin/);
 });

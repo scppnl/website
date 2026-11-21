@@ -34,6 +34,9 @@
         },
         {
           "env": "CONTACT_API_BASE_URL"
+        },
+        {
+          "env": "AUTH_API_BASE_URL"
         }
       ]
     },

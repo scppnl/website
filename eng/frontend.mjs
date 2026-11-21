@@ -8,6 +8,9 @@ export function bookingApiUrl(env = process.env) {
 export function contactApiUrl(env = process.env) {
   return apiUrl(env, 'CONTACT_API_BASE_URL');
 }
+export function authApiUrl(env = process.env) {
+  return apiUrl(env, 'AUTH_API_BASE_URL');
+}
 function apiUrl(env, name) {
   const value = (env[name] ?? '').trim().replace(/\/+$/, '');
   if (!value) return '';
@@ -35,6 +38,7 @@ if (isMain(import.meta.url)) main(() => {
   run(process.execPath, [resolve(cwd, 'node_modules/@angular/cli/bin/ng.js'), command,
     `--define=__TURNSTILE_SITE_KEY__=${JSON.stringify(siteKey())}`,
     `--define=__CONTACT_API_BASE_URL__=${JSON.stringify(contactApiUrl())}`,
+    `--define=__AUTH_API_BASE_URL__=${JSON.stringify(authApiUrl())}`,
     ...(booking ? [
       `--define=__BOOKING_TURNSTILE_SITE_KEY__=${JSON.stringify(siteKey(process.env, 'BOOKING_TURNSTILE_SITE_KEY'))}`,
       `--define=__BOOKING_API_BASE_URL__=${JSON.stringify(bookingApiUrl())}`,

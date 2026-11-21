@@ -20,5 +20,8 @@
       </ul>
     </nav>
   </div>
-  <p class="footer__copy container">© {{ year() }} {{ foundation.name }}</p>
+  <div class="footer__copy container">
+    <p>© {{ year() }} {{ foundation.name }}</p>
+    <a class="footer__login" routerLink="/inloggen">Inloggen</a>
+  </div>
 </footer>

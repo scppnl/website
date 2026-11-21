@@ -28,4 +28,12 @@ describe('Footer', () => {
 
     expect(links).toEqual([...navItems.map((item) => item.path), '/reserveren']);
   });
+
+  it('links to the sign-in page outside the menu', async () => {
+    const element = await render();
+    const link = element.querySelector('a[href="/inloggen"]');
+
+    expect(link?.textContent?.trim()).toBe('Inloggen');
+    expect(link?.closest('nav')).toBeNull();
+  });
 });

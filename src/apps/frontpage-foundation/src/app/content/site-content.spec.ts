@@ -10,9 +10,16 @@ import {
   home,
   bookingPage,
   ratesPage,
+  foundation,
+  workspaceDomainsText,
 } from './site-content';
 
 describe('site content', () => {
+  it('names both Workspace domains for sign-in copy', () => {
+    expect(foundation.workspaceDomains).toEqual(['scpp.nl', 'blokhutdewildert.nl']);
+    expect(workspaceDomainsText).toBe('@scpp.nl of @blokhutdewildert.nl');
+  });
+
   it('formats euros with and without cents', () => {
     expect(formatEuro(75)).toBe('€ 75');
     expect(formatEuro(75, true)).toBe('€ 75,00');

@@ -9,7 +9,7 @@ const sites = {
   },
   'scpp-foundation': {
     directory: 'dist/frontpage-foundation/browser',
-    routes: ['', 'gebouw', 'ligging', 'tarieven', 'reserveren', 'contact'],
+    routes: ['', 'gebouw', 'ligging', 'tarieven', 'reserveren', 'contact', 'inloggen', 'inloggen/geen-toegang'],
   },
 };
 
