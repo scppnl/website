@@ -194,7 +194,7 @@ successful `main` push deploys both sites with passing smoke checks.
 After each selected image is pushed and its manifest verified, CI exposes its
 service name and digest to an independent API deployment matrix. Only `main`
 pushes and manual runs deploy; PRs and other branches only validate. Full manual runs
-select both APIs and need unused versions for both; **sites_only** runs skip APIs.
+select all three APIs and need unused versions for each; **sites_only** runs skip APIs.
 No API selection means no
 API deployment. Main runs remain serialized.
 
@@ -202,6 +202,7 @@ API deployment. Main runs remain serialized.
 | --- | --- | --- | --- |
 | `contact-api` | https://contact-api-979979719406.europe-west4.run.app | `Contact API` | `POST /contact` |
 | `booking-api` | https://booking-api-979979719406.europe-west4.run.app | `Booking API` | `POST /bookings` |
+| `auth-api` | https://auth-api-979979719406.europe-west4.run.app | `Auth API` | `GET /auth/google` |
 
 Cloud Run uses the exact verified manifest digest through the Artifact Registry
 Docker Hub mirror:
@@ -214,6 +215,8 @@ are already managed in Google Cloud and carry over to new revisions.
 
 `contact-turnstile-secret-key:latest` supplies `CONTACT_TURNSTILE_SECRET_KEY`;
 `booking-turnstile-secret-key:latest` supplies `BOOKING_TURNSTILE_SECRET_KEY`.
+`auth-google-client-secret:latest` supplies `AUTH_GOOGLE_CLIENT_SECRET` and
+`auth-session-keys:latest` supplies `AUTH_SESSION_KEYS` for the auth API, once its service exists.
 CI does not read these values or pass them to deployment or image builds.
 Frontend hosting and API base URL settings are separate from this deployment.
 
@@ -314,6 +317,19 @@ ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/foundation/booking-a
 curl http://localhost:5080/
 ```
 
+The foundation auth API follows the booking layout in `src/foundation/auth-api/`, with
+component solution `Scpp.Foundation.Auth.Api.slnx`: the host `Scpp.Foundation.Auth.Api`
+(Native AOT), the DTO library `Scpp.Foundation.Auth.Contracts` and the MSTest project
+`Scpp.Foundation.Auth.Api.UnitTests`, all also in `Scpp.slnx` and in the `auth-api` Nx
+project. `GET /` returns `Auth API`; `GET /auth/google` starts the Google Workspace
+sign-in. See the [auth API guide](src/foundation/auth-api/README.md) for the flow, secrets,
+Google client setup, rotation and rollout. Run it locally on port 5082, the port the
+foundation frontend's development setting expects:
+
+```sh
+ASPNETCORE_ENVIRONMENT=Development dotnet run --project src/foundation/auth-api/src/Scpp.Foundation.Auth.Api -- --urls http://localhost:5082
+```
+
 ### Foundation sign-in
 
 The foundation site has a Google Workspace sign-in page at `/inloggen` and a "no access"
@@ -322,9 +338,11 @@ from the footer, and the sign-in button is a link to `{AUTH_API_BASE_URL}/auth/g
 (`?prompt=select_account` for "Ander account kiezen"). There are no local accounts.
 Set repository Actions variable `AUTH_API_BASE_URL` to the auth API origin (HTTPS, no path)
 once that API exists. Its default is empty: the button is disabled with an unavailable
-notice. Local development uses `http://localhost:5082`. The auth API must verify the Google
-account's Workspace domain (`scpp.nl` or `blokhutdewildert.nl`) itself, since Google's `hd`
-hint accepts one domain, and redirect other accounts to `/inloggen/geen-toegang`.
+notice. Local development uses `http://localhost:5082`. The [auth API](src/foundation/auth-api/README.md)
+verifies the Google account's Workspace domain (`scpp.nl` or `blokhutdewildert.nl`) itself,
+since Google's `hd` hint accepts one domain, and redirects other accounts to
+`/inloggen/geen-toegang`. Set the variable only after the API is deployed and verified,
+following the auth guide's rollout steps, then run CI with `sites_only=true`.
 
 ### Booking requests
 
@@ -377,7 +395,7 @@ The API also requires `BookingEmail__From`, `BookingEmail__To`, and the Secret
 Manager-backed `BOOKING_GMAIL_OAUTH_JSON`. See the [booking Gmail rollout guide](src/foundation/booking-api/README.md#gmail-configuration-and-rollout)
 for mailbox consent, secret bootstrap, form activation and recovery. Image-only CI
 deployment does not configure these values.
-Both APIs route Microsoft `ILogger<T>` events through Serilog to readable console
+All three APIs route Microsoft `ILogger<T>` events through Serilog to readable console
 output. The default minimum level is Information, with Microsoft.AspNetCore and
 System at Warning. Each event includes its timestamp, level, logger category,
 message, remaining structured properties, and exception when present. Application
@@ -397,19 +415,19 @@ Serilog 4.4 disables reflection-based object destructuring in trimmed/native
 builds. Use named scalar properties and collections in message templates rather
 than relying on `{@Object}` to reflect over arbitrary objects.
 
-CI registers the components as Nx projects `booking-api` and `contact-api`. An affected
+CI registers the components as Nx projects `auth-api`, `booking-api` and `contact-api`. An affected
 run restores, builds Release, and runs MSTest without rebuilding or restoring.
 The separate Docker job publishes Native AOT executables and builds images for
 affected projects with a `docker` target, after the check job passes. It runs on
 Ubuntu 24.04 with `clang` and `zlib1g-dev`, targets Linux amd64, and checks out the
 same commit as the check job. On pushes to `main`, CI pushes affected images to
-Docker Hub after building them. Full manual runs on `main` publish both APIs; PRs and
+Docker Hub after building them. Full manual runs on `main` publish all three APIs; PRs and
 manual runs on other branches only build. A Docker build or publication failure
 fails the workflow and keeps those changes in the next main run's affected selection. Manual runs build
 all registered images unless **sites_only** is enabled; Markdown-only and frontend-only changes build none.
-Both APIs have `publish` and `docker` targets and participate in these image builds.
+All three APIs have `publish` and `docker` targets and participate in these image builds.
 API sources, tests, project configuration, and component solutions affect only
-their own API; the root solution affects both APIs.
+their own API; the root solution affects all three APIs.
 Frontend-only changes select only the corresponding frontend. Shared SDK,
 build/package configuration, and CI tooling changes affect every project.
 Markdown-only changes select no projects.
@@ -476,7 +494,7 @@ npm run nx -- run contact-api:publish
 docker build --platform linux/amd64 -f src/shared/contact-api/Dockerfile -t contact-api:ci .
 ```
 
-Each Dockerfile only packages its API's published files. Both use the .NET 10 Ubuntu
+Each Dockerfile only packages its API's published files. All use the .NET 10 Ubuntu
 Noble chiseled runtime-dependencies image with globalization support, run the
 native executable as the image's non-root user, and listen on port 8080. The
 root `.dockerignore` permits publish artifacts while excluding debug symbols
@@ -487,19 +505,22 @@ depending on its own uncached `publish` target. Use a dedicated publish director
 Dockerfile and image tag, and include `.dockerignore` in that project's inputs.
 CI discovers Docker targets from the checked affected projects and exports them
 as the check job's `containers` output. Image builds need no API allowlist or
-hosting credentials. Docker Hub publication explicitly registers the two APIs in
+hosting credentials. Docker Hub publication explicitly registers the APIs in
 `eng/publish-containers.mjs`; register new publication targets there as well.
 
 ### Publish API images to Docker Hub
 
 In repository **Settings → Secrets and variables → Actions**, configure repository
 variable `DOCKER_HUB_USER` as `scppnl` and repository secret `DOCKER_HUB_KEY` as a
-Docker Hub token with read/write access to both `scppnl/booking-api` and
-`scppnl/contact-api`. Only eligible main runs log in; the key is supplied only to
+Docker Hub token with read/write access to `scppnl/auth-api`, `scppnl/booking-api` and
+`scppnl/contact-api`. A new image such as `scppnl/auth-api` must be allowed before its first
+push: create the public repository under the `scppnl` organization (Cloud Run pulls it
+through the Artifact Registry cache, which only reads public images) or confirm the token
+may create it. Only eligible main runs log in; the key is supplied only to
 the login action, which logs out at job completion.
 
 CI uses each API project's evaluated Release `Version` as its exact image tag:
-`scppnl/booking-api:<Version>` and `scppnl/contact-api:<Version>`. The versions
+`scppnl/auth-api:<Version>`, `scppnl/booking-api:<Version>` and `scppnl/contact-api:<Version>`. The versions
 are independent. There is no `latest`, `v` prefix, or commit tag.
 Versions must be valid Docker tags; for example, `1.2.3-rc.1` is supported but
 SemVer build metadata containing `+` is not. Local builds still use `<api>:ci`.
@@ -513,9 +534,9 @@ reference, manifest digest, and source commit in the run summary.
 
 Bump the version of each selected API whenever its tag has already been
 published. This applies to manual runs, reruns, API test changes, and shared
-tooling/workflow changes that select both APIs. A manual **CI → Run workflow →
-main** run publishes both APIs unless **sites_only** is enabled. Use that option
-for frontend configuration changes; full runs need unused versions for both APIs.
+tooling/workflow changes that select all APIs. A manual **CI → Run workflow →
+main** run publishes all three APIs unless **sites_only** is enabled. Use that option
+for frontend configuration changes; full runs need unused versions for every API.
 
 Main runs are serialized, and CI refuses to overwrite existing tags. Publication
 across repositories is not atomic: if one image is pushed before another fails,
@@ -530,7 +551,7 @@ Each verified image is exported as a service/digest job output for the
 
 ### API hosting infrastructure
 
-The Google Cloud Run hosting of both APIs (services, runtime accounts, Turnstile secret
+The Google Cloud Run hosting of the APIs (services, runtime accounts, Turnstile and auth secret
 containers, the Docker Hub image cache and the keyless GitHub login) is described as
 Terraform in [`infra/`](infra/README.md). Pull requests run offline checks and a read-only
 production plan for hosting changes (forks and billing-only changes run offline checks

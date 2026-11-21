@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Scpp.Foundation.Auth.Api/Scpp.Foundation.Auth.Api.csproj" />
+    <Project Path="src/Scpp.Foundation.Auth.Contracts/Scpp.Foundation.Auth.Contracts.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Scpp.Foundation.Auth.Api.UnitTests/Scpp.Foundation.Auth.Api.UnitTests.csproj" />
+  </Folder>
+</Solution>

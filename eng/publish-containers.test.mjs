@@ -24,6 +24,7 @@ function fixture(override = () => undefined) {
       assert.equal(args[0], 'msbuild');
       assert.ok(args.includes('-property:Configuration=Release'));
       assert.ok(args.includes('-getProperty:Version'));
+      if (args[1].includes('Auth.Api.csproj')) return ok('0.0.1');
       return ok(args[1].includes('Booking.Api.csproj') ? '1.2.3' : '2.3.4-rc.1');
     }
     assert.equal(command, 'docker');
@@ -86,11 +87,22 @@ test('publishes independent csproj versions from built images after checking the
   assert.ok(!calls.some(call => call.includes('build') || call.includes('latest')));
 });
 
-test('an existing tag for either API blocks every push and requests a version bump', () => {
-  for (const project of ['booking-api', 'contact-api']) {
+test('the auth API is registered and published under its own csproj version', () => {
+  const { exec, calls } = fixture();
+  assert.deepEqual(publishContainers({ ...env, CONTAINERS: '["auth-api"]' }, exec), [
+    { reference: 'scppnl/auth-api:0.0.1', digest: manifestDigest },
+  ]);
+  assert.ok(calls.some(call => call[0] === 'dotnet'
+    && call[2] === 'src/foundation/auth-api/src/Scpp.Foundation.Auth.Api/Scpp.Foundation.Auth.Api.csproj'));
+  assert.deepEqual(calls.filter(call => call[1] === 'tag'), [['docker', 'tag', 'auth-api:ci', 'scppnl/auth-api:0.0.1']]);
+});
+
+test('an existing tag for any API blocks every push and requests a version bump', () => {
+  for (const project of ['auth-api', 'booking-api', 'contact-api']) {
     const { exec, calls } = fixture((command, args) => command === 'docker'
       && args[0] === 'manifest' && args.at(-1).includes(project) ? ok('{}') : undefined);
-    assert.throws(() => publishContainers(env, exec), /already exists.*Bump/);
+    assert.throws(() => publishContainers({ ...env, CONTAINERS: '["auth-api","booking-api","contact-api"]' }, exec),
+      /already exists.*Bump/);
     assert.ok(!calls.some(call => ['tag', 'push'].includes(call[1])));
   }
 });

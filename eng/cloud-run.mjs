@@ -8,11 +8,12 @@ import { isMain, main, root, taskEnv } from './process.mjs';
 const services = new Map([
   ['contact-api', 'Contact API'],
   ['booking-api', 'Booking API'],
+  ['auth-api', 'Auth API'],
 ]);
 const location = ['--region=europe-west4', '--project=websites-514515'];
 
 export function targetFor(service, digest) {
-  if (!services.has(service)) throw new Error('Expected a registered API: contact-api, booking-api');
+  if (!services.has(service)) throw new Error('Expected a registered API: contact-api, booking-api, auth-api');
   if (typeof digest !== 'string' || digest.length !== 71 || !/^sha256:[a-f0-9]{64}$/.test(digest)) {
     throw new Error('Expected a verified sha256 image digest');
   }

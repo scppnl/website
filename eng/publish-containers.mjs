@@ -3,6 +3,7 @@ import { appendFileSync } from 'node:fs';
 import { isMain, main, root, taskEnv } from './process.mjs';
 
 const projects = new Map([
+  ['auth-api', 'src/foundation/auth-api/src/Scpp.Foundation.Auth.Api/Scpp.Foundation.Auth.Api.csproj'],
   ['booking-api', 'src/foundation/booking-api/src/Scpp.Foundation.Booking.Api/Scpp.Foundation.Booking.Api.csproj'],
   ['contact-api', 'src/shared/contact-api/src/Scpp.Shared.Contact.Api/Scpp.Shared.Contact.Api.csproj'],
 ]);
@@ -58,7 +59,7 @@ function publish(env, exec, deployments) {
   if (!canPublish(env)) throw new Error('API images may only be published by push or workflow_dispatch on main');
   const selected = JSON.parse(env.CONTAINERS ?? 'null');
   if (!Array.isArray(selected) || selected.some(name => typeof name !== 'string' || !projects.has(name))) {
-    throw new Error('Expected CONTAINERS to contain only registered APIs: booking-api, contact-api');
+    throw new Error('Expected CONTAINERS to contain only registered APIs: auth-api, booking-api, contact-api');
   }
   if (!selected.length) return [];
   if (env.DOCKER_HUB_USER !== 'scppnl') throw new Error('Set repository variable DOCKER_HUB_USER to scppnl');
