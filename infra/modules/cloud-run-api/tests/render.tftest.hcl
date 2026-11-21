@@ -188,3 +188,93 @@ run "rejects_localhost_hostnames" {
 
   expect_failures = [var.turnstile_allowed_hostnames]
 }
+
+run "auth_api_without_turnstile" {
+  command = plan
+
+  variables {
+    name                        = "auth-api"
+    image                       = "us-docker.pkg.dev/cloudrun/container/hello"
+    secret_id                   = null
+    secret_env_var              = null
+    cors_allowed_origins        = ["https://blokhutdewildert.nl"]
+    turnstile_allowed_hostnames = []
+    additional_env = {
+      Auth__Google__ClientId = "test-client.apps.googleusercontent.com"
+      Auth__ApiOrigin        = "https://auth.blokhutdewildert.nl"
+    }
+    additional_secrets = {
+      AUTH_GOOGLE_CLIENT_SECRET = "auth-google-client-secret"
+      AUTH_SESSION_KEYS         = "auth-session-keys"
+    }
+  }
+
+  assert {
+    condition = toset([for e in google_cloud_run_v2_service.this.template[0].containers[0].env : e.name]) == toset([
+      "AUTH_GOOGLE_CLIENT_SECRET",
+      "AUTH_SESSION_KEYS",
+      "Auth__Google__ClientId",
+      "Auth__ApiOrigin",
+      "Cors__AllowedOrigins__0",
+    ])
+    error_message = "An API without Turnstile renders no Turnstile secret or hostname variables."
+  }
+
+  assert {
+    condition     = length(google_secret_manager_secret.turnstile) == 0 && length(google_secret_manager_secret_iam_member.runtime_reads) == 0
+    error_message = "No Turnstile secret container or grant may be created."
+  }
+
+  assert {
+    condition = alltrue([
+      for key, member in google_secret_manager_secret_iam_member.additional_runtime_reads :
+      member.role == "roles/secretmanager.secretAccessor"
+    ]) && length(google_secret_manager_secret_iam_member.additional_runtime_reads) == 2
+    error_message = "The runtime reads exactly the two auth secrets."
+  }
+
+  assert {
+    condition = one([
+      for e in google_cloud_run_v2_service.this.template[0].containers[0].env : e.value_source[0].secret_key_ref[0].secret
+      if e.name == "AUTH_SESSION_KEYS"
+    ]) == "auth-session-keys"
+    error_message = "The session key ring must be a Secret Manager reference."
+  }
+
+  assert {
+    condition     = output.secret_id == null
+    error_message = "There is no Turnstile secret to report."
+  }
+}
+
+run "rejects_turnstile_secret_without_hostnames" {
+  command = plan
+
+  variables {
+    turnstile_allowed_hostnames = []
+  }
+
+  expect_failures = [var.turnstile_allowed_hostnames]
+}
+
+run "rejects_hostnames_without_turnstile_secret" {
+  command = plan
+
+  variables {
+    secret_id                   = null
+    secret_env_var              = null
+    turnstile_allowed_hostnames = ["blokhutdewildert.nl"]
+  }
+
+  expect_failures = [var.turnstile_allowed_hostnames]
+}
+
+run "rejects_secret_without_environment_variable" {
+  command = plan
+
+  variables {
+    secret_env_var = null
+  }
+
+  expect_failures = [var.secret_env_var]
+}

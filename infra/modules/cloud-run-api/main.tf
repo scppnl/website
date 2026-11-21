@@ -19,8 +19,25 @@ resource "google_service_account" "runtime" {
 }
 
 # --- Turnstile secret (container and access only; the value is added by hand) --
+# Optional: an API without a Turnstile widget (the auth API) leaves secret_id null.
+
+locals {
+  turnstile_enabled = var.secret_id != null
+}
+
+moved {
+  from = google_secret_manager_secret.turnstile
+  to   = google_secret_manager_secret.turnstile[0]
+}
+
+moved {
+  from = google_secret_manager_secret_iam_member.runtime_reads
+  to   = google_secret_manager_secret_iam_member.runtime_reads[0]
+}
 
 resource "google_secret_manager_secret" "turnstile" {
+  count = local.turnstile_enabled ? 1 : 0
+
   project   = var.project_id
   secret_id = var.secret_id
 
@@ -38,8 +55,10 @@ resource "google_secret_manager_secret" "turnstile" {
 }
 
 resource "google_secret_manager_secret_iam_member" "runtime_reads" {
+  count = local.turnstile_enabled ? 1 : 0
+
   project   = var.project_id
-  secret_id = google_secret_manager_secret.turnstile.secret_id
+  secret_id = google_secret_manager_secret.turnstile[0].secret_id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.runtime.email}"
 }
@@ -77,13 +96,17 @@ resource "google_cloud_run_v2_service" "this" {
         container_port = 8080
       }
 
-      env {
-        name = var.secret_env_var
+      dynamic "env" {
+        for_each = local.turnstile_enabled ? [var.secret_env_var] : []
 
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.turnstile.secret_id
-            version = "latest"
+        content {
+          name = env.value
+
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.turnstile[0].secret_id
+              version = "latest"
+            }
           }
         }
       }

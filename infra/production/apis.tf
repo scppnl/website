@@ -2,6 +2,9 @@ locals {
   # One entry per API. To host another API, add an entry (and an import block
   # only if it already exists in Google Cloud).
   #
+  # An API without a Turnstile widget (the auth API) omits secret_id, secret_env_var
+  # and turnstile_allowed_hostnames.
+  #
   # `image` is used only when a service is first created. CI deploys every later
   # image and Terraform ignores it (see modules/cloud-run-api).
   apis = {
@@ -61,10 +64,10 @@ module "apis" {
   region                         = local.region
   name                           = each.key
   image                          = each.value.image
-  secret_id                      = each.value.secret_id
-  secret_env_var                 = each.value.secret_env_var
+  secret_id                      = try(each.value.secret_id, null)
+  secret_env_var                 = try(each.value.secret_env_var, null)
   cors_allowed_origins           = each.value.cors_allowed_origins
-  turnstile_allowed_hostnames    = each.value.turnstile_allowed_hostnames
+  turnstile_allowed_hostnames    = try(each.value.turnstile_allowed_hostnames, [])
   deployer_service_account_email = module.github_deployer.service_account_email
   additional_env                 = try(each.value.additional_env, {})
   additional_secrets             = try(each.value.additional_secrets, {})

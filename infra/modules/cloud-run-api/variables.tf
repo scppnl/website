@@ -36,13 +36,20 @@ variable "image" {
 }
 
 variable "secret_id" {
-  description = "Secret Manager secret that holds the Turnstile secret key. The value is added by hand and is never managed by Terraform."
+  description = "Secret Manager secret that holds the Turnstile secret key. The value is added by hand and is never managed by Terraform. Null for an API without Turnstile."
   type        = string
+  default     = null
 }
 
 variable "secret_env_var" {
-  description = "Environment variable the API reads the Turnstile secret key from."
+  description = "Environment variable the API reads the Turnstile secret key from. Null exactly when secret_id is null."
   type        = string
+  default     = null
+
+  validation {
+    condition     = (var.secret_env_var == null) == (var.secret_id == null)
+    error_message = "secret_env_var must be set exactly when secret_id is set."
+  }
 }
 
 variable "cors_allowed_origins" {
@@ -56,12 +63,13 @@ variable "cors_allowed_origins" {
 }
 
 variable "turnstile_allowed_hostnames" {
-  description = "Hostnames the Turnstile widget may be served from. Rendered as Turnstile__AllowedHostnames__N."
+  description = "Hostnames the Turnstile widget may be served from. Rendered as Turnstile__AllowedHostnames__N. Empty exactly when secret_id is null."
   type        = list(string)
+  default     = []
 
   validation {
-    condition     = length(var.turnstile_allowed_hostnames) > 0 && alltrue([for h in var.turnstile_allowed_hostnames : !strcontains(h, "*") && h != "localhost"])
-    error_message = "turnstile_allowed_hostnames must be a non-empty list of exact production hostnames (no wildcards, no localhost)."
+    condition     = (length(var.turnstile_allowed_hostnames) > 0) == (var.secret_id != null) && alltrue([for h in var.turnstile_allowed_hostnames : !strcontains(h, "*") && h != "localhost"])
+    error_message = "turnstile_allowed_hostnames must be a non-empty list of exact production hostnames (no wildcards, no localhost) when secret_id is set, and empty otherwise."
   }
 }
 

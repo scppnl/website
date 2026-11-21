@@ -1,6 +1,6 @@
 # Infrastructure (Terraform)
 
-Terraform for the Google Cloud hosting of the contact and booking APIs: Cloud Run
+Terraform for the Google Cloud hosting of the contact, booking and auth APIs: Cloud Run
 services, their runtime accounts and secrets, the Docker Hub image cache, and the
 keyless GitHub Actions login. Frontends stay on Cloudflare and are not described
 here. GitHub Actions checks and plans pull requests, then applies changes on `main`
@@ -29,6 +29,7 @@ infra/
     ├── registry.tf        Docker Hub pull-through cache
     ├── github.tf          module "github_deployer"
     ├── apis.tf            the list of APIs (local.apis) and module "apis"
+    ├── auth.tf            secret containers for the auth API's Google client secret and session keys
     ├── outputs.tf         API URLs and the two GitHub variable values
     └── locals.tf          project, region, repository IDs
 ```
@@ -36,7 +37,7 @@ infra/
 A second environment would be a sibling folder of `production/` that reuses the same
 modules. `infra/.gitignore` and `infra/.editorconfig` live here on purpose: the root
 versions of those files are inputs of every Nx project, so changing them would select
-both APIs for a rebuild and republish.
+every API for a rebuild and republish.
 
 `billing-guard/` is deliberately not part of `production/`. `production/` is
 applied by CI; the budget guard needs rights on the billing account, which the CI
@@ -194,6 +195,22 @@ The follow-up plan should report no changes. Check that both APIs still answer a
 `https://contact-api-979979719406.europe-west4.run.app/` (`Contact API`) and
 `https://booking-api-979979719406.europe-west4.run.app/` (`Booking API`).
 
+## Auth API secrets
+
+`auth.tf` owns the `auth-google-client-secret` and `auth-session-keys` secret containers
+(europe-west4, `prevent_destroy`), like the Gmail secrets above. Values are uploaded by an
+operator (see `src/foundation/auth-api/README.md`) and never enter Terraform state. The
+`auth-api` service is added to `local.apis` only after those secrets hold enabled versions
+and the Google OAuth client ID is known; the guide has the exact entry. The auth API has no
+Turnstile widget, so its entry leaves out `secret_id`, `secret_env_var` and
+`turnstile_allowed_hostnames`, which the module treats as optional (all three or none).
+
+The change that made the Turnstile secret optional re-addressed the existing resources of
+every API with `moved` blocks (`google_secret_manager_secret.turnstile` and
+`google_secret_manager_secret_iam_member.runtime_reads` gained an index `[0]`). The plan
+for that change must show only those moves for `contact-api` and `booking-api`, with no
+destroy or replacement of a secret container; stop and investigate otherwise.
+
 ## Everyday changes
 
 Edit the code, run the offline checks below, and open a pull request. Review its plan,
@@ -208,7 +225,8 @@ merge, and approve the `infrastructure` job to apply.
   only read when a revision starts. Terraform is not involved.
 - **Scaling or timeout:** the module's `min_instances`, `max_instances` and
   `timeout_seconds` inputs.
-- **Add an API:** add an entry to `local.apis` in `production/apis.tf`, apply, add the
+- **Add an API:** add an entry to `local.apis` in `production/apis.tf` (omit the Turnstile
+  keys for an API without a widget), apply, add the
   secret value, and grant nothing by hand: the module creates the runtime account, the
   secret, public access and the deploy account's rights. Then deploy it from CI.
   Add `Dockerfile`/publish wiring as for the existing APIs.
