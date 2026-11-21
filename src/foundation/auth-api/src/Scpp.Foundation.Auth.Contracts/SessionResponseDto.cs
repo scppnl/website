@@ -4,5 +4,6 @@ namespace Scpp.Foundation.Auth.Contracts;
 public sealed class SessionResponseDto
 {
     public required string Email { get; init; }
+    public string? Name { get; init; }
     public required DateTimeOffset ExpiresAt { get; init; }
 }

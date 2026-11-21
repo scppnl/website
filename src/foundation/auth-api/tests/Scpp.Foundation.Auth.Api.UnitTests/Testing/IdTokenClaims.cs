@@ -9,6 +9,7 @@ public sealed record IdTokenClaims
     public string Email { get; init; } = "member@scpp.nl";
     public bool EmailVerified { get; init; } = true;
     public string? HostedDomain { get; init; } = "scpp.nl";
+    public string? Name { get; init; } = "Jan Jansen";
 
     /// <summary>Null means: the nonce of the sign-in attempt.</summary>
     public string? Nonce { get; init; }

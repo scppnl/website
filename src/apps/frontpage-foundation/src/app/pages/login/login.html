@@ -26,16 +26,48 @@
     <div class="login__content">
       <p class="login__org">{{ foundation.name }}</p>
       <p class="eyebrow">Beheeromgeving</p>
-      <h1>Welkom terug</h1>
-      <p class="lead">
-        Log in met je Google-account van de stichting om reserveringen en berichten te beheren.
-      </p>
-
-      <app-google-sign-in-button [href]="signInUrl" />
-      @if (!signInUrl) {
-        <p class="alert alert--error login__unavailable" role="status">
-          Inloggen is tijdelijk niet beschikbaar. Probeer het later opnieuw.
+      @if (session(); as current) {
+        <h1>Je bent ingelogd</h1>
+        <p class="lead login__identity">
+          Ingelogd als
+          @if (current.name) {
+            <strong>{{ current.name }}</strong> ({{ current.email }})
+          } @else {
+            <strong>{{ current.email }}</strong>
+          }
         </p>
+
+        <div class="login__actions">
+          <app-google-sign-in-button [href]="switchAccountUrl" label="Ander account kiezen" />
+          <button
+            type="button"
+            class="btn btn--outline"
+            [disabled]="signingOut()"
+            (click)="signOut()"
+          >
+            {{ signingOut() ? 'Uitloggen…' : 'Uitloggen' }}
+          </button>
+        </div>
+        @if (signOutFailed()) {
+          <p class="alert alert--error login__unavailable" role="alert">
+            Uitloggen is mislukt. Probeer het opnieuw.
+          </p>
+        }
+      } @else {
+        <h1>Welkom terug</h1>
+        <p class="lead">
+          Log in met je Google-account van de stichting om reserveringen en berichten te beheren.
+        </p>
+
+        <app-google-sign-in-button [href]="signInUrl" />
+        @if (!signInUrl) {
+          <p class="alert alert--error login__unavailable" role="status">
+            Inloggen is tijdelijk niet beschikbaar. Probeer het later opnieuw.
+          </p>
+        }
+        @if (signedOut()) {
+          <p class="login__signed-out" role="status">Je bent uitgelogd.</p>
+        }
       }
 
       <p class="login__note">

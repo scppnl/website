@@ -22,6 +22,7 @@ internal sealed class SessionEndpoint(CookieProtector protector, AccessPolicy po
         return TypedResults.Ok(new SessionResponseDto
         {
             Email = session.Email,
+            Name = session.Name,
             ExpiresAt = DateTimeOffset.FromUnixTimeSeconds(session.ExpiresAt),
         });
     }

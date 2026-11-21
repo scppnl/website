@@ -137,6 +137,26 @@
   margin: 1rem 0 0;
 }
 
+.login__identity {
+  overflow-wrap: anywhere;
+}
+
+.login__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  .btn {
+    width: 100%;
+    min-height: 3.25rem;
+  }
+}
+
+.login__signed-out {
+  margin: 1rem 0 0;
+  font-weight: 600;
+}
+
 .login__note {
   display: flex;
   align-items: flex-start;

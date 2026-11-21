@@ -18,7 +18,7 @@ internal sealed class GoogleCallbackEndpoint(
     TimeProvider clock,
     ILogger<GoogleCallbackEndpoint> logger)
 {
-    internal const int SessionVersion = 1;
+    internal const int SessionVersion = 2;
     internal static readonly TimeSpan SessionLifetime = TimeSpan.FromHours(8);
 
     internal async Task<IResult> GetAsync(HttpContext context, CancellationToken cancellationToken)
@@ -131,6 +131,7 @@ internal sealed class GoogleCallbackEndpoint(
             Subject = identity.Subject,
             Email = identity.Email,
             HostedDomain = identity.HostedDomain,
+            Name = identity.Name,
             IssuedAt = now.ToUnixTimeSeconds(),
             ExpiresAt = expires.ToUnixTimeSeconds(),
         };

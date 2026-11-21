@@ -36,7 +36,7 @@ internal sealed class GoogleSignInEndpoint(AuthSettings settings, CookieProtecto
             ["response_type"] = "code",
             ["client_id"] = settings.ClientId,
             ["redirect_uri"] = settings.CallbackUri.AbsoluteUri,
-            ["scope"] = "openid email",
+            ["scope"] = "openid email profile",
             ["state"] = flow.State,
             ["nonce"] = flow.Nonce,
             ["code_challenge"] = pkce.Challenge,

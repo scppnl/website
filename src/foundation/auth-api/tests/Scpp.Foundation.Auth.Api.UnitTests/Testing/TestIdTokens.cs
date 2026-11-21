@@ -19,6 +19,10 @@ internal static class TestIdTokens
             payload["hd"] = claims.HostedDomain;
         }
 
+        if (claims.Name is not null) {
+            payload["name"] = claims.Name;
+        }
+
         if (claims.AuthorizedParty is not null) {
             payload["azp"] = claims.AuthorizedParty;
         }

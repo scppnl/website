@@ -24,7 +24,7 @@ public sealed class GoogleSignInTests
         Assert.AreEqual("code", query["response_type"].ToString());
         Assert.AreEqual(AuthTestHost.ClientId, query["client_id"].ToString());
         Assert.AreEqual("https://auth.example.org/auth/google/callback", query["redirect_uri"].ToString());
-        Assert.AreEqual("openid email", query["scope"].ToString());
+        Assert.AreEqual("openid email profile", query["scope"].ToString());
         Assert.AreEqual("S256", query["code_challenge_method"].ToString());
         Assert.AreEqual("*", query["hd"].ToString());
         Assert.IsFalse(query.ContainsKey("prompt"));
