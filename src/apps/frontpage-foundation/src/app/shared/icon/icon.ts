@@ -45,6 +45,11 @@ const PATHS = {
     'M8 10V7a4 4 0 0 1 8 0v3',
   ],
   drop: ['M12 3s-6 6.5-6 11a6 6 0 0 0 12 0c0-4.5-6-11-6-11z'],
+  calendar: [
+    'M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z',
+    'M16 3v4M8 3v4M3 10h18',
+  ],
+  'arrow-right': ['M5 12h14M13 6l6 6-6 6'],
 } as const;
 
 export type IconName = keyof typeof PATHS;

@@ -49,7 +49,7 @@ commit the intended custom-domain `routes` configuration after confirming the
 zone and hostname. Use a different domain for each site. Angular does not need a
 hostname allowlist for prerendered static hosting.
 
-The build preserves the Nx output location. Routes `/`, `/gebouw`, `/ligging`, `/tarieven`, `/reserveren`, `/contact`, `/inloggen`, `/inloggen/geen-toegang` each have real HTML.
+The build preserves the Nx output location. Routes `/`, `/gebouw`, `/ligging`, `/tarieven`, `/reserveren`, `/contact`, `/inloggen`, `/inloggen/geen-toegang`, `/toegang-aanvragen` each have real HTML.
 The `404` Angular route is copied to root `404.html` for Workers' `404-page`
 handling, so unknown direct URLs return HTTP 404 with the site's own content.
 Client navigation also renders the not-found component. `drop-trailing-slash`
@@ -95,6 +95,16 @@ Turnstile token. A booking is still a request awaiting confirmation. Follow the
 [Gmail rollout guide](../../foundation/booking-api/README.md#gmail-configuration-and-rollout)
 and verify real delivery before setting the production URL. Clear the variable and
 rebuild to disable submissions if email delivery fails persistently.
+
+## Toegangsaanvragen
+
+`/toegang-aanvragen` is a form for asking the board (bestuur) for access to the building locks:
+the locks, a period and a reason. This stage is frontend only. The page is public, `noindex`
+and not linked from the menu or footer, and it sits outside the site layout like `/inloggen`.
+Submitting is **simulated**: `SimulatedLockAccessRequestService` waits briefly and succeeds, and
+nothing is sent. The route provides it for `LockAccessRequestService`; the backend stage replaces
+that one provider with an HTTP service. Sign-in and domain checks come later too, so the page
+shows no account details yet.
 
 ## Turnstile protection
 

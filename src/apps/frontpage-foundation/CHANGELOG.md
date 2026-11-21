@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add the lock access request form at `/toegang-aanvragen`: choose locks, a period and a
+  reason, with validation and a confirmation screen. Public, `noindex` and unlinked for now;
+  submitting is simulated until the API and sign-in exist.
 - Show on `/inloggen` as whom you are signed in (name and email) with **Ander account
   kiezen** and **Uitloggen**, using the auth API's session endpoints. It needs the auth API
   on the same site as the website; otherwise the page keeps offering sign-in.
