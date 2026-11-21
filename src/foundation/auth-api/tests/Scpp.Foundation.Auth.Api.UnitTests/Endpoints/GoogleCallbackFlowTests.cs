@@ -118,6 +118,50 @@ public sealed class GoogleCallbackFlowTests
         Assert.IsTrue(ResponseCookies.IsDeleted(response, AuthCookies.Flow));
     }
 
+    [TestMethod]
+    [DataRow("/auth/google/callback?error=access_denied")]
+    [DataRow("/auth/google/callback?error=x&state=forged")]
+    [DataRow("/auth/google/callback?code=anything&state=forged")]
+    [DataRow("/auth/google/callback")]
+    public async Task ForeignRequestWithoutThisBrowsersFlowDoesNotEndTheSession(string pathAndQuery)
+    {
+        await using var host = await AuthTestHost.StartAsync();
+        using var signedIn = await host.SignInAsync();
+        var session = $"{AuthCookies.Session}={ResponseCookies.Value(signedIn, AuthCookies.Session)}";
+
+        using var response = await host.GetAsync(pathAndQuery, session);
+
+        Assert.AreEqual(SignIn, response.Headers.Location!.AbsoluteUri);
+        Assert.IsFalse(response.Headers.Contains("Set-Cookie"), "no cookie may be set or deleted");
+        using var stillSignedIn = await host.GetAsync("/auth/session", session);
+        Assert.AreEqual(HttpStatusCode.OK, stillSignedIn.StatusCode);
+    }
+
+    [TestMethod]
+    public async Task MismatchedStateDoesNotAbortTheSignInInProgress()
+    {
+        await using var host = await AuthTestHost.StartAsync();
+        var attempt = await host.StartSignInAsync();
+
+        using var response = await host.GetAsync("/auth/google/callback?error=x&state=forged", attempt.FlowCookie);
+
+        Assert.IsFalse(response.Headers.Contains("Set-Cookie"));
+        using var completed = await host.CompleteAsync(attempt);
+        Assert.AreEqual("https://frontend.example.org/beheer", completed.Headers.Location!.AbsoluteUri);
+    }
+
+    [TestMethod]
+    public async Task ValidatedFailureEndsTheExistingSession()
+    {
+        await using var host = await AuthTestHost.StartAsync();
+        var attempt = await host.StartSignInAsync();
+
+        using var response = await host.GetAsync($"/auth/google/callback?error=access_denied&state={attempt.State}", attempt.FlowCookie);
+
+        Assert.IsTrue(ResponseCookies.IsDeleted(response, AuthCookies.Session));
+        Assert.IsTrue(ResponseCookies.IsDeleted(response, AuthCookies.Flow));
+    }
+
     private static void AssertSignInPage(HttpResponseMessage response)
     {
         Assert.AreEqual(HttpStatusCode.Redirect, response.StatusCode);

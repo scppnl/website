@@ -39,6 +39,8 @@ public sealed class AuthSettingsTests
     [DataRow("Auth:AllowedDomains:1", "*.scpp.nl")]
     [DataRow("Auth:AllowedDomains:1", "not a hostname")]
     [DataRow("Auth:AllowedDomains:1", "localhost")]
+    [DataRow("Auth:AllowedDomains:1", "blo\u212Ahutdewildert.nl")]
+    [DataRow("Auth:AllowedEmails:0", "b\u212Aeheer@scpp.nl")]
     [DataRow("Auth:AllowedEmails:0", "no-at-sign")]
     public void InvalidConfigurationIsRejectedAtStartup(string key, string? value)
     {

@@ -30,7 +30,7 @@ internal sealed class GoogleIdTokenValidator(
         }
 
         var now = clock.GetUtcNow().UtcDateTime;
-        if (token.ValidTo + ClockSkew < now || token.IssuedAt - ClockSkew > now ||
+        if (token.IssuedAt == DateTime.MinValue || token.ValidTo + ClockSkew < now || token.IssuedAt - ClockSkew > now ||
             !token.TryGetPayloadValue<string>("nonce", out var nonce) || !FixedTimeString.AreEqual(nonce, expectedNonce) ||
             token.TryGetPayloadValue<string>("azp", out var authorizedParty) && authorizedParty != settings.ClientId ||
             !token.TryGetPayloadValue<string>("sub", out var subject) || string.IsNullOrEmpty(subject) ||

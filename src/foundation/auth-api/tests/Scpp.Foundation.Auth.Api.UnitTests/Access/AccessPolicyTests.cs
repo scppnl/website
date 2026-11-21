@@ -22,7 +22,12 @@ public sealed class AccessPolicyTests
     [DataRow("a@scpp.nl.evil.example", "scpp.nl", "WrongDomain")]
     [DataRow("scpp.nl", "scpp.nl", "WrongDomain")]
     [DataRow("@scpp.nl", "scpp.nl", "WrongDomain")]
-    [DataRow("a@evil.example@scpp.nl", "scpp.nl", "Allowed")]
+    [DataRow("a@evil.example@scpp.nl", "scpp.nl", "WrongDomain")]
+    [DataRow("a@scpp.nl@evil.example", "scpp.nl", "WrongDomain")]
+    [DataRow("a@", "scpp.nl", "WrongDomain")]
+    [DataRow("someone@blo\u212Ahutdewildert.nl", "scpp.nl", "WrongDomain")]
+    [DataRow("someone@scpp.nl", "blo\u212Ahutdewildert.nl", "WrongDomain")]
+    [DataRow("someone@scpp.nl", "scpp.nl.", "WrongDomain")]
     public void DomainRulesRequireHostedDomainAndEmailDomainToBeAllowed(string email, string? hostedDomain, string expected)
     {
         Assert.AreEqual(expected, Policy().Evaluate(hostedDomain, email).ToString());

@@ -41,14 +41,20 @@ with an `Origin` check, together with the first admin page that has a sign-out b
    a check: Google's `hd` request parameter accepts one domain, so the server validates.
 2. The callback requires the flow cookie and a `state` equal to the stored one
    (fixed-time comparison), then exchanges `code` with the client secret and PKCE
-   verifier. The flow cookie is always cleared.
+   verifier. The state is checked before anything else in the query. Without a matching
+   flow, the request is sent to `/inloggen` and **no cookie is set or deleted**: another
+   site can send a visitor to the callback (`SameSite=Lax` cookies travel on top-level
+   navigations), and that must neither sign them out nor abort a sign-in in progress. After
+   a matching state, the flow cookie is always cleared, and so is the session on any failure.
 3. The ID token must have an RS256 signature from Google's cached JWKS (a refresh is
    requested once for an unknown key id), issuer `https://accounts.google.com` or
    `accounts.google.com`, audience equal to the client ID (and `azp`, when present), a
    valid `exp` and `iat` (one minute of clock skew), and the stored `nonce`.
 4. `email_verified` must be true.
 5. The `hd` claim **and** the email domain must each exactly equal an entry of
-   `Auth:AllowedDomains` (no suffix matching: `x.scpp.nl` and `evilscpp.nl` fail). A
+   `Auth:AllowedDomains`: ASCII only, a case-insensitive ordinal comparison, an email with
+   exactly one `@`, and no suffix matching (`x.scpp.nl`, `evilscpp.nl` and look-alikes with
+   non-ASCII letters fail). A
    Workspace with secondary domains reports its primary domain in `hd`, so the two values
    are checked separately, not against each other.
 6. When `Auth:AllowedEmails` is not empty, the email must be listed (case-insensitive).
@@ -60,8 +66,11 @@ Failures log one event, `Google sign-in finished with {Outcome}`, where the outc
 `Success`, `WrongDomain`, `NotAuthorized`, `EmailUnverified`, `InvalidState`,
 `Cancelled`, `CodeRejected`, `InvalidToken` or `ProviderUnavailable`. Provider failures also log a
 `FailureCategory` (network, timeout, provider error or invalid response). Codes, tokens,
-secrets, state, nonces, cookies and email addresses are never logged, and request logs
-record the path without its query string.
+secrets, state, nonces, cookies and email addresses are never logged by the API, and its
+request logs record the path without its query string. That covers the API's own logs:
+Cloud Run's platform request log records the full URL, including the callback's `code` and
+`state`. They are single use and bound to the PKCE verifier and the browser's flow cookie,
+so they are not usable on their own, but keep access to those logs limited.
 
 ## Session cookies
 

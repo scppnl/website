@@ -10,15 +10,23 @@ internal sealed class AccessPolicy(AuthSettings settings)
 {
     internal AccessDecision Evaluate(string? hostedDomain, string email)
     {
-        var at = email.LastIndexOf('@');
-        var emailDomain = at > 0 ? email[(at + 1)..].ToLowerInvariant() : "";
-        if (hostedDomain is null || !settings.AllowedDomains.Contains(hostedDomain.ToLowerInvariant()) ||
-            !settings.AllowedDomains.Contains(emailDomain)) {
+        var emailDomain = EmailDomain(email);
+        if (hostedDomain is null || emailDomain is null || !IsAllowedDomain(hostedDomain) || !IsAllowedDomain(emailDomain)) {
             return AccessDecision.WrongDomain;
         }
 
-        return settings.AllowedEmails.Count == 0 || settings.AllowedEmails.Contains(email.ToLowerInvariant())
+        return settings.AllowedEmails.Count == 0 || settings.AllowedEmails.Contains(email)
             ? AccessDecision.Allowed
             : AccessDecision.NotAuthorized;
     }
+
+    /// <summary>The part after the single '@', or null for anything that is not exactly one local part and one domain.</summary>
+    private static string? EmailDomain(string email)
+    {
+        var at = email.IndexOf('@', StringComparison.Ordinal);
+        return at > 0 && at == email.LastIndexOf('@') && at < email.Length - 1 ? email[(at + 1)..] : null;
+    }
+
+    // ASCII only: culture-style case folding would let look-alikes such as the Kelvin sign match.
+    private bool IsAllowedDomain(string domain) => domain.All(char.IsAscii) && settings.AllowedDomains.Contains(domain);
 }

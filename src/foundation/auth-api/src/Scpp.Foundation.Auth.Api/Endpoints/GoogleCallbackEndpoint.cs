@@ -24,10 +24,14 @@ internal sealed class GoogleCallbackEndpoint(
     internal async Task<IResult> GetAsync(HttpContext context, CancellationToken cancellationToken)
     {
         context.Response.Headers["Referrer-Policy"] = "no-referrer";
-        var flow = ReadFlow(context.Request);
-        AuthCookies.Clear(context.Response, AuthCookies.Flow);
+        var (outcome, identity) = await ResolveAsync(context.Request.Query, ReadFlow(context.Request), cancellationToken);
+        // Another site can send a visitor here (SameSite=Lax cookies travel on top-level navigations), so
+        // cookies are only ended once the state proved that this attempt was started from this browser.
+        var attemptIsOurs = outcome != SignInOutcome.InvalidState;
+        if (attemptIsOurs) {
+            AuthCookies.Clear(context.Response, AuthCookies.Flow);
+        }
 
-        var (outcome, identity) = await ResolveAsync(context.Request.Query, flow, cancellationToken);
         if (outcome == SignInOutcome.Success) {
             logger.LogInformation("Google sign-in finished with {Outcome}", outcome);
             IssueSession(context.Response, identity!);
@@ -35,7 +39,10 @@ internal sealed class GoogleCallbackEndpoint(
         }
 
         logger.LogWarning("Google sign-in finished with {Outcome}", outcome);
-        AuthCookies.Clear(context.Response, AuthCookies.Session);
+        if (attemptIsOurs) {
+            AuthCookies.Clear(context.Response, AuthCookies.Session);
+        }
+
         return outcome switch
         {
             SignInOutcome.ProviderUnavailable =>
@@ -49,18 +56,12 @@ internal sealed class GoogleCallbackEndpoint(
     private async Task<(SignInOutcome Outcome, GoogleIdentity? Identity)> ResolveAsync(
         IQueryCollection query, FlowPayload? flow, CancellationToken cancellationToken)
     {
-        if (query.ContainsKey("error")) {
-            return (SignInOutcome.Cancelled, null);
-        }
-
-        var code = query["code"].ToString();
-        var state = query["state"].ToString();
-        if (flow is null || code.Length == 0 || state.Length == 0 || !FixedTimeString.AreEqual(state, flow.State)) {
-            return (SignInOutcome.InvalidState, null);
+        if (CheckAttempt(query, flow) is { } failure) {
+            return (failure, null);
         }
 
         try {
-            var idToken = await google.ExchangeCodeAsync(code, flow.CodeVerifier, cancellationToken);
+            var idToken = await google.ExchangeCodeAsync(query["code"].ToString(), flow!.CodeVerifier, cancellationToken);
             if (idToken is null) {
                 return (SignInOutcome.CodeRejected, null);
             }
@@ -73,6 +74,21 @@ internal sealed class GoogleCallbackEndpoint(
             logger.LogWarning(exception, "Google sign-in provider failure {FailureCategory}", exception.Category);
             return (SignInOutcome.ProviderUnavailable, null);
         }
+    }
+
+    /// <summary>The state is checked first: nothing else in the query is trusted before it matches this browser's flow.</summary>
+    private static SignInOutcome? CheckAttempt(IQueryCollection query, FlowPayload? flow)
+    {
+        var state = query["state"].ToString();
+        if (flow is null || state.Length == 0 || !FixedTimeString.AreEqual(state, flow.State)) {
+            return SignInOutcome.InvalidState;
+        }
+
+        if (query.ContainsKey("error")) {
+            return SignInOutcome.Cancelled;
+        }
+
+        return query["code"].ToString().Length == 0 ? SignInOutcome.CodeRejected : null;
     }
 
     private SignInOutcome Authorize(GoogleIdentity identity)

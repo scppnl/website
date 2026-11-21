@@ -28,6 +28,7 @@ public sealed class SessionKeyRingTests
     [DataRow("{\"activeKeyId\":\"missing\",\"keys\":{\"k1\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\"}}")]
     [DataRow("{\"activeKeyId\":\"k1\",\"keys\":{\"k1\":\"AAAA\"}}")]
     [DataRow("{\"activeKeyId\":\"k1\",\"keys\":{\"k1\":\"%%%not-base64%%%\"}}")]
+    [DataRow("{\"activeKeyId\":\"k1\\n\",\"keys\":{\"k1\\n\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\"}}")]
     [DataRow("{\"activeKeyId\":\"bad id\",\"keys\":{\"bad id\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\"}}")]
     public void MalformedKeyRingIsRejected(string? json)
     {

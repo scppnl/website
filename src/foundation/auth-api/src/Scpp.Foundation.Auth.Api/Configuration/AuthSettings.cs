@@ -38,7 +38,7 @@ internal sealed record AuthSettings(
             apiOrigin is null || frontendOrigin is null ||
             !IsLocalPath(postSignIn) ||
             domains.Count == 0 || domains.Any(domain => !IsHostname(domain)) ||
-            emails.Any(email => !email.Contains('@', StringComparison.Ordinal))) {
+            emails.Any(email => !email.All(char.IsAscii) || !email.Contains('@', StringComparison.Ordinal))) {
             throw new InvalidOperationException(ConfigurationError);
         }
 
@@ -47,15 +47,15 @@ internal sealed record AuthSettings(
 
     private static HashSet<string> ReadSet(IConfiguration configuration, string section) =>
         configuration.GetSection(section).GetChildren()
-            .Select(child => (child.Value ?? "").Trim().ToLowerInvariant())
-            .ToHashSet(StringComparer.Ordinal);
+            .Select(child => (child.Value ?? "").Trim())
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
     private static bool IsLocalPath(string path) =>
         path.StartsWith('/') && !path.StartsWith("//", StringComparison.Ordinal) &&
         !path.Contains('\\', StringComparison.Ordinal) && !path.Any(char.IsControl);
 
     private static bool IsHostname(string domain) =>
-        !domain.Contains('*', StringComparison.Ordinal) && domain.Contains('.', StringComparison.Ordinal) &&
+        domain.All(char.IsAscii) && !domain.Contains('*', StringComparison.Ordinal) && domain.Contains('.', StringComparison.Ordinal) &&
         Uri.CheckHostName(domain) == UriHostNameType.Dns;
 
     private static Uri? ParseOrigin(string? value, IHostEnvironment environment)

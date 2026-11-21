@@ -21,6 +21,9 @@ public sealed record IdTokenClaims
 
     /// <summary>Null means: the test clock.</summary>
     public DateTimeOffset? IssuedAt { get; init; }
+
+    /// <summary>Leaves the iat claim out of the token.</summary>
+    public bool OmitIssuedAt { get; init; }
     public string Algorithm { get; init; } = SecurityAlgorithms.RsaSha256;
     public TestSigningKey SigningKey { get; init; } = TestSigningKey.Primary;
 }

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 
@@ -22,12 +23,21 @@ internal static class TestIdTokens
             payload["azp"] = claims.AuthorizedParty;
         }
 
-        return new JsonWebTokenHandler().CreateToken(new SecurityTokenDescriptor
+        var handler = new JsonWebTokenHandler();
+        if (claims.OmitIssuedAt) {
+            // CreateToken(descriptor) adds iat on its own, so build the payload by hand.
+            payload["iss"] = claims.Issuer;
+            payload["aud"] = claims.Audience;
+            payload["exp"] = (claims.ExpiresAt ?? now.AddHours(1)).ToUnixTimeSeconds();
+            return handler.CreateToken(JsonSerializer.Serialize(payload), new SigningCredentials(claims.SigningKey.SecurityKey, claims.Algorithm));
+        }
+
+        return handler.CreateToken(new SecurityTokenDescriptor
         {
             Issuer = claims.Issuer,
             Audience = claims.Audience,
             Claims = payload,
-            IssuedAt = (claims.IssuedAt ?? now).UtcDateTime,
+            IssuedAt = claims.OmitIssuedAt ? null : (claims.IssuedAt ?? now).UtcDateTime,
             Expires = (claims.ExpiresAt ?? now.AddHours(1)).UtcDateTime,
             SigningCredentials = new SigningCredentials(claims.SigningKey.SecurityKey, claims.Algorithm),
         });

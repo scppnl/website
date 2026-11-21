@@ -15,6 +15,7 @@ public sealed class GoogleCallbackTokenTests
         [new IdTokenClaims { Nonce = "another-nonce" }],
         [new IdTokenClaims { ExpiresAt = Now.AddMinutes(-5), IssuedAt = Now.AddHours(-1) }],
         [new IdTokenClaims { IssuedAt = Now.AddMinutes(5), ExpiresAt = Now.AddHours(1) }],
+        [new IdTokenClaims { OmitIssuedAt = true }],
         [new IdTokenClaims { SigningKey = TestSigningKey.Forged }],
         [new IdTokenClaims { SigningKey = TestSigningKey.Unpublished }],
         [new IdTokenClaims { Issuer = "https://evil.example" }],
