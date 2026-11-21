@@ -51,6 +51,7 @@ internal sealed class AuthTestHost : IAsyncDisposable
             builder.Services.AddSingleton<ILogEventSink>(sink);
             builder.Services.AddHttpClient<GoogleOidcClient>().ConfigurePrimaryHttpMessageHandler(() => google);
             builder.Services.AddHttpClient(GoogleEndpoints.MetadataClient).ConfigurePrimaryHttpMessageHandler(() => google);
+            builder.Services.AddHttpClient(GoogleEndpoints.CloudClient).ConfigurePrimaryHttpMessageHandler(() => google);
             configure?.Invoke(builder);
         });
         await app.StartAsync();

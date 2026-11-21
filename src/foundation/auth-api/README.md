@@ -20,9 +20,10 @@ HTTPS origin of this API with no path.
 | `GET /auth/google/callback` | success: session cookie, redirect to `Auth:FrontendOrigin` + `Auth:PostSignInPath` | 302 |
 | | wrong domain, unverified email, or not on `Auth:AllowedEmails`: redirect to `/inloggen/geen-toegang` | 302 |
 | | invalid, missing or expired flow cookie, state mismatch, Google `error` (such as cancel), rejected code or invalid ID token: redirect to `/inloggen` | 302 |
-| | Google unreachable, timed out or answering unusably | 503 |
-| `GET /auth/session` | `{"email":"…","name":"…","expiresAt":"…"}` for a valid session; `name` is `null` when Google sent none | 200 |
+| | Google unreachable, timed out or answering unusably, including the group lookup when permissions are configured | 503 |
+| `GET /auth/session` | `{"email":"…","name":"…","expiresAt":"…","permissions":["…"]}` for a valid session; `name` is `null` when Google sent none; `permissions` is `[]` when none apply (see [Permissions](#permissions)) | 200 |
 | | no, invalid or expired session, or an account that is no longer allowed | 401 |
+| | the user's groups could not be looked up (only when permissions are configured) | 503 |
 | `DELETE /auth/session` | signs out: deletes the session cookie, also when there is none | 204 |
 | | `Origin` missing or not `Auth:FrontendOrigin` | 403 |
 
@@ -77,6 +78,58 @@ Cloud Run's platform request log records the full URL, including the callback's 
 `state`. They are single use and bound to the PKCE verifier and the browser's flow cookie,
 so they are not usable on their own, but keep access to those logs limited.
 
+## Permissions
+
+Pages need different permissions, and a permission comes from membership of a Google Workspace
+**security group**. Google's ID token has no groups claim, so the API asks the Cloud Identity
+Groups API (`memberships:searchTransitiveGroups`) which security groups the signed-in user is
+in, including through nested groups. Only groups that carry Workspace's **Security** label
+count: adding someone to an ordinary mailing list can never grant access. Create dedicated
+groups such as `website-bookings@scpp.nl`, mark them as security groups and switch off email
+delivery.
+
+`Auth:Permissions` maps permissions to groups:
+
+```
+Auth__Permissions__0__Name      = bookings.manage
+Auth__Permissions__0__Groups__0 = website-bookings@scpp.nl
+Auth__Permissions__1__Name      = contact.read
+Auth__Permissions__1__Groups__0 = website-bookings@scpp.nl
+Auth__Permissions__1__Groups__1 = website-contact@scpp.nl
+```
+
+A name is lowercase letters, digits and hyphens in dot-separated segments and appears once.
+A group is an address on one of `Auth:AllowedDomains`. Invalid values stop the host at startup.
+Without any entry the API never calls Google and every session has `permissions: []`.
+
+- **Sign-in** looks the groups up and fails closed: if Google or the lookup is unavailable, the
+  callback answers `503` and no session is issued.
+- **`GET /auth/session`** returns the user's permissions, sorted by name. The groups are
+  remembered in memory for 10 minutes per instance, so a removal from a group takes effect
+  within 10 minutes, not after the 8-hour session. A lookup that fails is never remembered and
+  never answered from stale data: the request gets `503`. A new sign-in always asks Google again.
+- The permissions are not stored in the session cookie.
+- The frontend can use `permissions` to hide links, but that is not protection. Every API that
+  serves a protected page's data must enforce the permission itself.
+- Logs hold the failure category only: never the email address, group names, queries or tokens.
+
+### One-time setup (administrator)
+
+No new OAuth client or consent-screen scope is needed: sign-in keeps `openid email profile`.
+The API reads groups as its own Cloud Run service account, whose token comes from the metadata
+server with the scope `https://www.googleapis.com/auth/cloud-identity.groups.readonly`. There
+is no key file and no domain-wide delegation.
+
+1. Terraform enables `cloudidentity.googleapis.com` (`infra/production/project.tf`).
+2. A Workspace super admin assigns the **Groups Reader** admin role to the service account in
+   the Admin console under Account > Admin roles > Groups Reader > Assign service accounts.
+   The address is the Terraform output `auth_api_runtime_service_account`.
+3. Create the security groups, then add the `Auth__Permissions__*` values to the auth API entry
+   in `infra/production/apis.tf` together with the first page that needs them.
+
+Locally there is no metadata server, so leave `Auth:Permissions` empty. The unit tests replace
+Google's endpoints entirely.
+
 ## Session cookies
 
 Both cookies are host-only (`__Host-` prefix, Secure, `Path=/`, no `Domain`), HttpOnly and
@@ -117,6 +170,7 @@ invalid values.
 | `Auth__PostSignInPath` | Cloud Run env | a local path, default `/`; `/beheer` once that page exists |
 | `Auth__AllowedDomains__0..n` | Cloud Run env | `scpp.nl`, `blokhutdewildert.nl`; exact hostnames, no wildcards |
 | `Auth__AllowedEmails__0..n` | Cloud Run env | optional; empty allows every account in the allowed domains |
+| `Auth__Permissions__n__Name`, `Auth__Permissions__n__Groups__m` | Cloud Run env | optional; see [Permissions](#permissions) |
 | `Cors__AllowedOrigins__0..n` | Cloud Run env | explicit origins; must include `Auth:FrontendOrigin`; no `*` |
 
 Origins must be `https` and not loopback outside Development. `/inloggen` and

@@ -22,6 +22,8 @@ public sealed class SessionTests
         Assert.AreEqual("member@scpp.nl", body.RootElement.GetProperty("email").GetString());
         Assert.AreEqual("Jan Jansen", body.RootElement.GetProperty("name").GetString());
         Assert.AreEqual(DateTimeOffset.Parse("2026-11-21T20:00:00Z"), body.RootElement.GetProperty("expiresAt").GetDateTimeOffset());
+        Assert.AreEqual(JsonValueKind.Array, body.RootElement.GetProperty("permissions").ValueKind);
+        Assert.AreEqual(0, body.RootElement.GetProperty("permissions").GetArrayLength());
     }
 
     [TestMethod]

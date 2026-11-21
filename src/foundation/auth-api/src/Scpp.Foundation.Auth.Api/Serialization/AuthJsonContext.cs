@@ -9,6 +9,8 @@ namespace Scpp.Foundation.Auth.Api.Serialization;
 [JsonSourceGenerationOptions(PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]
 [JsonSerializable(typeof(SessionResponseDto))]
 [JsonSerializable(typeof(GoogleTokenResponse))]
+[JsonSerializable(typeof(MetadataTokenResponse))]
+[JsonSerializable(typeof(TransitiveGroupsResponse))]
 [JsonSerializable(typeof(FlowPayload))]
 [JsonSerializable(typeof(SessionPayload))]
 [JsonSerializable(typeof(SessionKeyRingDocument))]

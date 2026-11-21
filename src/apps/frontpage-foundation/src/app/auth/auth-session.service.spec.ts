@@ -5,7 +5,12 @@ import { AUTH_API_BASE_URL } from './auth-api-config';
 import { AuthSessionService } from './auth-session.service';
 
 const url = 'https://auth.example.nl/auth/session';
-const session = { email: 'jan@scpp.nl', name: 'Jan Jansen', expiresAt: '2026-11-21T20:00:00Z' };
+const session = {
+  email: 'jan@scpp.nl',
+  name: 'Jan Jansen',
+  expiresAt: '2026-11-21T20:00:00Z',
+  permissions: ['bookings.manage'],
+};
 
 describe('AuthSessionService', () => {
   beforeEach(() =>

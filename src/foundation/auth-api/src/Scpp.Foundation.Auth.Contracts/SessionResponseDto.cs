@@ -6,4 +6,7 @@ public sealed class SessionResponseDto
     public required string Email { get; init; }
     public string? Name { get; init; }
     public required DateTimeOffset ExpiresAt { get; init; }
+
+    /// <summary>The permissions granted through Workspace group membership, sorted. Empty when none apply.</summary>
+    public required IReadOnlyList<string> Permissions { get; init; }
 }

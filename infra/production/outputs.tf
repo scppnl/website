@@ -17,3 +17,8 @@ output "turnstile_secrets" {
   description = "Secrets whose values must be added by hand (gcloud secrets versions add ...)."
   value       = { for name, api in module.apis : name => api.secret_id if api.secret_id != null }
 }
+
+output "auth_api_runtime_service_account" {
+  description = "Service account of the auth API. A Workspace super admin must assign it the Groups Reader admin role (Admin console > Account > Admin roles) before Auth__Permissions can be used."
+  value       = module.apis["auth-api"].runtime_service_account_email
+}

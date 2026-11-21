@@ -7,7 +7,12 @@ import { AUTH_API_BASE_URL } from '../../auth/auth-api-config';
 import { routes } from '../../app.routes';
 
 const sessionUrl = 'https://auth.example.nl/auth/session';
-const signedIn = { email: 'jan@scpp.nl', name: 'Jan Jansen', expiresAt: '2026-11-21T20:00:00Z' };
+const signedIn = {
+  email: 'jan@scpp.nl',
+  name: 'Jan Jansen',
+  expiresAt: '2026-11-21T20:00:00Z',
+  permissions: [],
+};
 
 /** Lets the service's promise chain finish, then renders what it changed. */
 async function settle(harness: RouterTestingHarness) {

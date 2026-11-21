@@ -14,6 +14,22 @@ internal sealed class GoogleHttpStub : HttpMessageHandler
     internal Exception? TokenFailure { get; set; }
     internal HttpStatusCode DiscoveryStatus { get; set; } = HttpStatusCode.OK;
 
+    /// <summary>Requests to the metadata server's token endpoint.</summary>
+    internal ConcurrentQueue<RecordedRequest> MetadataRequests { get; } = new();
+    internal HttpStatusCode MetadataStatus { get; set; } = HttpStatusCode.OK;
+    internal int MetadataExpiresIn { get; set; } = 3600;
+
+    /// <summary>Requests to the Cloud Identity <c>searchTransitiveGroups</c> endpoint.</summary>
+    internal ConcurrentQueue<RecordedRequest> GroupRequests { get; } = new();
+    internal HttpStatusCode GroupsStatus { get; set; } = HttpStatusCode.OK;
+    internal Exception? GroupsFailure { get; set; }
+
+    /// <summary>The addresses of the groups the signed-in user belongs to.</summary>
+    internal IReadOnlyList<string> Groups { get; set; } = [];
+
+    /// <summary>How many groups one page holds; 0 puts everything on one page.</summary>
+    internal int GroupsPageSize { get; set; }
+
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         var uri = request.RequestUri!;
@@ -23,6 +39,17 @@ internal sealed class GoogleHttpStub : HttpMessageHandler
             return TokenFailure is not null
                 ? throw TokenFailure
                 : Json(TokenStatus, TokenBody ?? $"{{\"access_token\":\"unused\",\"token_type\":\"Bearer\",\"id_token\":\"{IdToken}\"}}");
+        }
+
+        if (uri is { Host: "metadata.google.internal", AbsolutePath: "/computeMetadata/v1/instance/service-accounts/default/token" }) {
+            MetadataRequests.Enqueue(Record(request));
+            return Json(MetadataStatus, $"{{\"access_token\":\"test-access-token\",\"expires_in\":{MetadataExpiresIn},\"token_type\":\"Bearer\"}}");
+        }
+
+        if (uri is { Host: "cloudidentity.googleapis.com", AbsolutePath: "/v1/groups/-/memberships:searchTransitiveGroups" }) {
+            var recorded = Record(request);
+            GroupRequests.Enqueue(recorded);
+            return GroupsFailure is not null ? throw GroupsFailure : Json(GroupsStatus, GroupsPage(recorded.PageToken));
         }
 
         if (uri is { Host: "accounts.google.com", AbsolutePath: "/.well-known/openid-configuration" }) {
@@ -37,6 +64,27 @@ internal sealed class GoogleHttpStub : HttpMessageHandler
         return uri is { Host: "www.googleapis.com", AbsolutePath: "/oauth2/v3/certs" }
             ? Json(HttpStatusCode.OK, $"{{\"keys\":[{TestSigningKey.Primary.Jwk}]}}")
             : new HttpResponseMessage(HttpStatusCode.NotFound);
+    }
+
+    private static RecordedRequest Record(HttpRequestMessage request)
+    {
+        var query = QueryHelpers.ParseQuery(request.RequestUri!.Query);
+        return new(
+            query.TryGetValue("query", out var searchQuery) ? searchQuery.ToString() : null,
+            query.TryGetValue("pageToken", out var pageToken) ? pageToken.ToString() : null,
+            query.TryGetValue("scopes", out var scopes) ? scopes.ToString() : null,
+            request.Headers.Authorization?.ToString(),
+            request.Headers.TryGetValues("Metadata-Flavor", out var flavor) ? flavor.Single() : null);
+    }
+
+    /// <summary>The page the given token asks for. A token is the index of the first group on that page.</summary>
+    private string GroupsPage(string? pageToken)
+    {
+        var start = pageToken is null ? 0 : int.Parse(pageToken, System.Globalization.CultureInfo.InvariantCulture);
+        var size = GroupsPageSize == 0 ? Groups.Count : GroupsPageSize;
+        var page = Groups.Skip(start).Take(size).Select(address => $"{{\"groupKey\":{{\"id\":\"{address}\"}}}}");
+        var next = start + size < Groups.Count ? $",\"nextPageToken\":\"{start + size}\"" : "";
+        return $"{{\"memberships\":[{string.Join(',', page)}]{next}}}";
     }
 
     private static HttpResponseMessage Json(HttpStatusCode status, string body) =>
