@@ -52,6 +52,7 @@ internal sealed record AuthSettings(
     private static List<PermissionRule>? ReadPermissions(IConfiguration configuration, IReadOnlySet<string> domains)
     {
         var rules = new List<PermissionRule>();
+        
         foreach (var section in configuration.GetSection("Auth:Permissions").GetChildren()) {
             var name = section["Name"] ?? "";
             var groups = ReadSet(section, "Groups");
@@ -74,6 +75,7 @@ internal sealed record AuthSettings(
     private static bool IsGroupAddress(string address, IReadOnlySet<string> domains)
     {
         var at = address.IndexOf('@', StringComparison.Ordinal);
+        
         return at > 0 && at == address.LastIndexOf('@') && at < address.Length - 1 &&
             address.All(character => char.IsAsciiLetterOrDigit(character) || character is '@' or '.' or '_' or '-' or '+') &&
             domains.Contains(address[(at + 1)..]);
