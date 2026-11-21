@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Scpp.Foundation.Auth.Api.Logging;
+using Scpp.Foundation.Auth.Api.Sessions;
 using Scpp.Foundation.Auth.Api.UnitTests.Testing;
 using Serilog.Core;
 using Serilog.Events;
@@ -86,7 +87,7 @@ public sealed class LoggingTests
     {
         await using var host = await AuthTestHost.StartAsync();
         var attempt = await host.StartSignInAsync("?prompt=select_account");
-        using var success = await host.CompleteAsync(attempt, new IdTokenClaims { Email = "private.person@scpp.nl" });
+        using var success = await host.CompleteAsync(attempt, new IdTokenClaims { Email = "private.person@scpp.nl", Name = "Private Person" });
         var denied = await host.StartSignInAsync();
         using var wrongDomain = await host.CompleteAsync(denied, new IdTokenClaims { Email = "stranger@example.org", HostedDomain = null });
         var tampered = await host.StartSignInAsync();
@@ -104,11 +105,28 @@ public sealed class LoggingTests
         foreach (var secret in new[]
         {
             AuthTestHost.AuthorizationCode, AuthTestHost.ClientSecret, host.Google.IdToken, attempt.State, attempt.Nonce, attempt.Challenge,
-            "private.person@scpp.nl", "stranger@example.org", "forged-state-value", "code=", "state=", "nonce=",
+            "private.person@scpp.nl", "Private Person", "stranger@example.org", "forged-state-value", "code=", "state=", "nonce=",
             ResponseCookies.Value(success, "__Host-scpp-session")!,
         }) {
             Assert.DoesNotContain(secret, everything);
         }
+    }
+
+    [TestMethod]
+    public async Task SigningOutLogsAnEventWithoutIdentifiers()
+    {
+        await using var host = await AuthTestHost.StartAsync();
+        using var signIn = await host.SignInAsync(new IdTokenClaims { Email = "private.person@scpp.nl", Name = "Private Person" });
+        var cookie = $"{AuthCookies.Session}={ResponseCookies.Value(signIn, AuthCookies.Session)}";
+
+        using var response = await host.DeleteAsync("/auth/session", cookie, AuthTestHost.FrontendOrigin);
+
+        var ended = host.Sink.Events.Single(logEvent => logEvent.MessageTemplate.Text == "Session ended");
+        Assert.AreEqual(LogEventLevel.Information, ended.Level);
+        var everything = string.Join('\n', host.Sink.Events.Select(Describe));
+        Assert.DoesNotContain("private.person@scpp.nl", everything);
+        Assert.DoesNotContain("Private Person", everything);
+        Assert.DoesNotContain(cookie, everything);
     }
 
     [TestMethod]

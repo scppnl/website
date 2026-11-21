@@ -39,12 +39,14 @@ internal sealed class GoogleIdTokenValidator(
         }
 
         token.TryGetPayloadValue<string>("hd", out var hostedDomain);
+        token.TryGetPayloadValue<string>("name", out var name);
         return new(new GoogleIdentity
         {
             Subject = subject,
             Email = email,
             EmailVerified = IsEmailVerified(token),
             HostedDomain = hostedDomain,
+            Name = string.IsNullOrWhiteSpace(name) ? null : name,
         });
     }
 

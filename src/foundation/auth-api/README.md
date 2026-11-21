@@ -21,23 +21,28 @@ HTTPS origin of this API with no path.
 | | wrong domain, unverified email, or not on `Auth:AllowedEmails`: redirect to `/inloggen/geen-toegang` | 302 |
 | | invalid, missing or expired flow cookie, state mismatch, Google `error` (such as cancel), rejected code or invalid ID token: redirect to `/inloggen` | 302 |
 | | Google unreachable, timed out or answering unusably | 503 |
-| `GET /auth/session` | `{"email":"…","expiresAt":"…"}` for a valid session | 200 |
+| `GET /auth/session` | `{"email":"…","name":"…","expiresAt":"…"}` for a valid session; `name` is `null` when Google sent none | 200 |
 | | no, invalid or expired session, or an account that is no longer allowed | 401 |
+| `DELETE /auth/session` | signs out: deletes the session cookie, also when there is none | 204 |
+| | `Origin` missing or not `Auth:FrontendOrigin` | 403 |
 
 The no-access redirect never carries the email: the frontend page does not show which
 account was used. There is no return-URL parameter. Every redirect target and the OAuth
 `redirect_uri` come from configuration. Responses under `/auth` are `Cache-Control: no-store`;
 the callback also sends `Referrer-Policy: no-referrer`.
 
-There is no `POST /auth/sign-out` yet because no page can call it. Sessions last eight
-hours, and signing in again (**Ander account kiezen**) replaces the session. Add sign-out,
-with an `Origin` check, together with the first admin page that has a sign-out button.
+Sessions last eight hours, and signing in again (**Ander account kiezen**) replaces the
+session. `DELETE /auth/session` signs out: it requires the `Origin` header to equal
+`Auth:FrontendOrigin` (so another site cannot sign a visitor out) and browsers preflight it
+because `DELETE` is not a simple CORS method. Sessions are stateless, so signing out removes
+the cookie from that browser only: a copy of the cookie value stays valid until it expires.
+The foundation site's `/inloggen` page uses both session endpoints to show as whom you are signed in.
 
 ## Sign-in and validation
 
 1. `GET /auth/google` creates 32-byte random `state`, `nonce` and PKCE verifier, stores
    them in the encrypted flow cookie (10 minutes) and redirects to Google with
-   `scope=openid email`, `code_challenge_method=S256` and the hint `hd=*`. The hint is not
+   `scope=openid email profile`, `code_challenge_method=S256` and the hint `hd=*`. The hint is not
    a check: Google's `hd` request parameter accepts one domain, so the server validates.
 2. The callback requires the flow cookie and a `state` equal to the stored one
    (fixed-time comparison), then exchanges `code` with the client secret and PKCE
@@ -66,7 +71,7 @@ Failures log one event, `Google sign-in finished with {Outcome}`, where the outc
 `Success`, `WrongDomain`, `NotAuthorized`, `EmailUnverified`, `InvalidState`,
 `Cancelled`, `CodeRejected`, `InvalidToken` or `ProviderUnavailable`. Provider failures also log a
 `FailureCategory` (network, timeout, provider error or invalid response). Codes, tokens,
-secrets, state, nonces, cookies and email addresses are never logged by the API, and its
+secrets, state, nonces, cookies, names and email addresses are never logged by the API, and its
 request logs record the path without its query string. That covers the API's own logs:
 Cloud Run's platform request log records the full URL, including the callback's `code` and
 `state`. They are single use and bound to the PKCE verifier and the browser's flow cookie,
@@ -83,7 +88,7 @@ authenticated, so one cookie cannot be replayed as the other.
 | Cookie | Lifetime | Content |
 | --- | --- | --- |
 | `__Host-scpp-auth-flow` | 10 minutes | state, nonce, PKCE verifier, creation time |
-| `__Host-scpp-session` | 8 hours, not sliding | subject, email, `hd`, issue and expiry time |
+| `__Host-scpp-session` | 8 hours, not sliding | subject, email, name, `hd`, issue and expiry time |
 
 The key ring is `AUTH_SESSION_KEYS`:
 
@@ -115,15 +120,15 @@ invalid values.
 | `Cors__AllowedOrigins__0..n` | Cloud Run env | explicit origins; must include `Auth:FrontendOrigin`; no `*` |
 
 Origins must be `https` and not loopback outside Development. `/inloggen` and
-`/inloggen/geen-toegang` are fixed: they are the frontend's contract. CORS allows `GET`
-with credentials for the listed origins only.
+`/inloggen/geen-toegang` are fixed: they are the frontend's contract. CORS allows `GET` and
+`DELETE` with credentials for the listed origins only.
 
 ## Google client setup (administrator, once)
 
 1. In the **De Wildert / P&P APIs** OAuth app (an **Internal** app, which only admits
    accounts of this Workspace; `blokhutdewildert.nl` is a secondary domain of `scpp.nl`),
-   create a **Web application** client for sign-in. The scopes are `openid` and `email`
-   only, which need no verification. Gmail scopes belong to the mailbox clients, not this one.
+   create a **Web application** client for sign-in. The scopes are `openid`, `email`
+   and `profile` only (the name), which need no verification. Gmail scopes belong to the mailbox clients, not this one.
 2. Add the authorized redirect URIs for the hosts you use:
    - `https://auth-api-979979719406.europe-west4.run.app/auth/google/callback`
    - later `https://auth.blokhutdewildert.nl/auth/google/callback`

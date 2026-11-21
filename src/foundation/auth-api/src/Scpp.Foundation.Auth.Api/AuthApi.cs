@@ -39,6 +39,7 @@ internal static class AuthApi
         app.MapGet("/auth/google/callback", (HttpContext context, GoogleCallbackEndpoint endpoint, CancellationToken cancellationToken) =>
             endpoint.GetAsync(context, cancellationToken));
         app.MapGet("/auth/session", (HttpContext context, SessionEndpoint endpoint) => endpoint.Get(context));
+        app.MapDelete("/auth/session", (HttpContext context, SignOutEndpoint endpoint) => endpoint.Delete(context));
     }
 
     private static void AddServices(WebApplicationBuilder builder)
@@ -64,6 +65,7 @@ internal static class AuthApi
         builder.Services.AddScoped<GoogleSignInEndpoint>();
         builder.Services.AddScoped<GoogleCallbackEndpoint>();
         builder.Services.AddScoped<SessionEndpoint>();
+        builder.Services.AddScoped<SignOutEndpoint>();
     }
 
     private static void AddCors(WebApplicationBuilder builder, AuthSettings settings)
@@ -79,6 +81,6 @@ internal static class AuthApi
         }
 
         builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
-            policy.WithOrigins(allowedOrigins).WithMethods("GET").AllowCredentials()));
+            policy.WithOrigins(allowedOrigins).WithMethods("GET", "DELETE").AllowCredentials()));
     }
 }

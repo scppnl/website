@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Show on `/inloggen` as whom you are signed in (name and email) with **Ander account
+  kiezen** and **Uitloggen**, using the auth API's session endpoints. It needs the auth API
+  on the same site as the website; otherwise the page keeps offering sign-in.
 - Protect booking submissions with a separate Turnstile widget and fresh-token
   retries; preserve form input on failure and keep pricing usable when unavailable.
 

@@ -20,7 +20,45 @@ public sealed class SessionTests
         Assert.Contains("no-store", response.Headers.CacheControl!.ToString());
         using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Assert.AreEqual("member@scpp.nl", body.RootElement.GetProperty("email").GetString());
+        Assert.AreEqual("Jan Jansen", body.RootElement.GetProperty("name").GetString());
         Assert.AreEqual(DateTimeOffset.Parse("2026-11-21T20:00:00Z"), body.RootElement.GetProperty("expiresAt").GetDateTimeOffset());
+    }
+
+    [TestMethod]
+    [DataRow(null)]
+    [DataRow("  ")]
+    public async Task SessionWithoutANameStillWorks(string? name)
+    {
+        await using var host = await AuthTestHost.StartAsync();
+        using var signIn = await host.SignInAsync(new IdTokenClaims { Name = name });
+        var cookie = $"{AuthCookies.Session}={ResponseCookies.Value(signIn, AuthCookies.Session)}";
+
+        using var response = await host.GetAsync("/auth/session", cookie);
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.AreEqual("member@scpp.nl", body.RootElement.GetProperty("email").GetString());
+        Assert.AreEqual(JsonValueKind.Null, body.RootElement.GetProperty("name").ValueKind);
+    }
+
+    [TestMethod]
+    public async Task SessionFromAnOlderVersionIsUnauthorized()
+    {
+        await using var host = await AuthTestHost.StartAsync();
+        var payload = new SessionPayload
+        {
+            Version = 1,
+            Subject = "1234567890",
+            Email = "member@scpp.nl",
+            HostedDomain = "scpp.nl",
+            IssuedAt = host.Clock.GetUtcNow().ToUnixTimeSeconds(),
+            ExpiresAt = host.Clock.GetUtcNow().AddHours(8).ToUnixTimeSeconds(),
+        };
+        var cookie = $"{AuthCookies.Session}={host.Protect(AuthCookies.Session, payload)}";
+
+        using var response = await host.GetAsync("/auth/session", cookie);
+
+        Assert.AreEqual(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [TestMethod]

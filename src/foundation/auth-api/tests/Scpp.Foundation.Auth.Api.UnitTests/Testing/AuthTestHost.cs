@@ -2,7 +2,9 @@ using System.Net;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.DependencyInjection;
+using System.Text.Json;
 using Scpp.Foundation.Auth.Api.Google;
+using Scpp.Foundation.Auth.Api.Serialization;
 using Scpp.Foundation.Auth.Api.Sessions;
 using Serilog.Core;
 
@@ -59,15 +61,36 @@ internal sealed class AuthTestHost : IAsyncDisposable
         return new(app, client, google, clock, sink);
     }
 
+    /// <summary>A cookie value protected with this host's key ring, for sessions the callback would not issue.</summary>
+    internal string Protect(string cookieName, SessionPayload payload) =>
+        app.Services.GetRequiredService<CookieProtector>()
+            .Protect(cookieName, JsonSerializer.SerializeToUtf8Bytes(payload, AuthJsonContext.Default.SessionPayload));
+
     public async ValueTask DisposeAsync()
     {
         client.Dispose();
         await app.DisposeAsync();
     }
 
-    internal Task<HttpResponseMessage> GetAsync(string pathAndQuery, string? cookie = null, string host = ApiHost, string? origin = null)
+    internal Task<HttpResponseMessage> GetAsync(string pathAndQuery, string? cookie = null, string host = ApiHost, string? origin = null) =>
+        SendAsync(HttpMethod.Get, pathAndQuery, cookie, host, origin);
+
+    internal Task<HttpResponseMessage> DeleteAsync(string pathAndQuery, string? cookie = null, string? origin = null) =>
+        SendAsync(HttpMethod.Delete, pathAndQuery, cookie, ApiHost, origin);
+
+    /// <summary>A CORS preflight, as a browser sends it before a cross-origin request with a non-simple method.</summary>
+    internal Task<HttpResponseMessage> PreflightAsync(string pathAndQuery, string origin, string method)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get, pathAndQuery);
+        using var request = new HttpRequestMessage(HttpMethod.Options, pathAndQuery);
+        request.Headers.Host = ApiHost;
+        request.Headers.Add("Origin", origin);
+        request.Headers.Add("Access-Control-Request-Method", method);
+        return client.SendAsync(request);
+    }
+
+    private Task<HttpResponseMessage> SendAsync(HttpMethod method, string pathAndQuery, string? cookie, string host, string? origin)
+    {
+        using var request = new HttpRequestMessage(method, pathAndQuery);
         request.Headers.Host = host;
         if (cookie is not null) {
             request.Headers.Add("Cookie", cookie);
