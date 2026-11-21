@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.7] - 2026-11-21
+
+### Changed
+
+- Add the SonarAnalyzer and CSharpGuidelines analyzers, treat Release warnings as
+  errors, and enforce C# style analysis (braces, unused imports).
+- Refactor validation and Gmail delivery code and bind the booking endpoint through
+  dependency injection. Request and response behavior is unchanged.
+- Release the changes above, which were merged after 0.0.6 but never published
+  because the image publish step failed on the unchanged 0.0.6 tag.
+
 ## [0.0.6] - 2026-11-14
 
 ### Added
