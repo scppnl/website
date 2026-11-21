@@ -4,4 +4,6 @@ export interface AuthSession {
   /** Null when Google did not send a name. */
   readonly name: string | null;
   readonly expiresAt: string;
+  /** Permissions granted through Workspace group membership. Only hides UI: the APIs must enforce them. */
+  readonly permissions: readonly string[];
 }

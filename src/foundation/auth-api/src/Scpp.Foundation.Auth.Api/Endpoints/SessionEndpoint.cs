@@ -1,16 +1,26 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Scpp.Foundation.Auth.Api.Access;
+using Scpp.Foundation.Auth.Api.Google;
 using Scpp.Foundation.Auth.Api.Serialization;
 using Scpp.Foundation.Auth.Api.Sessions;
 using Scpp.Foundation.Auth.Contracts;
 
 namespace Scpp.Foundation.Auth.Api.Endpoints;
 
-/// <summary>Reports the signed-in user, re-applying the domain rules so config changes take effect.</summary>
-internal sealed class SessionEndpoint(CookieProtector protector, AccessPolicy policy, TimeProvider clock)
+/// <summary>
+/// Reports the signed-in user, re-applying the domain rules and the group-based permissions so
+/// configuration and membership changes take effect.
+/// </summary>
+internal sealed class SessionEndpoint(
+    CookieProtector protector,
+    AccessPolicy policy,
+    PermissionResolver permissions,
+    TimeProvider clock,
+    ILogger<SessionEndpoint> logger)
 {
-    internal Results<Ok<SessionResponseDto>, UnauthorizedHttpResult> Get(HttpContext context)
+    internal async Task<Results<Ok<SessionResponseDto>, UnauthorizedHttpResult, ContentHttpResult>> GetAsync(
+        HttpContext context, CancellationToken cancellationToken)
     {
         var session = ReadSession(context.Request);
         if (session is null || clock.GetUtcNow().ToUnixTimeSeconds() >= session.ExpiresAt ||
@@ -19,12 +29,20 @@ internal sealed class SessionEndpoint(CookieProtector protector, AccessPolicy po
             return TypedResults.Unauthorized();
         }
 
-        return TypedResults.Ok(new SessionResponseDto
-        {
-            Email = session.Email,
-            Name = session.Name,
-            ExpiresAt = DateTimeOffset.FromUnixTimeSeconds(session.ExpiresAt),
-        });
+        try {
+            return TypedResults.Ok(new SessionResponseDto
+            {
+                Email = session.Email,
+                Name = session.Name,
+                ExpiresAt = DateTimeOffset.FromUnixTimeSeconds(session.ExpiresAt),
+                Permissions = await permissions.ResolveAsync(session.Email, cancellationToken),
+            });
+        } catch (GoogleUnavailableException exception) {
+            // Fail closed: without a trustworthy answer nobody is told which permissions they hold.
+            logger.LogWarning(exception, "Session permissions lookup failed with {FailureCategory}", exception.Category);
+            return TypedResults.Text("Permissions are temporarily unavailable. Please try again.", "text/plain",
+                statusCode: StatusCodes.Status503ServiceUnavailable);
+        }
     }
 
     private SessionPayload? ReadSession(HttpRequest request)

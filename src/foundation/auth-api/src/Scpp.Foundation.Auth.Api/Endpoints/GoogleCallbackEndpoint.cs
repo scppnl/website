@@ -8,13 +8,17 @@ using Scpp.Foundation.Auth.Api.Sessions;
 
 namespace Scpp.Foundation.Auth.Api.Endpoints;
 
-/// <summary>Finishes the flow: validates state, code and ID token, applies the domain rules and issues the session.</summary>
+/// <summary>
+/// Finishes the flow: validates state, code and ID token, applies the domain rules, looks up the
+/// user's group permissions and issues the session.
+/// </summary>
 internal sealed class GoogleCallbackEndpoint(
     AuthSettings settings,
     CookieProtector protector,
     GoogleOidcClient google,
     GoogleIdTokenValidator validator,
     AccessPolicy policy,
+    PermissionResolver permissions,
     TimeProvider clock,
     ILogger<GoogleCallbackEndpoint> logger)
 {
@@ -67,9 +71,18 @@ internal sealed class GoogleCallbackEndpoint(
             }
 
             var validation = await validator.ValidateAsync(idToken, flow.Nonce, cancellationToken);
-            return validation.Identity is null
-                ? (SignInOutcome.InvalidToken, null)
-                : (Authorize(validation.Identity), validation.Identity);
+            if (validation.Identity is null) {
+                return (SignInOutcome.InvalidToken, null);
+            }
+
+            var outcome = Authorize(validation.Identity);
+            if (outcome == SignInOutcome.Success) {
+                // The session does not carry permissions. Looking them up here makes a Google problem refuse the
+                // sign-in (fail closed) and gives the first session request fresh data.
+                await permissions.RefreshAsync(validation.Identity.Email, cancellationToken);
+            }
+
+            return (outcome, validation.Identity);
         } catch (GoogleUnavailableException exception) {
             logger.LogWarning(exception, "Google sign-in provider failure {FailureCategory}", exception.Category);
             return (SignInOutcome.ProviderUnavailable, null);

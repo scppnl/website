@@ -53,6 +53,84 @@ public sealed class AuthSettingsTests
     }
 
     [TestMethod]
+    public void NoPermissionsIsValid()
+    {
+        var settings = AuthSettings.Load(Configure(), new TestHostEnvironment("Production"));
+
+        Assert.IsEmpty(settings.Permissions);
+    }
+
+    [TestMethod]
+    public void PermissionsAreLoadedInConfiguredOrder()
+    {
+        var settings = AuthSettings.Load(Configure(
+            ("Auth:Permissions:0:Name", "bookings.manage"),
+            ("Auth:Permissions:0:Groups:0", "Website-Bookings@scpp.nl"),
+            ("Auth:Permissions:1:Name", "contact-form.read2"),
+            ("Auth:Permissions:1:Groups:0", "website-contact@blokhutdewildert.nl"),
+            ("Auth:Permissions:1:Groups:1", "website-bookings@scpp.nl")), new TestHostEnvironment("Production"));
+
+        CollectionAssert.AreEqual(new[] { "bookings.manage", "contact-form.read2" }, settings.Permissions.Select(rule => rule.Name).ToArray());
+        Assert.IsTrue(settings.Permissions[0].Groups.SetEquals(["website-bookings@scpp.nl"]));
+        Assert.IsTrue(settings.Permissions[1].Groups.SetEquals(["website-contact@blokhutdewildert.nl", "website-bookings@scpp.nl"]));
+    }
+
+    [TestMethod]
+    [DataRow(null)]
+    [DataRow("")]
+    [DataRow("Bookings.manage")]
+    [DataRow("bookings manage")]
+    [DataRow("bookings..manage")]
+    [DataRow(".bookings")]
+    [DataRow("bookings.")]
+    [DataRow("bookings_manage")]
+    [DataRow("b\u00F6ekings")]
+    public void InvalidPermissionNamesAreRejectedAtStartup(string? name)
+    {
+        var configuration = Configure(("Auth:Permissions:0:Name", name), ("Auth:Permissions:0:Groups:0", "website-bookings@scpp.nl"));
+
+        Assert.ThrowsExactly<InvalidOperationException>(() => AuthSettings.Load(configuration, new TestHostEnvironment("Production")));
+    }
+
+    [TestMethod]
+    [DataRow("no-at-sign")]
+    [DataRow("@scpp.nl")]
+    [DataRow("website@")]
+    [DataRow("a@b@scpp.nl")]
+    [DataRow("website@example.org")]
+    [DataRow("website@sub.scpp.nl")]
+    [DataRow("web'site@scpp.nl")]
+    [DataRow("web site@scpp.nl")]
+    [DataRow("web\\site@scpp.nl")]
+    [DataRow("w\u00E9bsite@scpp.nl")]
+    public void InvalidGroupAddressesAreRejectedAtStartup(string group)
+    {
+        var configuration = Configure(("Auth:Permissions:0:Name", "bookings.manage"), ("Auth:Permissions:0:Groups:0", group));
+
+        Assert.ThrowsExactly<InvalidOperationException>(() => AuthSettings.Load(configuration, new TestHostEnvironment("Production")));
+    }
+
+    [TestMethod]
+    public void PermissionWithoutGroupsIsRejected()
+    {
+        var configuration = Configure(("Auth:Permissions:0:Name", "bookings.manage"));
+
+        Assert.ThrowsExactly<InvalidOperationException>(() => AuthSettings.Load(configuration, new TestHostEnvironment("Production")));
+    }
+
+    [TestMethod]
+    public void DuplicatePermissionNamesAreRejected()
+    {
+        var configuration = Configure(
+            ("Auth:Permissions:0:Name", "bookings.manage"),
+            ("Auth:Permissions:0:Groups:0", "website-bookings@scpp.nl"),
+            ("Auth:Permissions:1:Name", "bookings.manage"),
+            ("Auth:Permissions:1:Groups:0", "website-contact@scpp.nl"));
+
+        Assert.ThrowsExactly<InvalidOperationException>(() => AuthSettings.Load(configuration, new TestHostEnvironment("Production")));
+    }
+
+    [TestMethod]
     public void NoDomainsIsRejected()
     {
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(Values().Where(pair => !pair.Key.StartsWith("Auth:AllowedDomains", StringComparison.Ordinal))).Build();

@@ -7,6 +7,7 @@ internal sealed record AuthSettings(
     string PostSignInPath,
     IReadOnlySet<string> AllowedDomains,
     IReadOnlySet<string> AllowedEmails,
+    IReadOnlyList<PermissionRule> Permissions,
     string ClientId,
     string ClientSecret)
 {
@@ -17,6 +18,7 @@ internal sealed record AuthSettings(
 
     private const string ConfigurationError =
         "Configure AUTH_GOOGLE_CLIENT_SECRET, Auth:Google:ClientId, Auth:ApiOrigin, Auth:FrontendOrigin, Auth:PostSignInPath and Auth:AllowedDomains. " +
+        "Each Auth:Permissions entry needs a lowercase dotted Name and Groups that are addresses on an allowed domain. " +
         "Origins must be bare HTTPS origins outside Development.";
 
     internal Uri CallbackUri => new(ApiOrigin, CallbackPath);
@@ -30,19 +32,53 @@ internal sealed record AuthSettings(
         var postSignIn = configuration["Auth:PostSignInPath"] ?? "/";
         var domains = ReadSet(configuration, "Auth:AllowedDomains");
         var emails = ReadSet(configuration, "Auth:AllowedEmails");
+        var permissions = ReadPermissions(configuration, domains);
         var apiOrigin = ParseOrigin(configuration["Auth:ApiOrigin"], environment);
         var frontendOrigin = ParseOrigin(configuration["Auth:FrontendOrigin"], environment);
 
         if (string.IsNullOrWhiteSpace(secret) ||
             string.IsNullOrWhiteSpace(clientId) || !clientId.EndsWith(".apps.googleusercontent.com", StringComparison.Ordinal) ||
-            apiOrigin is null || frontendOrigin is null ||
+            apiOrigin is null || frontendOrigin is null || permissions is null ||
             !IsLocalPath(postSignIn) ||
             domains.Count == 0 || domains.Any(domain => !IsHostname(domain)) ||
             emails.Any(email => !email.All(char.IsAscii) || !email.Contains('@', StringComparison.Ordinal))) {
             throw new InvalidOperationException(ConfigurationError);
         }
 
-        return new(apiOrigin, frontendOrigin, postSignIn, domains, emails, clientId, secret);
+        return new(apiOrigin, frontendOrigin, postSignIn, domains, emails, permissions, clientId, secret);
+    }
+
+    /// <summary>Null when any entry is invalid. Names are unique, and every group is an address on an allowed domain.</summary>
+    private static List<PermissionRule>? ReadPermissions(IConfiguration configuration, IReadOnlySet<string> domains)
+    {
+        var rules = new List<PermissionRule>();
+        
+        foreach (var section in configuration.GetSection("Auth:Permissions").GetChildren()) {
+            var name = section["Name"] ?? "";
+            var groups = ReadSet(section, "Groups");
+            if (!IsPermissionName(name) || rules.Exists(rule => rule.Name == name) ||
+                groups.Count == 0 || !groups.All(group => IsGroupAddress(group, domains))) {
+                return null;
+            }
+
+            rules.Add(new(name, groups));
+        }
+
+        return rules;
+    }
+
+    /// <summary>Dot-separated lowercase segments of ASCII letters, digits and hyphens, such as <c>bookings.manage</c>.</summary>
+    private static bool IsPermissionName(string name) =>
+        name.Split('.').All(segment => segment.Length > 0 && segment.All(character => char.IsAsciiLetterLower(character) || char.IsAsciiDigit(character) || character == '-'));
+
+    /// <summary>One local part and an allowed domain, in a deliberately small character set: it ends up in a query string literal.</summary>
+    private static bool IsGroupAddress(string address, IReadOnlySet<string> domains)
+    {
+        var at = address.IndexOf('@', StringComparison.Ordinal);
+        
+        return at > 0 && at == address.LastIndexOf('@') && at < address.Length - 1 &&
+            address.All(character => char.IsAsciiLetterOrDigit(character) || character is '@' or '.' or '_' or '-' or '+') &&
+            domains.Contains(address[(at + 1)..]);
     }
 
     private static HashSet<string> ReadSet(IConfiguration configuration, string section) =>
