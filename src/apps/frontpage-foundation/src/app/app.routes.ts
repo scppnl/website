@@ -23,6 +23,7 @@ export const routes: Routes = [
     path: 'beheer',
     component: AdminLayout,
     children: [
+      { path: '', pathMatch: 'full', redirectTo: 'toegangsaanvragen' },
       {
         path: 'toegangsaanvragen',
         title: 'Toegangsaanvragen',

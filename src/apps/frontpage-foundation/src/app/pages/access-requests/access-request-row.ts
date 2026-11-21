@@ -1,10 +1,12 @@
-import { Component, computed, input } from '@angular/core';
+import { Location } from '@angular/common';
+import { Component, computed, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AccessRequest } from '../../access-requests/access-request';
 import { formatLength, formatPeriod } from '../../access-requests/access-request-format';
 import { displayName, firstName, hasAllLocks } from '../../access-requests/access-request-queries';
 import { Icon } from '../../shared/icon/icon';
 import { AccessStatusBadge } from './access-status-badge';
+import { FROM_LIST_STATE, openedFromList } from './list-navigation';
 
 /** One request in the list. It is a link, so the address bar always says which one is open. */
 @Component({
@@ -18,6 +20,7 @@ import { AccessStatusBadge } from './access-status-badge';
       [queryParams]="{ aanvraag: request().id }"
       queryParamsHandling="merge"
       [replaceUrl]="replaceUrl()"
+      [state]="linkState()"
       [attr.aria-current]="selected() ? 'true' : null"
     >
       <span class="row__who">
@@ -60,6 +63,16 @@ export class AccessRequestRow {
   readonly now = input.required<Date>();
   /** Switching between requests should not fill the browser history. */
   readonly replaceUrl = input(false);
+
+  private readonly location = inject(Location);
+
+  /**
+   * Opening a request from the list marks the new entry, so the details can go back to the list
+   * instead of adding another entry. Switching between requests replaces the entry and keeps its mark.
+   */
+  protected linkState() {
+    return this.replaceUrl() ? { fromList: openedFromList(this.location) } : FROM_LIST_STATE;
+  }
 
   protected readonly name = computed(() => displayName(this.request()));
   protected readonly first = computed(() => firstName(this.request()));

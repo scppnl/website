@@ -24,6 +24,8 @@ export interface AccessRequestHistoryEntry {
   readonly revised: boolean;
   readonly by?: string;
   readonly notified?: boolean;
+  /** The e-mail was asked for but not sent, because no real API is connected yet. */
+  readonly simulated?: boolean;
 }
 
 export interface AccessRequest {

@@ -165,15 +165,21 @@
 }
 
 .layout {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
   gap: 1.5rem;
+}
+
+/* From here list and details sit side by side; the list takes what the panel leaves. */
+@media (min-width: 64rem) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr) 25rem;
+  }
 }
 
 .list {
   display: flex;
-  flex: 999 1 35rem;
   flex-direction: column;
   gap: 0.75rem;
   min-width: 0;
@@ -186,8 +192,20 @@
 }
 
 .detail {
-  flex: 1 1 25rem;
   min-width: 0;
+}
+
+/* The phone's detail screen hides the intro, so it repeats the sample-data notice. */
+.notice--detail {
+  display: flex;
+  margin-bottom: 1rem;
+  border-radius: var(--radius-sm);
+}
+
+@media (min-width: 64rem) {
+  .notice--detail {
+    display: none;
+  }
 }
 
 .empty,

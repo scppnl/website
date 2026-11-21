@@ -11,6 +11,9 @@ export const PLACEHOLDER_ADMIN = 'Beheerder';
  */
 @Injectable({ providedIn: 'root' })
 export class AccessRequestService {
+  /** The example data cannot e-mail anyone: the page says so instead of claiming it did. */
+  readonly sendsEmail = false;
+
   private requests: readonly AccessRequest[] | null = null;
   /** The requests as they were before the last decision, so that it can be undone. */
   private beforeLastDecision: readonly AccessRequest[] = [];
@@ -41,6 +44,7 @@ export class AccessRequestService {
                 revised: request.status !== 'pending',
                 by: PLACEHOLDER_ADMIN,
                 notified: decision.notify,
+                simulated: decision.notify && !this.sendsEmail,
               },
             ],
           }

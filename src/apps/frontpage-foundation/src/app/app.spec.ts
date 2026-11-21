@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
 import { App } from './app';
 import { routes } from './app.routes';
@@ -46,6 +46,13 @@ describe('App', () => {
     expect(compiled.querySelector('footer')).toBeNull();
     expect(compiled.querySelectorAll('main#main').length).toBe(1);
     expect(compiled.querySelector('h1')?.textContent).toContain('Toegangsaanvragen');
+  });
+
+  it('sends /beheer on to the access requests', async () => {
+    const harness = await RouterTestingHarness.create('/beheer');
+    await harness.fixture.whenStable();
+
+    expect(TestBed.inject(Router).url).toBe('/beheer/toegangsaanvragen');
   });
 
   it('leaves the header and footer out of the sign-in pages', async () => {

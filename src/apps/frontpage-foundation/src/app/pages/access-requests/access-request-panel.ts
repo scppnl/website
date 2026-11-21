@@ -1,13 +1,15 @@
+import { Location } from '@angular/common';
 import {
   afterRenderEffect,
   Component,
   computed,
   ElementRef,
+  inject,
   input,
   output,
   viewChild,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AccessDecisionDraft, AccessRequest } from '../../access-requests/access-request';
 import {
   formatDateTime,
@@ -20,11 +22,13 @@ import {
   AccessOverlap,
   displayName,
   hasAllLocks,
+  SeriesMember,
 } from '../../access-requests/access-request-queries';
 import { accessRequestsPage } from '../../content/site-content';
 import { Icon } from '../../shared/icon/icon';
 import { AccessDecisionForm } from './access-decision-form';
 import { AccessStatusBadge } from './access-status-badge';
+import { openedFromList } from './list-navigation';
 
 /** The details of one request, with the decision form while it is open, or the decision once made. */
 @Component({
@@ -33,12 +37,7 @@ import { AccessStatusBadge } from './access-status-badge';
   styleUrl: './access-request-panel.scss',
   template: `
     <aside class="panel" aria-labelledby="panel-title">
-      <a
-        class="panel__back"
-        routerLink="."
-        [queryParams]="{ aanvraag: null }"
-        queryParamsHandling="merge"
-      >
+      <a class="panel__back" [href]="listUrl" (click)="backToList($event)">
         <app-icon name="chevron-left" [size]="22" [strokeWidth]="2.2" />
         Aanvragen
       </a>
@@ -162,6 +161,7 @@ import { AccessStatusBadge } from './access-status-badge';
                 [queryParams]="{ aanvraag: next }"
                 queryParamsHandling="merge"
                 replaceUrl
+                [state]="{ fromList: fromList() }"
               >
                 Volgende openstaande
                 <app-icon name="arrow-right" [size]="18" [strokeWidth]="2.2" />
@@ -176,7 +176,7 @@ import { AccessStatusBadge } from './access-status-badge';
 export class AccessRequestPanel {
   readonly request = input.required<AccessRequest>();
   /** The person's other open requests. */
-  readonly siblings = input<readonly AccessRequest[]>([]);
+  readonly siblings = input<readonly SeriesMember[]>([]);
   readonly overlaps = input<readonly AccessOverlap[]>([]);
   /** The open request to continue with, if there is one. */
   readonly nextId = input<string | undefined>();
@@ -194,6 +194,12 @@ export class AccessRequestPanel {
   protected readonly period = (request: AccessRequest) => formatPeriod(request.start, request.end);
 
   private readonly title = viewChild<ElementRef<HTMLElement>>('title');
+  private readonly router = inject(Router);
+  private readonly location = inject(Location);
+
+  /** The list without a request open; also the back link's address for a new tab. */
+  protected readonly listUrl = '/beheer/toegangsaanvragen';
+  protected readonly fromList = () => openedFromList(this.location);
 
   protected readonly name = computed(() => displayName(this.request()));
   protected readonly editing = computed(
@@ -225,6 +231,26 @@ export class AccessRequestPanel {
     afterRenderEffect(() => {
       requestId();
       this.title()?.nativeElement.focus();
+    });
+  }
+
+  /**
+   * Back to the list. Opened from the list, this goes back in history, so the browser's own Back
+   * button does not return to these details afterwards. A direct link replaces itself with the list.
+   */
+  protected backToList(event: MouseEvent): void {
+    if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) {
+      return;
+    }
+    event.preventDefault();
+    if (openedFromList(this.location)) {
+      this.location.back();
+      return;
+    }
+    void this.router.navigate([], {
+      queryParams: { aanvraag: null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
     });
   }
 }

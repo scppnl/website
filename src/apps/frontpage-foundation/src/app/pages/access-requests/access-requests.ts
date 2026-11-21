@@ -9,6 +9,7 @@ import {
   signal,
   viewChild,
 } from '@angular/core';
+import { Location } from '@angular/common';
 import { Router } from '@angular/router';
 import {
   AccessDecisionDraft,
@@ -24,6 +25,7 @@ import {
   firstName,
   nextPending,
   overlapsOf,
+  seriesMembers,
   seriesOf,
 } from '../../access-requests/access-request-queries';
 import { AccessRequestService } from '../../access-requests/access-request.service';
@@ -31,6 +33,7 @@ import { accessRequestsPage } from '../../content/site-content';
 import { Icon } from '../../shared/icon/icon';
 import { AccessRequestPanel } from './access-request-panel';
 import { AccessRequestRow } from './access-request-row';
+import { openedFromList } from './list-navigation';
 
 interface Toast {
   /** The requests the decision was applied to, for undoing it. */
@@ -55,6 +58,7 @@ export class AccessRequests {
 
   private readonly service = inject(AccessRequestService);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
   private readonly toastElement = viewChild<ElementRef<HTMLElement>>('toastElement');
 
   /** Null until the requests are loaded: the page is prerendered, so it starts without them. */
@@ -83,9 +87,10 @@ export class AccessRequests {
     const id = this.aanvraag();
     return id ? this.all().find((request) => request.id === id) : undefined;
   });
+  /** The person's other open requests, each with the access it overlaps. */
   protected readonly siblings = computed(() => {
     const request = this.selected();
-    return request ? seriesOf(request, this.all()) : [];
+    return request ? seriesMembers(request, this.all()) : [];
   });
   protected readonly overlaps = computed(() => {
     const request = this.selected();
@@ -138,7 +143,7 @@ export class AccessRequests {
   }
 
   protected async decide(request: AccessRequest, draft: AccessDecisionDraft): Promise<void> {
-    const targets = [request, ...(draft.applyAll ? this.siblings() : [])];
+    const targets = [request, ...(draft.applyAll ? this.siblings().map((member) => member.request) : [])];
     const list = await this.service.decide({
       ids: targets.map((target) => target.id),
       outcome: draft.outcome,
@@ -155,9 +160,11 @@ export class AccessRequests {
     this.toast.set({
       ids: targets.map((target) => target.id),
       text: `${count > 1 ? `${count} aanvragen van ${who}` : `Aanvraag van ${who}`} ${result}.`,
-      detail: draft.notify
-        ? `${receiver} krijgt ${count > 1 ? 'één e-mail met alle besluiten.' : 'een e-mail.'}`
-        : 'Er is geen e-mail verstuurd.',
+      detail: !draft.notify
+        ? 'Er is geen e-mail verstuurd.'
+        : this.service.sendsEmail
+          ? `${receiver} krijgt ${count > 1 ? 'één e-mail met alle besluiten.' : 'een e-mail.'}`
+          : 'Er is geen e-mail verstuurd: dit zijn voorbeeldgegevens.',
     });
   }
 
@@ -171,6 +178,8 @@ export class AccessRequests {
       queryParams: { aanvraag: toast.ids[0] },
       queryParamsHandling: 'merge',
       replaceUrl: true,
+      // Keep whether this entry was opened from the list, for the panel's back link.
+      state: { fromList: openedFromList(this.location) },
     });
   }
 }

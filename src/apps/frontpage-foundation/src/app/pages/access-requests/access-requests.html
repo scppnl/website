@@ -88,6 +88,10 @@
 
       <div class="detail">
         @if (selected(); as request) {
+          <p class="notice notice--detail">
+            <app-icon name="info" [size]="20" [strokeWidth]="2" />
+            {{ content.sampleNotice }}
+          </p>
           <app-access-request-panel
             [request]="request"
             [siblings]="siblings()"

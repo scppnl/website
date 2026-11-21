@@ -88,10 +88,18 @@ export function formatLength(
     : duration;
 }
 
-/** "Goedgekeurd door Karin Willems · e-mail verstuurd", or the matching line for the other events. */
+/**
+ * "Goedgekeurd door Karin Willems · e-mail verstuurd", or the matching line for the other events.
+ * An e-mail that was only simulated says so.
+ */
 export function historyLabel(entry: AccessRequestHistoryEntry): string {
   if (entry.event === 'submitted') return 'Ingediend via het formulier';
   const verb = entry.event === 'approved' ? 'goedgekeurd' : 'afgewezen';
   const lead = entry.revised ? `Herzien naar ${verb}` : verb.replace(/^./, (c) => c.toUpperCase());
-  return `${lead} door ${entry.by}${entry.notified ? ' · e-mail verstuurd' : ''}`;
+  const mail = !entry.notified
+    ? ''
+    : entry.simulated
+      ? ' · e-mail niet verstuurd (voorbeeld)'
+      : ' · e-mail verstuurd';
+  return `${lead} door ${entry.by}${mail}`;
 }

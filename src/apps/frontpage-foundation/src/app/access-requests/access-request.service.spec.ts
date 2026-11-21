@@ -47,6 +47,15 @@ describe('AccessRequestService', () => {
     ]);
   });
 
+  it('records an asked-for e-mail as simulated, because it sends none', async () => {
+    expect(service.sendsEmail).toBe(false);
+    const list = await service.decide({ ids: ['d1', 'd2'], outcome: 'approved', comment: '', notify: true });
+    expect(find(list, 'd1').history.at(-1)).toMatchObject({ notified: true, simulated: true });
+
+    const quiet = await service.decide({ ids: ['d3'], outcome: 'approved', comment: '', notify: false });
+    expect(find(quiet, 'd3').history.at(-1)).toMatchObject({ notified: false, simulated: false });
+  });
+
   it('does not change the lists it handed out earlier', async () => {
     const before = await service.list();
     await service.decide({ ids: ['d1'], outcome: 'approved', comment: '', notify: false });

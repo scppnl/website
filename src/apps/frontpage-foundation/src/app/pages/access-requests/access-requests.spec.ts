@@ -1,4 +1,6 @@
+import { Location } from '@angular/common';
 import { TestBed } from '@angular/core/testing';
+import { vi } from 'vitest';
 import { Meta } from '@angular/platform-browser';
 import { provideRouter, Router, TitleStrategy, withComponentInputBinding } from '@angular/router';
 import { RouterTestingHarness } from '@angular/router/testing';
@@ -206,7 +208,11 @@ describe('foundation /beheer/toegangsaanvragen page', () => {
     await submit();
 
     expect(text($('.toast'))).toContain('3 aanvragen van Mila Koster afgewezen.');
-    expect(text($('.toast'))).toContain('Mila krijgt één e-mail met alle besluiten.');
+    // The example data e-mails nobody, and the page must not claim otherwise.
+    expect(text($('.toast'))).toContain('Er is geen e-mail verstuurd: dit zijn voorbeeldgegevens.');
+    expect(text($('.toast'))).not.toContain('krijgt');
+    expect(text($('app-access-request-panel'))).toContain('e-mail niet verstuurd (voorbeeld)');
+    expect(text($('app-access-request-panel'))).not.toContain('e-mail verstuurd ');
     expect(tabCount('Openstaand')).toBe('3');
     expect(tabCount('Afgewezen')).toBe('4');
     expect(text($('app-access-request-panel'))).toContain('Afgewezen door');
@@ -283,5 +289,46 @@ describe('foundation /beheer/toegangsaanvragen page', () => {
     await click($<HTMLAnchorElement>('.panel__back')!);
     expect(url()).not.toContain('aanvraag');
     expect($('.page')!.classList).not.toContain('page--detail');
+  });
+  it('shows the locks and overlaps of every request a series decision includes', async () => {
+    // m1 itself overlaps nobody, but m2 in the same series overlaps Wouter Bos.
+    await render('/beheer/toegangsaanvragen?aanvraag=m1');
+    expect(text($('app-access-request-panel .overlaps'))).toBe('');
+
+    const series = text($('.series'));
+    expect(series).toContain('Alle sloten');
+    expect(series).toContain('Ook toegang: Wouter Bos');
+    expect(series).toContain('Voordeur kleine gebouw, Magazijn buitendeur');
+  });
+
+  it('keeps the sample-data notice in view on the details screen', async () => {
+    await render('/beheer/toegangsaanvragen?aanvraag=d1');
+    expect(text($('.notice--detail'))).toBe('Voorbeeldgegevens: besluiten worden nog niet opgeslagen.');
+  });
+
+  it('goes back in history to the list it came from, so Back does not reopen the details', async () => {
+    await render();
+    const location = TestBed.inject(Location);
+    const back = vi.spyOn(location, 'back');
+
+    await click(rows()[0].querySelector('a')!);
+    expect(url()).toContain('aanvraag=d1');
+    await click($<HTMLAnchorElement>('.panel__back')!);
+
+    expect(back).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps the list mark when switching requests, and not for a direct link', async () => {
+    await render('/beheer/toegangsaanvragen?aanvraag=d1');
+    const location = TestBed.inject(Location);
+    const back = vi.spyOn(location, 'back');
+
+    // Switching rows replaces this directly opened entry; it must not claim to come from the list.
+    await click(rows()[1].querySelector('a')!);
+    expect(url()).toContain('aanvraag=d2');
+    await click($<HTMLAnchorElement>('.panel__back')!);
+
+    expect(back).not.toHaveBeenCalled();
+    expect(url()).toBe('/beheer/toegangsaanvragen');
   });
 });

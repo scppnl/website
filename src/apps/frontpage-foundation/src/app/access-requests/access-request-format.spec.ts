@@ -101,5 +101,15 @@ describe('historyLabel', () => {
     expect(
       historyLabel({ event: 'approved', at: when, revised: true, by: 'Ruud Hermans', notified: false }),
     ).toBe('Herzien naar goedgekeurd door Ruud Hermans');
+    expect(
+      historyLabel({
+        event: 'approved',
+        at: when,
+        revised: false,
+        by: 'Beheerder',
+        notified: true,
+        simulated: true,
+      }),
+    ).toBe('Goedgekeurd door Beheerder · e-mail niet verstuurd (voorbeeld)');
   });
 });

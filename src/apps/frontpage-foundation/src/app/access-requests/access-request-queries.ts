@@ -102,6 +102,26 @@ export function overlapsOf(
     .sort((a, b) => time(a.request.start) - time(b.request.start));
 }
 
+/** A request a series decision would also apply to, with the access it overlaps. */
+export interface SeriesMember {
+  readonly request: AccessRequest;
+  readonly overlaps: readonly AccessOverlap[];
+}
+
+/**
+ * The other open requests of the same person, each with its own overlaps, so that deciding the
+ * whole series never approves an overlap the admin has not seen.
+ */
+export function seriesMembers(
+  request: AccessRequest,
+  requests: readonly AccessRequest[],
+): SeriesMember[] {
+  return seriesOf(request, requests).map((member) => ({
+    request: member,
+    overlaps: overlapsOf(member, requests),
+  }));
+}
+
 /** The open request that starts first, leaving out the one being looked at. */
 export function nextPending(
   requests: readonly AccessRequest[],

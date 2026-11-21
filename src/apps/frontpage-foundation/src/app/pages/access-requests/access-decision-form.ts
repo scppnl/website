@@ -13,7 +13,12 @@ import {
   AccessRequest,
 } from '../../access-requests/access-request';
 import { formatPeriod } from '../../access-requests/access-request-format';
-import { firstName } from '../../access-requests/access-request-queries';
+import {
+  displayName,
+  firstName,
+  hasAllLocks,
+  SeriesMember,
+} from '../../access-requests/access-request-queries';
 import { Icon } from '../../shared/icon/icon';
 
 export const CHOOSE_OUTCOME_ERROR = 'Kies eerst of je de aanvraag goedkeurt of afwijst.';
@@ -103,8 +108,23 @@ function decisionRules(group: AbstractControl): ValidationErrors | null {
             <span>{{ siblingsLabel() }}</span>
           </label>
           <ul>
-            @for (sibling of siblings(); track sibling.id) {
-              <li>{{ period(sibling) }} · {{ sibling.reason }}</li>
+            @for (member of siblings(); track member.request.id) {
+              <li class="series__item">
+                <span>{{ period(member.request) }} · {{ member.request.reason }}</span>
+                <span class="series__locks">
+                  <app-icon name="lock" [size]="14" [strokeWidth]="2.2" />
+                  {{ locks(member.request) }}
+                </span>
+                @for (overlap of member.overlaps; track overlap.request.id) {
+                  <span class="series__overlap">
+                    <app-icon name="users" [size]="16" [strokeWidth]="2" />
+                    <span
+                      >Ook toegang: <strong>{{ name(overlap.request) }}</strong> ·
+                      {{ period(overlap.request) }} · {{ overlap.locks.join(', ') }}</span
+                    >
+                  </span>
+                }
+              </li>
             }
           </ul>
         </div>
@@ -143,7 +163,7 @@ function decisionRules(group: AbstractControl): ValidationErrors | null {
 export class AccessDecisionForm {
   readonly request = input.required<AccessRequest>();
   /** The person's other open requests, which the decision can be applied to as well. */
-  readonly siblings = input<readonly AccessRequest[]>([]);
+  readonly siblings = input<readonly SeriesMember[]>([]);
   /** Changing a decision that was already made. */
   readonly reconsidering = input(false);
 
@@ -153,6 +173,9 @@ export class AccessDecisionForm {
   protected readonly chooseOutcomeError = CHOOSE_OUTCOME_ERROR;
   protected readonly commentRequiredError = COMMENT_REQUIRED_ERROR;
   protected readonly period = (request: AccessRequest) => formatPeriod(request.start, request.end);
+  protected readonly name = displayName;
+  protected readonly locks = (request: AccessRequest) =>
+    hasAllLocks(request) ? 'Alle sloten' : request.locks.join(', ');
 
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly commentField = viewChild<ElementRef<HTMLTextAreaElement>>('comment');
