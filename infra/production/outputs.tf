@@ -15,5 +15,5 @@ output "github_variable_gcp_service_account" {
 
 output "turnstile_secrets" {
   description = "Secrets whose values must be added by hand (gcloud secrets versions add ...)."
-  value       = { for name, api in module.apis : name => api.secret_id }
+  value       = { for name, api in module.apis : name => api.secret_id if api.secret_id != null }
 }

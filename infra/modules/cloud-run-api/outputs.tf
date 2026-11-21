@@ -14,6 +14,6 @@ output "runtime_service_account_email" {
 }
 
 output "secret_id" {
-  description = "Secret that must hold the Turnstile secret key (value added by hand)."
-  value       = google_secret_manager_secret.turnstile.secret_id
+  description = "Secret that must hold the Turnstile secret key (value added by hand). Null for an API without Turnstile."
+  value       = one(google_secret_manager_secret.turnstile[*].secret_id)
 }
