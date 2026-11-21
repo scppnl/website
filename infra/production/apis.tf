@@ -37,7 +37,7 @@ locals {
       additional_env = {
         Auth__Google__ClientId  = "979979719406-brkpjbj4pal832tvic51rlkqu99m9krd.apps.googleusercontent.com"
         Auth__ApiOrigin         = "https://auth-api-979979719406.europe-west4.run.app"
-        Auth__FrontendOrigin    = "https://blokhutdewildert.nl"
+        Auth__FrontendOrigin    = "https://scpp-foundation.de-wildert-penp.workers.dev"
         Auth__PostSignInPath    = "/"
         Auth__AllowedDomains__0 = "scpp.nl"
         Auth__AllowedDomains__1 = "blokhutdewildert.nl"
