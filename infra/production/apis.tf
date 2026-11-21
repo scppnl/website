@@ -33,6 +33,26 @@ locals {
         "blokhutdewildert.nl",
       ]
     }
+    "auth-api" = {
+      additional_env = {
+        Auth__Google__ClientId  = "979979719406-brkpjbj4pal832tvic51rlkqu99m9krd.apps.googleusercontent.com"
+        Auth__ApiOrigin         = "https://auth-api-979979719406.europe-west4.run.app"
+        Auth__FrontendOrigin    = "https://blokhutdewildert.nl"
+        Auth__PostSignInPath    = "/"
+        Auth__AllowedDomains__0 = "scpp.nl"
+        Auth__AllowedDomains__1 = "blokhutdewildert.nl"
+      }
+      additional_secrets = {
+        AUTH_GOOGLE_CLIENT_SECRET = google_secret_manager_secret.auth_google_client_secret.secret_id
+        AUTH_SESSION_KEYS         = google_secret_manager_secret.auth_session_keys.secret_id
+      }
+      # Only used when the service is first created; CI deploys every later image.
+      image = "us-docker.pkg.dev/cloudrun/container/hello"
+      cors_allowed_origins = [
+        "https://scpp-foundation.de-wildert-penp.workers.dev",
+        "https://blokhutdewildert.nl",
+      ]
+    }
     "booking-api" = {
       additional_env = {
         BookingEmail__From = "noreply@scpp.nl"
