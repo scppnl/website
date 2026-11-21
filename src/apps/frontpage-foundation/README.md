@@ -49,7 +49,7 @@ commit the intended custom-domain `routes` configuration after confirming the
 zone and hostname. Use a different domain for each site. Angular does not need a
 hostname allowlist for prerendered static hosting.
 
-The build preserves the Nx output location. Routes `/`, `/gebouw`, `/ligging`, `/tarieven`, `/reserveren`, `/contact`, `/inloggen`, `/inloggen/geen-toegang` each have real HTML.
+The build preserves the Nx output location. Routes `/`, `/gebouw`, `/ligging`, `/tarieven`, `/reserveren`, `/contact`, `/inloggen`, `/inloggen/geen-toegang`, `/beheer/toegangsaanvragen` each have real HTML.
 The `404` Angular route is copied to root `404.html` for Workers' `404-page`
 handling, so unknown direct URLs return HTTP 404 with the site's own content.
 Client navigation also renders the not-found component. `drop-trailing-slash`
