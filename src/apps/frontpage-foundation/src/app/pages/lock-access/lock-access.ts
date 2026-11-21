@@ -17,11 +17,11 @@ import { lockAccessPage } from '../../content/site-content';
 import { LockAccessRequest, LockId } from '../../lock-access/lock-access-request';
 import { LockAccessRequestService } from '../../lock-access/lock-access-request.service';
 import {
-  clock,
-  dayLongWithYear,
+  clubhouseInstant,
+  clubhouseNow,
+  formatDay,
   formatDuration,
   formatPeriod,
-  parseLocalDateTime,
   toLocalIso,
 } from '../../lock-access/period';
 import { MemberBar } from '../../layout/member-bar/member-bar';
@@ -30,6 +30,17 @@ import { Icon } from '../../shared/icon/icon';
 type SubmitStatus = 'idle' | 'submitting' | 'success' | 'error';
 type FieldKey = 'locks' | 'start' | 'end' | 'reason';
 type Errors = Partial<Record<FieldKey, string>>;
+
+interface FormValue {
+  readonly locks: Readonly<Record<LockId, boolean>>;
+  readonly period: {
+    readonly startDate: string;
+    readonly startTime: string;
+    readonly endDate: string;
+    readonly endTime: string;
+  };
+  readonly reason: string;
+}
 
 interface SentRequest {
   readonly locks: string;
@@ -54,11 +65,14 @@ export class LockAccess {
   private readonly injector = inject(Injector);
 
   protected readonly content = lockAccessPage;
-  protected readonly today = currentDate();
+  /** Prerendered with the build's date, then the clubhouse date in the browser. */
+  protected readonly minDate = signal(currentDate()().today);
   protected readonly status = signal<SubmitStatus>('idle');
   protected readonly sent = signal<SentRequest | null>(null);
   /** Errors only show once the visitor tried to submit. */
   private readonly submitted = signal(false);
+  /** Bumped on every submit, so the shown errors are re-checked against the clock each time. */
+  private readonly attempt = signal(0);
 
   private readonly summary = viewChild<ElementRef<HTMLElement>>('summary');
   private readonly sentHeading = viewChild<ElementRef<HTMLElement>>('sentHeading');
@@ -91,21 +105,18 @@ export class LockAccess {
     () => this.chosenLocks().length === this.content.locks.length,
   );
 
-  private readonly start = computed(() => {
-    const { startDate, startTime } = this.value().period;
-    return parseLocalDateTime(startDate, startTime);
-  });
-
-  private readonly end = computed(() => {
-    const { endDate, endTime } = this.value().period;
-    return parseLocalDateTime(endDate, endTime);
-  });
-
   /** Shown once both ends are valid and in the right order. */
   protected readonly summaryLine = computed(() => {
-    const [start, end] = [this.start(), this.end()];
+    const { startDate, startTime, endDate, endTime } = this.value().period;
+    const [start, end] = [
+      clubhouseInstant(startDate, startTime),
+      clubhouseInstant(endDate, endTime),
+    ];
     return start && end && end > start
-      ? { period: formatPeriod(start, end), duration: formatDuration(start, end) }
+      ? {
+          period: formatPeriod(startDate, startTime, endDate, endTime),
+          duration: formatDuration(start, end),
+        }
       : null;
   });
 
@@ -113,7 +124,10 @@ export class LockAccess {
     () => `${this.value().reason.length} / ${this.content.reasonMaxLength}`,
   );
 
-  protected readonly errors = computed<Errors>(() => (this.submitted() ? this.validate() : {}));
+  protected readonly errors = computed<Errors>(() => {
+    this.attempt();
+    return this.submitted() ? this.validate(this.value()) : {};
+  });
 
   protected readonly errorList = computed(() => {
     const errors = this.errors();
@@ -139,22 +153,23 @@ export class LockAccess {
       }
     });
     inject(DestroyRef).onDestroy(() => subscription.unsubscribe());
+    afterNextRender(() => this.minDate.set(clubhouseNow().date));
   }
 
-  /** Checked against the clock at the moment of asking, so a stale page cannot pass a past start. */
-  private validate(): Errors {
+  /** Checked against the clubhouse clock at the moment of asking, so a stale page cannot pass a past start. */
+  private validate(value: FormValue): Errors {
     const errors: Errors = {};
     const messages = this.content.errors;
-    const { period, reason } = this.form.getRawValue();
-    const start = parseLocalDateTime(period.startDate, period.startTime);
-    const end = parseLocalDateTime(period.endDate, period.endTime);
+    const { locks, period, reason } = value;
+    const start = clubhouseInstant(period.startDate, period.startTime);
+    const end = clubhouseInstant(period.endDate, period.endTime);
 
-    if (this.chosenLocks().length === 0) {
+    if (!this.content.locks.some((lock) => locks[lock.id])) {
       errors.locks = messages.locks;
     }
     if (!start) {
       errors.start = messages.startMissing;
-    } else if (start < new Date()) {
+    } else if (start.getTime() < Date.now()) {
       errors.start = messages.startPast;
     }
     if (!end) {
@@ -190,7 +205,8 @@ export class LockAccess {
       return;
     }
     this.submitted.set(true);
-    if (Object.keys(this.validate()).length > 0) {
+    this.attempt.update((count) => count + 1);
+    if (Object.keys(this.errors()).length > 0) {
       afterNextRender(() => this.summary()?.nativeElement.focus(), { injector: this.injector });
       return;
     }
@@ -206,7 +222,7 @@ export class LockAccess {
     } finally {
       this.form.enable({ emitEvent: false });
     }
-    this.sent.set(this.toSent());
+    this.sent.set(this.toSent(request));
     this.status.set('success');
     afterNextRender(() => this.sentHeading()?.nativeElement.focus(), { injector: this.injector });
   }
@@ -240,16 +256,20 @@ export class LockAccess {
     };
   }
 
-  private toSent(): SentRequest {
-    const [start, end] = [this.start() as Date, this.end() as Date];
+  /** Built from what was sent, not from the form, which the visitor may have changed meanwhile. */
+  private toSent(request: LockAccessRequest): SentRequest {
+    const moment = (value: string) => {
+      const [date, time] = value.split('T');
+      return `${formatDay(date, true)}, ${time}`;
+    };
     return {
-      locks: this.chosenLocks()
-        .map((lock) => lock.name)
+      locks: request.locks
+        .map((id) => this.content.locks.find((lock) => lock.id === id)?.name ?? id)
         .join(', '),
-      start: `${dayLongWithYear(start)}, ${clock(start)}`,
-      end: `${dayLongWithYear(end)}, ${clock(end)}`,
-      reason: this.form.getRawValue().reason.trim(),
-      submittedAt: clock(new Date()),
+      start: moment(request.start),
+      end: moment(request.end),
+      reason: request.reason,
+      submittedAt: clubhouseNow().time,
     };
   }
 }

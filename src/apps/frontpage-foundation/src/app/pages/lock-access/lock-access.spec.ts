@@ -11,6 +11,8 @@ const NEXT_DAY = '2099-06-05';
 describe('LockAccess', () => {
   const submit = vi.fn();
 
+  afterEach(() => vi.useRealTimers());
+
   beforeEach(async () => {
     vi.clearAllMocks();
     submit.mockResolvedValue(undefined);
@@ -174,7 +176,7 @@ describe('LockAccess', () => {
     expect(element.querySelector('.period__summary')).toBeNull();
 
     await setPeriod();
-    expect(text('.period__summary')).toBe('donderdag 4 juni, 19:00 – 21:30 · 2,5 uur');
+    expect(text('.period__summary')).toBe('donderdag 4 juni, 19:00 – 21:30 · 2 uur en 30 minuten');
   });
 
   it('submits the request, then shows what was sent', async () => {
@@ -232,5 +234,83 @@ describe('LockAccess', () => {
     expect((element.querySelector('button[type="submit"]') as HTMLButtonElement).disabled).toBe(
       false,
     );
+  });
+
+  it('names the lock group with a legend that is the first child of its fieldset', async () => {
+    const { element } = await setup();
+    const fieldset = element.querySelector('#field-locks') as HTMLFieldSetElement;
+
+    expect(fieldset.firstElementChild?.tagName).toBe('LEGEND');
+    expect(fieldset.firstElementChild?.textContent?.trim()).toBe('Sloten');
+  });
+
+  it('says that times are clubhouse time', async () => {
+    const { text } = await setup();
+
+    expect(text('#period-hint')).toBe('Alle tijden zijn Nederlandse tijd.');
+  });
+
+  it('confirms what was sent, even if the form changes while sending', async () => {
+    let finish!: () => void;
+    submit.mockReturnValue(new Promise<void>((resolve) => (finish = resolve)));
+    const { fixture, fillValidForm, submitForm, element, text } = await setup();
+    await fillValidForm();
+    await submitForm();
+
+    const toggle = element.querySelector('.locks__all') as HTMLButtonElement;
+    expect(toggle.disabled).toBe(true);
+    // Even a change that slips past the disabled controls must not reach the confirmation.
+    const component = fixture.componentInstance as unknown as {
+      form: { controls: { locks: { setValue(value: Record<string, boolean>): void } } };
+    };
+    component.form.controls.locks.setValue({
+      'voordeur-grote-gebouw': true,
+      'voordeur-kleine-gebouw': true,
+      'magazijn-binnendeur': true,
+      'magazijn-buitendeur': true,
+    });
+    finish();
+    await fixture.whenStable();
+
+    expect(submit.mock.calls[0][0].locks).toEqual(['magazijn-binnendeur', 'magazijn-buitendeur']);
+    const details = text('.sent__details');
+    expect(details).toContain('Magazijn binnendeur, Magazijn buitendeur');
+    expect(details).not.toContain('Voordeur');
+  });
+
+  it('re-checks the start against the clock on every submit', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    // 18:59 at the clubhouse (summer time, UTC+2).
+    vi.setSystemTime(new Date('2099-06-04T16:59:00Z'));
+    const { fixture, element, toggleLock, setPeriod, setValue, submitForm, text } = await setup();
+    await submitForm();
+    await toggleLock(0);
+    await setPeriod('19:00', '21:30');
+    await setValue('#reason', 'Tenten drogen en opbergen.');
+    expect(element.querySelector('.summary')).toBeNull();
+
+    // A minute later the same start has passed, without any edit in between.
+    vi.setSystemTime(new Date('2099-06-04T17:01:00Z'));
+    await submitForm();
+    await fixture.whenStable();
+
+    expect(text('#field-start .error')).toBe('De starttijd ligt in het verleden.');
+    expect(text('.summary__title')).toBe('Nog één ding voor je kunt versturen');
+    expect(document.activeElement).toBe(element.querySelector('.summary'));
+    expect(submit).not.toHaveBeenCalled();
+  });
+
+  it('checks a past start in clubhouse time, whatever the browser time zone', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    // 10:15 at the clubhouse in winter (UTC+1), so 10:00 that day has passed.
+    vi.setSystemTime(new Date('2099-01-15T09:15:00Z'));
+    const { toggleLock, setPeriod, setValue, submitForm, text } = await setup();
+    await toggleLock(0);
+    await setPeriod('10:00', '12:00', '2099-01-15');
+    await setValue('#reason', 'Tenten drogen en opbergen.');
+    await submitForm();
+
+    expect(text('#field-start .error')).toBe('De starttijd ligt in het verleden.');
+    expect(submit).not.toHaveBeenCalled();
   });
 });

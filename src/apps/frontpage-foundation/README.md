@@ -105,6 +105,9 @@ Submitting is **simulated**: `SimulatedLockAccessRequestService` waits briefly a
 nothing is sent. The route provides it for `LockAccessRequestService`; the backend stage replaces
 that one provider with an HTTP service. Sign-in and domain checks come later too, so the page
 shows no account details yet.
+Periods are clubhouse time (`Europe/Amsterdam`) whatever the browser's time zone: the
+request sends `YYYY-MM-DDTHH:mm` without an offset, and the past-start check, the summary and the
+confirmation use that zone too.
 
 ## Turnstile protection
 

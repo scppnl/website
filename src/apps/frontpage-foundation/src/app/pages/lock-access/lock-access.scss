@@ -58,7 +58,8 @@ legend,
   color: var(--color-primary-dark);
 }
 
-.period h2 {
+.period h2,
+.period .hint {
   margin: 0;
 }
 
@@ -94,13 +95,18 @@ legend,
   font-weight: 700;
 }
 
-.locks__head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.25rem 1rem;
+/* The legend stays the fieldset's first child, so it names the group; floats put the button beside it. */
+.locks legend {
+  float: left;
   margin-bottom: 0.25rem;
+}
+
+.locks__all {
+  float: right;
+}
+
+.locks .hint {
+  clear: both;
 }
 
 .link-button {
@@ -114,6 +120,11 @@ legend,
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
+
+  &:disabled {
+    color: var(--color-muted);
+    cursor: default;
+  }
 }
 
 .locks__list {

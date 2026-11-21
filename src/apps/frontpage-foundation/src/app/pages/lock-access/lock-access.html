@@ -71,12 +71,15 @@
             }
 
             <fieldset id="field-locks" class="locks" aria-describedby="locks-hint">
-              <div class="locks__head">
-                <legend>Sloten</legend>
-                <button type="button" class="link-button" (click)="toggleAll()">
-                  {{ allChosen() ? content.selectNone : content.selectAll }}
-                </button>
-              </div>
+              <legend>Sloten</legend>
+              <button
+                type="button"
+                class="link-button locks__all"
+                [disabled]="status() === 'submitting'"
+                (click)="toggleAll()"
+              >
+                {{ allChosen() ? content.selectNone : content.selectAll }}
+              </button>
               <p id="locks-hint" class="hint">{{ content.locksHint }}</p>
               <div class="locks__list" formGroupName="locks">
                 @for (lock of content.locks; track lock.id) {
@@ -97,8 +100,9 @@
 
             <div class="period" formGroupName="period">
               <h2>{{ content.periodTitle }}</h2>
+              <p id="period-hint" class="hint">{{ content.periodHint }}</p>
               <div class="period__pair">
-                <fieldset id="field-start">
+                <fieldset id="field-start" aria-describedby="period-hint">
                   <legend>Van</legend>
                   <div class="period__inputs">
                     <label class="field">
@@ -106,7 +110,7 @@
                       <input
                         type="date"
                         formControlName="startDate"
-                        [min]="today().today"
+                        [min]="minDate()"
                         [attr.aria-invalid]="!!errors().start"
                       />
                     </label>
@@ -124,7 +128,7 @@
                     <p class="error">{{ message }}</p>
                   }
                 </fieldset>
-                <fieldset id="field-end">
+                <fieldset id="field-end" aria-describedby="period-hint">
                   <legend>Tot</legend>
                   <div class="period__inputs">
                     <label class="field">
@@ -132,7 +136,7 @@
                       <input
                         type="date"
                         formControlName="endDate"
-                        [min]="today().today"
+                        [min]="minDate()"
                         [attr.aria-invalid]="!!errors().end"
                       />
                     </label>

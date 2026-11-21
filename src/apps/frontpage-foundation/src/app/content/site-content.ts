@@ -652,6 +652,7 @@ export const lockAccessPage = {
   selectAll: 'Alle sloten kiezen',
   selectNone: 'Alles deselecteren',
   periodTitle: 'Periode',
+  periodHint: 'Alle tijden zijn Nederlandse tijd.',
   reasonLabel: 'Waarvoor heb je toegang nodig?',
   reasonHint:
     'Bijvoorbeeld de opkomst, de klus of het materiaal dat je ophaalt. Het bestuur leest dit bij het beoordelen.',
