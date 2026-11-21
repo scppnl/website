@@ -1,0 +1,111 @@
+<div class="page" [class.page--detail]="!!selected()">
+  <div class="browse">
+    <header class="intro">
+      <div class="intro__text">
+        <p class="eyebrow">{{ content.eyebrow }}</p>
+        <h1>{{ content.title }}</h1>
+        <p class="lead">{{ content.lead }}</p>
+      </div>
+      <p class="notice">
+        <app-icon name="info" [size]="20" [strokeWidth]="2" />
+        {{ content.sampleNotice }}
+      </p>
+    </header>
+
+    <div class="filters">
+      <div class="tabs" role="group" aria-label="Filter op status">
+        @for (item of content.tabs; track item.id) {
+          <button
+            type="button"
+            class="tab"
+            [attr.aria-pressed]="tab() === item.id"
+            (click)="tab.set(item.id)"
+          >
+            {{ item.label }}
+            <span class="tab__count">{{ counts()[item.id] }}</span>
+          </button>
+        }
+      </div>
+      <div class="search">
+        <label class="search__field">
+          <span class="visually-hidden">Zoek op naam, e-mail of reden</span>
+          <app-icon name="search" [size]="20" [strokeWidth]="2" />
+          <input
+            type="search"
+            placeholder="Zoek op naam, e-mail of reden"
+            [value]="query()"
+            (input)="setQuery($event)"
+          />
+        </label>
+        <label class="search__lock">
+          <span class="visually-hidden">Filter op slot</span>
+          <select (change)="setLock($event)">
+            <option value="all" [selected]="lock() === 'all'">Alle sloten</option>
+            @for (name of locks; track name) {
+              <option [value]="name" [selected]="lock() === name">{{ name }}</option>
+            }
+          </select>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  @if (toast(); as message) {
+    <div #toastElement class="toast" role="status" tabindex="-1">
+      <span class="toast__text">
+        <app-icon name="check" [size]="22" [strokeWidth]="2.4" />
+        <span
+          ><strong>{{ message.text }}</strong> {{ message.detail }}</span
+        >
+      </span>
+      <button type="button" class="btn btn--on-dark toast__undo" (click)="undo()">
+        Ongedaan maken
+      </button>
+    </div>
+  }
+
+  @if (requests() === null) {
+    <p class="loading" role="status">Aanvragen laden…</p>
+  } @else {
+    <div class="layout">
+      <section class="list" aria-label="Aanvragen">
+        <p class="list__caption">{{ caption() }}</p>
+        @for (row of rows(); track row.request.id) {
+          <app-access-request-row
+            [request]="row.request"
+            [seriesSize]="row.seriesSize"
+            [selected]="row.request.id === selected()?.id"
+            [replaceUrl]="!!selected()"
+            [now]="now()"
+          />
+        } @empty {
+          <div class="empty">
+            <p class="empty__title">{{ empty().title }}</p>
+            <p>{{ empty().text }}</p>
+          </div>
+        }
+      </section>
+
+      <div class="detail">
+        @if (selected(); as request) {
+          <app-access-request-panel
+            [request]="request"
+            [siblings]="siblings()"
+            [overlaps]="overlaps()"
+            [nextId]="nextId()"
+            [reconsidering]="editingId() === request.id"
+            [now]="now()"
+            (decided)="decide(request, $event)"
+            (reopen)="editingId.set(request.id)"
+            (cancelled)="editingId.set(null)"
+          />
+        } @else {
+          <aside class="detail__empty" aria-labelledby="no-selection">
+            <h2 id="no-selection">Geen aanvraag geselecteerd</h2>
+            <p>Kies een aanvraag in de lijst om de details te zien en een besluit te nemen.</p>
+          </aside>
+        }
+      </div>
+    </div>
+  }
+</div>

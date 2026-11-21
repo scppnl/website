@@ -36,6 +36,18 @@ describe('App', () => {
     expect(compiled.querySelector('nav[aria-label="Hoofdmenu"]')).toBeTruthy();
   });
 
+  it('gives the management pages their own header, without the public menu or footer', async () => {
+    const harness = await RouterTestingHarness.create('/beheer/toegangsaanvragen');
+    await harness.fixture.whenStable();
+    const compiled = harness.fixture.nativeElement as HTMLElement;
+
+    expect(compiled.querySelector('nav[aria-label="Beheermenu"]')).toBeTruthy();
+    expect(compiled.querySelector('nav[aria-label="Hoofdmenu"]')).toBeNull();
+    expect(compiled.querySelector('footer')).toBeNull();
+    expect(compiled.querySelectorAll('main#main').length).toBe(1);
+    expect(compiled.querySelector('h1')?.textContent).toContain('Toegangsaanvragen');
+  });
+
   it('leaves the header and footer out of the sign-in pages', async () => {
     const harness = await RouterTestingHarness.create('/inloggen');
 

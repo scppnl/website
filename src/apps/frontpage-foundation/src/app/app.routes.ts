@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { AdminLayout } from './layout/admin-layout/admin-layout';
 import { SiteLayout } from './layout/site-layout/site-layout';
 
 export const routes: Routes = [
@@ -17,6 +18,19 @@ export const routes: Routes = [
     title: 'Geen toegang',
     data: { robots: 'noindex' },
     loadComponent: () => import('./pages/login-denied/login-denied').then((m) => m.LoginDenied),
+  },
+  {
+    path: 'beheer',
+    component: AdminLayout,
+    children: [
+      {
+        path: 'toegangsaanvragen',
+        title: 'Toegangsaanvragen',
+        data: { robots: 'noindex' },
+        loadComponent: () =>
+          import('./pages/access-requests/access-requests').then((m) => m.AccessRequests),
+      },
+    ],
   },
   {
     path: '',
