@@ -49,7 +49,11 @@ const PATHS = {
     'M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z',
     'M16 3v4M8 3v4M3 10h18',
   ],
+  search: ['M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z', 'M20 20l-4-4'],
+  copy: ['M9 7h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z', 'M4 16V6a2 2 0 0 1 2-2h10'],
+  'alert-circle': ['M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z', 'M12 7.5v5M12 16v.01'],
   'arrow-right': ['M5 12h14M13 6l6 6-6 6'],
+  'chevron-left': ['M15 6l-6 6 6 6'],
 } as const;
 
 export type IconName = keyof typeof PATHS;

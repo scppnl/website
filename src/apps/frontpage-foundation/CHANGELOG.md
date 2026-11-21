@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add the lock access request form at `/toegang-aanvragen`: choose locks, a period and a
   reason, with validation and a confirmation screen. Public, `noindex` and unlinked for now;
   submitting is simulated until the API and sign-in exist.
+- Add the **Toegangsaanvragen** management page at `/beheer/toegangsaanvragen`: filter the access
+  requests by status, search and lock, open one, and approve or reject it with a comment, one
+  request or a person's whole series at once (showing the overlaps of every request in it), with
+  undo. It shows example data, sends no e-mail and says so, and is not protected yet; saving
+  decisions, sign-in checks and the decision e-mail come with the API. `/beheer` redirects to it.
 - Show on `/inloggen` as whom you are signed in (name and email) with **Ander account
   kiezen** and **Uitloggen**, using the auth API's session endpoints. It needs the auth API
   on the same site as the website; otherwise the page keeps offering sign-in.

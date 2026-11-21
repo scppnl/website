@@ -718,3 +718,21 @@ export const contactPage = {
     },
   },
 };
+
+export const accessRequestsPage = {
+  eyebrow: 'Beheer',
+  title: 'Toegangsaanvragen',
+  lead: 'Leden van de vereniging vragen via het formulier toegang aan tot een of meer sloten. Keur een aanvraag goed of wijs hem af, met een toelichting voor de aanvrager.',
+  sampleNotice: 'Voorbeeldgegevens: besluiten worden nog niet opgeslagen.',
+  tabs: [
+    { id: 'pending', label: 'Openstaand', adjective: 'openstaande' },
+    { id: 'approved', label: 'Goedgekeurd', adjective: 'goedgekeurde' },
+    { id: 'rejected', label: 'Afgewezen', adjective: 'afgewezen' },
+    { id: 'all', label: 'Alle', adjective: '' },
+  ] as const,
+  statusLabels: {
+    pending: 'Openstaand',
+    approved: 'Goedgekeurd',
+    rejected: 'Afgewezen',
+  } as const,
+};
