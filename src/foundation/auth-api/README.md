@@ -170,7 +170,7 @@ secret or to deploy to a service that does not exist:
      additional_env = {
        Auth__Google__ClientId  = "<client id>.apps.googleusercontent.com"
        Auth__ApiOrigin         = "https://auth-api-979979719406.europe-west4.run.app"
-       Auth__FrontendOrigin    = "https://blokhutdewildert.nl"
+       Auth__FrontendOrigin    = "https://scpp-foundation.de-wildert-penp.workers.dev"
        Auth__PostSignInPath    = "/"
        Auth__AllowedDomains__0 = "scpp.nl"
        Auth__AllowedDomains__1 = "blokhutdewildert.nl"
@@ -208,8 +208,9 @@ secret or to deploy to a service that does not exist:
   mappings have limited availability, so confirm europe-west4 support and domain
   ownership first; a global external load balancer with a serverless NEG is the fallback),
   add its redirect URI to the Google client, set `Auth__ApiOrigin` and
-  `AUTH_API_BASE_URL` to it, and set `Auth__PostSignInPath` to `/beheer` when that page
-  exists.
+  `AUTH_API_BASE_URL` to it, switch `Auth__FrontendOrigin` from the foundation Worker URL
+  to `https://blokhutdewildert.nl` once that domain is live, and set `Auth__PostSignInPath`
+  to `/beheer` when that page exists.
 
 ### Enabling the button
 
